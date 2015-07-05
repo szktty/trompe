@@ -29,6 +29,17 @@ func ModuleList() *Module {
 				TArgs(TVar("a")))))
 	m.SetPrim("hd", List_hd)
 
+	// val tl : 'a list -> 'a list
+	m.SetFieldType("tl",
+		TPoly(Tyvars("a"),
+			TApp(
+				TcTyFun(Tyvars("a"),
+					TApp(TcArrow, TArgs(
+						TApp(TcList, TArgs(TVar("a"))),
+						TApp(TcList, TArgs(TVar("a")))))),
+				TArgs(TVar("a")))))
+	m.SetPrim("tl", List_tl)
+
 	m.SetFieldType("iter",
 		TPoly(Tyvars("a"),
 			TApp(
@@ -63,5 +74,14 @@ func List_hd(state *State, parent *Context, args []Value) (Value, error) {
 		return nil, fmt.Errorf("list is nil")
 	} else {
 		return list.Head, nil
+	}
+}
+
+func List_tl(state *State, parent *Context, args []Value) (Value, error) {
+	list := args[0].(*List)
+	if list == NilValue {
+		return nil, fmt.Errorf("list is nil")
+	} else {
+		return list.Tail, nil
 	}
 }
