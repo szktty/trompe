@@ -21,7 +21,7 @@ let test s t =
  
 # kitten -> sitting = 3
 # rosettacode -> raisethysword = 8
-;; test "kitten" "sitting"
+;; test "kitten1234" "sitting"
 
 # warning! too slow!
 # ;; test "rosettacode" "raisethysword"
