@@ -7,6 +7,17 @@ import (
 func ModuleList() *Module {
 	m := NewModule("List")
 
+	// val length : 'a list -> int
+	m.SetFieldType("length",
+		TPoly(Tyvars("a"),
+			TApp(
+				TcTyFun(Tyvars("a"),
+					TApp(TcArrow, TArgs(
+						TApp(TcList, TArgs(TVar("a"))),
+						TInt))),
+				TArgs(TVar("a")))))
+	m.SetPrim("length", List_length)
+
 	// val hd : 'a list -> 'a
 	m.SetFieldType("hd",
 		TPoly(Tyvars("a"),
@@ -38,20 +49,12 @@ func ModuleList() *Module {
 						TApp(TcList, TArgs(TVar("a")))))),
 				TArgs(TVar("a")))))
 
-	m.SetFieldType("length",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TInt))),
-				TArgs(TVar("a")))))
-
 	return m
 }
 
 func List_length(state *State, parent *Context, args []Value) (Value, error) {
-	return 0, nil // TODO
+	list := args[0].(*List)
+	return list.Length(), nil
 }
 
 func List_hd(state *State, parent *Context, args []Value) (Value, error) {
