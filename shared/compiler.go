@@ -129,59 +129,11 @@ func (c *Compiler) Compile(bld *IRBuilder, node *TypedNode) {
 		c.CompileMatchPattern(bld, desc.Ptn)
 
 	case *TypedBlockNode:
-		name, _ := desc.Name.Name()
-		inner := NewIRBuilder(bld, c.Azer.ScopeOfNode(node))
-		inner.Name = name
-
-		// outer variables
-		Debugf("block = %s", inner.Scope.Asis)
-		numRefs := len(inner.Scope.Refs)
-		if numRefs > 0 {
-			Debugf("push copied %d", numRefs)
-			inner.PushCopied(nil, numRefs)
+		name, ok := desc.Name.Name()
+		if !ok {
+			panic("block must have name")
 		}
-
-		// shared variables (array, recursive functions)
-		numSharedSlots := inner.Scope.NumSharedSlots()
-		if numSharedSlots > 0 {
-			inner.PutCreateArray(nil, numSharedSlots)
-			inner.StorePopLocal(nil, inner.Scope.Shared.Index)
-		}
-
-		c.Compile(inner, desc.Body)
-		inner.PutReturn(nil)
-		code := c.CompiledCode(inner)
-		LogCompilingf("block code:\n%s", code)
-		bld = inner.Parent
-		if inner.Scope.IsClean() {
-			// clean block
-			i := bld.AddConst(NewBlockClosure(code))
-			bld.PushConst(node.Loc, i)
-
-		} else if inner.Scope.IsFull() && !inner.Scope.IsCopying() {
-			codeIdx := bld.AddConst(code)
-			bld.MakeFullBlock(nil, codeIdx)
-
-		} else if inner.Scope.IsCopying() || inner.Scope.IsFullCopying() {
-			// push variables to copy
-			codeIdx := bld.AddConst(code)
-			for _, ref := range inner.Scope.Refs {
-				bld.PushLocal(nil, ref.Ref.Index)
-			}
-
-			// make block
-			numCopied := inner.Scope.NumCopied()
-			Debugf("make block %d for %s", numCopied, inner.Scope)
-			if inner.Scope.IsFullCopying() {
-				//bld.PushLocal(nil, bld.Scope.Shared.Index)
-				bld.MakeFullCopyingBlock(nil, codeIdx, numCopied)
-			} else {
-				bld.MakeCopyingBlock(nil, codeIdx, numCopied)
-			}
-		} else {
-			panic("block must be one of clean, copying, full or full copying")
-		}
-
+		c.CompileBlock(bld, name, node, desc.Body)
 		if bld.Scope.Outer == nil {
 			i := bld.AddConst(name)
 			bld.StorePopGlobal(nil, i)
@@ -491,6 +443,9 @@ func (c *Compiler) Compile(bld *IRBuilder, node *TypedNode) {
 		i := bld.AddConst(desc.Path)
 		bld.PushValue(node.Loc, i)
 
+	case *TypedFunNode:
+		c.CompileMultiMatch(bld, desc.MultiMatch)
+
 	default:
 		Panicf("compiler notimpl %s", node)
 	}
@@ -572,6 +527,11 @@ func (c *Compiler) CompileMatch(bld *IRBuilder, matches []*TypedNode) {
 	}
 	bld.AddInstr(toEnd)
 	bld.SwapPop(nil)
+}
+
+func (c *Compiler) CompileMultiMatch(bld *IRBuilder, multi *TypedNode) {
+	desc := multi.Desc.(*TypedMultiMatchNode)
+	c.CompileBlock(bld, "<fun>", multi, desc.Body)
 }
 
 func (c *Compiler) CompileMatchPattern(bld *IRBuilder, ptn *TypedNode) {
@@ -673,6 +633,61 @@ func (c *Compiler) CompileMatchPattern(bld *IRBuilder, ptn *TypedNode) {
 
 	default:
 		Panicf("compiler match pattern notimpl %s", ptn)
+	}
+}
+
+func (c *Compiler) CompileBlock(bld *IRBuilder, name string,
+	node *TypedNode, body *TypedNode) {
+	inner := NewIRBuilder(bld, c.Azer.ScopeOfNode(node))
+	inner.Name = name
+
+	// outer variables
+	Debugf("block = %s", inner.Scope.Asis)
+	numRefs := len(inner.Scope.Refs)
+	if numRefs > 0 {
+		Debugf("push copied %d", numRefs)
+		inner.PushCopied(nil, numRefs)
+	}
+
+	// shared variables (array, recursive functions)
+	numSharedSlots := inner.Scope.NumSharedSlots()
+	if numSharedSlots > 0 {
+		inner.PutCreateArray(nil, numSharedSlots)
+		inner.StorePopLocal(nil, inner.Scope.Shared.Index)
+	}
+
+	c.Compile(inner, body)
+	inner.PutReturn(nil)
+	code := c.CompiledCode(inner)
+	LogCompilingf("block code:\n%s", code)
+	bld = inner.Parent
+	if inner.Scope.IsClean() {
+		// clean block
+		i := bld.AddConst(NewBlockClosure(code))
+		bld.PushConst(node.Loc, i)
+
+	} else if inner.Scope.IsFull() && !inner.Scope.IsCopying() {
+		codeIdx := bld.AddConst(code)
+		bld.MakeFullBlock(nil, codeIdx)
+
+	} else if inner.Scope.IsCopying() || inner.Scope.IsFullCopying() {
+		// push variables to copy
+		codeIdx := bld.AddConst(code)
+		for _, ref := range inner.Scope.Refs {
+			bld.PushLocal(nil, ref.Ref.Index)
+		}
+
+		// make block
+		numCopied := inner.Scope.NumCopied()
+		Debugf("make block %d for %s", numCopied, inner.Scope)
+		if inner.Scope.IsFullCopying() {
+			//bld.PushLocal(nil, bld.Scope.Shared.Index)
+			bld.MakeFullCopyingBlock(nil, codeIdx, numCopied)
+		} else {
+			bld.MakeCopyingBlock(nil, codeIdx, numCopied)
+		}
+	} else {
+		panic("block must be one of clean, copying, full or full copying")
 	}
 }
 

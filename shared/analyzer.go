@@ -453,14 +453,7 @@ func (azer *Analyzer) Analyze(node *TypedNode) {
 		}
 
 		azer.BeginBlock(node)
-		for _, param := range desc.Params {
-			switch ptn := param.Desc.(type) {
-			case *TypedPtnIdentNode:
-				azer.Current.AddNewArg(ptn.Name)
-			default:
-				panic(fmt.Errorf("not impl %s", ptn))
-			}
-		}
+		azer.AnalyzeParamList(desc.Params)
 		azer.Analyze(desc.Body)
 		azer.EndBlock()
 
@@ -589,6 +582,18 @@ func (azer *Analyzer) Analyze(node *TypedNode) {
 			azer.Analyze(desc.Set)
 		}
 
+	case *TypedFunNode:
+		azer.Analyze(desc.MultiMatch)
+
+	case *TypedMultiMatchNode:
+		azer.BeginBlock(node)
+		azer.AnalyzeParamList(desc.Params)
+		if desc.Cond != nil {
+			azer.Analyze(desc.Cond)
+		}
+		azer.Analyze(desc.Body)
+		azer.EndBlock()
+
 	case *TypedAddNode:
 		azer.Analyze(desc.Left)
 		azer.Analyze(desc.Right)
@@ -648,6 +653,18 @@ func (azer *Analyzer) Analyze(node *TypedNode) {
 			asis = asis.Parent
 		}
 		Panicf("block analyzer notimpl %s\n", node)
+	}
+}
+
+func (azer *Analyzer) AnalyzeParamList(params []*TypedNode) {
+	// TODO: other patterns
+	for _, param := range params {
+		switch ptn := param.Desc.(type) {
+		case *TypedPtnIdentNode:
+			azer.Current.AddNewArg(ptn.Name)
+		default:
+			panic(fmt.Errorf("not impl %s", ptn))
+		}
 	}
 }
 

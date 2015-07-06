@@ -160,7 +160,7 @@ func (state *State) Exec(mod *Module, parent *Context, block *BlockClosure, args
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("arity not equal")
+		panic("arity not equal")
 	}
 
 loophead:

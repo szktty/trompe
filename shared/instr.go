@@ -691,7 +691,7 @@ func (desc *ApplyInstr) Generate(bld *BytecodeBuilder, instr *Instr) {
 }
 
 func (desc *ApplyInstr) StackSize() int {
-	return desc.Arity
+	return -(desc.Arity + 1) + 1
 }
 
 func (desc *ApplyDirectInstr) Generate(bld *BytecodeBuilder, instr *Instr) {
