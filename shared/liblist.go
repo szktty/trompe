@@ -29,6 +29,7 @@ func ModuleList() *Module {
 	// val iter : 'a list -> ('a -> unit) -> unit
 	m.SetFieldType("iter", TypePolyListArrow(TypePolyList1,
 		TApp(TcArrow, TArgs(TVar("a"), TUnit)), TUnit))
+	m.SetPrim("iter", List_iter)
 
 	// val filter : 'a list -> ('a -> bool) -> 'a list
 	m.SetFieldType("filter", TypePolyListArrow(TypePolyList1,
@@ -58,4 +59,14 @@ func List_tl(state *State, parent *Context, args []Value) (Value, error) {
 	} else {
 		return list.Tail, nil
 	}
+}
+
+func List_iter(state *State, parent *Context, args []Value) (Value, error) {
+	list := args[0].(*List)
+	blk := args[1].(*BlockClosure)
+	for list != NilValue {
+		state.Exec(parent.Module, parent, blk, []Value{list.Head})
+		list = list.Tail
+	}
+	return UnitValue, nil
 }
