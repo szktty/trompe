@@ -154,22 +154,22 @@ func Pervasives_show(state *State, parent *Context, args []Value) (Value, error)
 }
 
 func Pervasives_print_char(state *State, parent *Context, args []Value) (Value, error) {
-	fmt.Printf("%s", args[0].(string))
+	fmt.Printf("%s\n", args[0].(string))
 	return UnitValue, nil
 }
 
 func Pervasives_print_string(state *State, parent *Context, args []Value) (Value, error) {
-	fmt.Printf("%s", args[0].(string))
+	fmt.Printf("%s\n", args[0].(string))
 	return UnitValue, nil
 }
 
 func Pervasives_print_int(state *State, parent *Context, args []Value) (Value, error) {
-	fmt.Printf("%d", args[0].(int64))
+	fmt.Printf("%d\n", args[0].(int64))
 	return UnitValue, nil
 }
 
 func Pervasives_print_float(state *State, parent *Context, args []Value) (Value, error) {
-	fmt.Printf("%f", args[0].(float64))
+	fmt.Printf("%f\n", args[0].(float64))
 	return UnitValue, nil
 }
 
