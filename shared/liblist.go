@@ -4,61 +4,35 @@ import (
 	"fmt"
 )
 
+var TypePolyList1 = TApp(TcList, TArgs(TVar("a")))
+var TypePolyList2 = TApp(TcList, TArgs(TVar("a"), TVar("b")))
+
+func TypePolyListArrow(arg ...Type) Type {
+	return WrapInTypePoly1(TApp(TcArrow, TArgs(arg...)))
+}
+
 func ModuleList() *Module {
 	m := NewModule("List")
 
 	// val length : 'a list -> int
-	m.SetFieldType("length",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TInt))),
-				TArgs(TVar("a")))))
+	m.SetFieldType("length", TypePolyListArrow(TypePolyList1, TInt))
 	m.SetPrim("length", List_length)
 
 	// val hd : 'a list -> 'a
-	m.SetFieldType("hd",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TVar("a")))),
-				TArgs(TVar("a")))))
+	m.SetFieldType("hd", TypePolyListArrow(TypePolyList1, TVar("a")))
 	m.SetPrim("hd", List_hd)
 
 	// val tl : 'a list -> 'a list
-	m.SetFieldType("tl",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TApp(TcList, TArgs(TVar("a")))))),
-				TArgs(TVar("a")))))
+	m.SetFieldType("tl", TypePolyListArrow(TypePolyList1, TypePolyList1))
 	m.SetPrim("tl", List_tl)
 
-	m.SetFieldType("iter",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TApp(TcArrow, TArgs(TVar("a"), TUnit)),
-						TUnit))),
-				TArgs(TVar("a")))))
+	// val iter : 'a list -> ('a -> unit) -> unit
+	m.SetFieldType("iter", TypePolyListArrow(TypePolyList1,
+		TApp(TcArrow, TArgs(TVar("a"), TUnit)), TUnit))
 
-	m.SetFieldType("filter",
-		TPoly(Tyvars("a"),
-			TApp(
-				TcTyFun(Tyvars("a"),
-					TApp(TcArrow, TArgs(
-						TApp(TcList, TArgs(TVar("a"))),
-						TApp(TcArrow, TArgs(TVar("a"), TBool)),
-						TApp(TcList, TArgs(TVar("a")))))),
-				TArgs(TVar("a")))))
+	// val filter : 'a list -> ('a -> bool) -> 'a list
+	m.SetFieldType("filter", TypePolyListArrow(TypePolyList1,
+		TApp(TcArrow, TArgs(TVar("a"), TBool)), TypePolyList1))
 
 	return m
 }

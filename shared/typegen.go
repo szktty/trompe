@@ -116,3 +116,17 @@ var TcResult = TcTyFun(
 	TApp(
 		TcVariantv(nil, "result", "Ok", "Error"),
 		TArgs(TVar("a"), TVar("b"))))
+
+func WrapInTypePoly1(ty Type) Type {
+	return TPoly(Tyvars("a"),
+		TApp(
+			TcTyFun(Tyvars("a"), ty),
+			TArgs(TVar("a"))))
+}
+
+func WrapInTypePoly2(ty Type) Type {
+	return TPoly(Tyvars("a", "b"),
+		TApp(
+			TcTyFun(Tyvars("a", "b"), ty),
+			TArgs(TVar("a"), TVar("b"))))
+}
