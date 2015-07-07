@@ -291,6 +291,10 @@ exp
     { $$ = newNode($1.Loc.Union($6.Loc), &IfNode{Cond:$2, True:$4, False:$6}) }
     | MATCH exp WITH ptnmatch
     { $$ = newNode($1.Loc.Union($3.Loc), &CaseNode{Exp:$2, Match:$4}) }
+    | FUNCTION ptnmatch
+    { $$ = newNode($1.Loc, &FunctionNode{Match:$2}) }
+    | FUN multimatch %prec prec_fun
+    { $$ = newNode($1.Loc, &FunNode{MultiMatch:$2}) }
     | SOME simple_exp { $$ = newNode($1.Loc, &OptionNode{Value:$2}) }
     | simple_exp DOT_LPAREN exp RPAREN LARROW simple_exp
     { $$ = newNode($1.Loc, &ArrayAccessNode{Array:$1, Index:$3, Set: $6}) }
@@ -348,8 +352,12 @@ match
 multimatch 
     : paramlist RARROW exp
     { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Body:$3}) }
+    | paramlist RARROW INDENT exp DEDENT
+    { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Body:$4}) }
     | paramlist WHEN exp RARROW exp
     { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Cond:$3, Body:$5}) }
+    | paramlist WHEN exp RARROW INDENT exp DEDENT
+    { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Cond:$3, Body:$6}) }
 
 simple_exp
     : valuepath { $$ = $1 }
@@ -375,10 +383,6 @@ simple_exp
     { $$ = newNode($1.Loc.Union($6.Loc), &CaseNode{Exp:$2, Match:$5}) }
     | TRY exp WITH ptnmatch DONE
     { $$ = newNode($1.Loc.Union($5.Loc), &TryNode{Exp:$2, Match:$4}) }
-    | FUNCTION ptnmatch END
-    { $$ = newNode($1.Loc, &FunctionNode{Match:$2}) }
-    | FUN multimatch END %prec prec_fun
-    { $$ = newNode($1.Loc, &FunNode{MultiMatch:$2}) }
     | simple_exp DOT_LPAREN exp RPAREN
     { $$ = newNode($1.Loc, &ArrayAccessNode{Array:$1, Index:$3}) }
 
