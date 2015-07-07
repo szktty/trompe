@@ -32,6 +32,7 @@ package trompe
 %right ELSE
 %nonassoc AS
 %right RARROW
+%right prec_ptnmatch
 %left PIPE
 %nonassoc COMMA
 %right DOL
@@ -179,7 +180,6 @@ let
     | valuename paramlist EQ INDENT seqexp DEDENT
     { $$ = newNode($1.unionLoc($5), &BlockNode{Name:$1, Params:$2, Body: $5}) }
 
-
 pattern
     : valuename
     { $$ = newNode($1.Loc, &PtnIdentNode{Name:$1.Desc.(*IdentNode).Name}) }
@@ -289,6 +289,8 @@ exp
     { $$ = newNode($1.Loc.Union($4.Loc), &IfNode{Cond:$2, True:$4}) }
     | IF exp THEN exp ELSE exp %prec prec_if
     { $$ = newNode($1.Loc.Union($6.Loc), &IfNode{Cond:$2, True:$4, False:$6}) }
+    | MATCH exp WITH ptnmatch
+    { $$ = newNode($1.Loc.Union($3.Loc), &CaseNode{Exp:$2, Match:$4}) }
     | SOME simple_exp { $$ = newNode($1.Loc, &OptionNode{Value:$2}) }
     | simple_exp DOT_LPAREN exp RPAREN LARROW simple_exp
     { $$ = newNode($1.Loc, &ArrayAccessNode{Array:$1, Index:$3, Set: $6}) }
@@ -301,8 +303,9 @@ prefix
     | SUB_DOT { $$ = &Word{Loc:$1.Loc, Value:"-."} }
 
 ptnmatch
-    : ptnmatch_head { $$ = NewNodeList($1) }
-    | ptnmatch_head ptnmatch_tail
+    : ptnmatch_head %prec prec_ptnmatch
+    { $$ = NewNodeList($1) }
+    | ptnmatch_head ptnmatch_tail %prec prec_ptnmatch
     {
         $$ = NewNodeList($1)
         for _, m := range $2 {
@@ -315,25 +318,37 @@ ptnmatch_tail
     | ptnmatch_tail match { $$ = append($1, $2) }
 
 ptnmatch_head
-    : pattern RARROW seqexp
+    : pattern RARROW exp
     { $$ = newNode($1.Loc.Union($3.Loc), &MatchNode{Ptn:$1, Body:$3}) }
-    | pattern WHEN exp RARROW seqexp
+    | pattern RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($4.Loc), &MatchNode{Ptn:$1, Body:$4}) }
+    | pattern WHEN exp RARROW exp
     { $$ = newNode($1.Loc.Union($5.Loc), &MatchNode{Ptn:$1, Cond:$3, Body:$5}) }
-    | PIPE pattern RARROW seqexp
+    | pattern WHEN exp RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($6.Loc), &MatchNode{Ptn:$1, Cond:$3, Body:$6}) }
+    | PIPE pattern RARROW exp
     { $$ = newNode($1.Loc.Union($4.Loc), &MatchNode{Ptn:$2, Body:$4}) }
-    | PIPE pattern WHEN exp RARROW seqexp
+    | PIPE pattern RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($5.Loc), &MatchNode{Ptn:$2, Body:$5}) }
+    | PIPE pattern WHEN exp RARROW exp
     { $$ = newNode($1.Loc.Union($6.Loc), &MatchNode{Ptn:$2, Cond:$4, Body:$6}) }
+    | PIPE pattern WHEN exp RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($7.Loc), &MatchNode{Ptn:$2, Cond:$4, Body:$7}) }
 
 match
-    : PIPE pattern RARROW seqexp
+    : PIPE pattern RARROW exp
     { $$ = newNode($1.Loc.Union($4.Loc), &MatchNode{Ptn:$2, Body:$4}) }
-    | PIPE pattern WHEN exp RARROW seqexp
+    | PIPE pattern RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($5.Loc), &MatchNode{Ptn:$2, Body:$5}) }
+    | PIPE pattern WHEN exp RARROW exp
     { $$ = newNode($1.Loc.Union($6.Loc), &MatchNode{Ptn:$2, Cond:$4, Body:$6}) }
+    | PIPE pattern WHEN exp RARROW INDENT exp DEDENT
+    { $$ = newNode($1.Loc.Union($7.Loc), &MatchNode{Ptn:$2, Cond:$4, Body:$7}) }
 
 multimatch 
-    : paramlist RARROW seqexp
+    : paramlist RARROW exp
     { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Body:$3}) }
-    | paramlist WHEN exp RARROW seqexp
+    | paramlist WHEN exp RARROW exp
     { $$ = newNode($1[0].Loc, &MultiMatchNode{Params:$1, Cond:$3, Body:$5}) }
 
 simple_exp
@@ -356,8 +371,8 @@ simple_exp
     { $$ = newNode($1.Loc.Union($9.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirTo, Limit:$6, Body:$8}) }
     | FOR valuename EQ exp DOWNTO exp DO seqexp DONE
     { $$ = newNode($1.Loc.Union($9.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirDownTo, Limit:$6, Body:$8}) }
-    | MATCH exp WITH ptnmatch DONE
-    { $$ = newNode($1.Loc.Union($5.Loc), &CaseNode{Exp:$2, Match:$4}) }
+    | MATCH exp WITH INDENT ptnmatch DEDENT
+    { $$ = newNode($1.Loc.Union($6.Loc), &CaseNode{Exp:$2, Match:$5}) }
     | TRY exp WITH ptnmatch DONE
     { $$ = newNode($1.Loc.Union($5.Loc), &TryNode{Exp:$2, Match:$4}) }
     | FUNCTION ptnmatch END
