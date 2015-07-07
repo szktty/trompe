@@ -175,6 +175,8 @@ letbind
 let
     : pattern EQ seqexp
     { $$ = newNode($1.unionLoc($3), &LetBindingNode{Ptn:$1, Body:$3}) }
+    | pattern EQ INDENT seqexp DEDENT
+    { $$ = newNode($1.unionLoc($4), &LetBindingNode{Ptn:$1, Body:$4}) }
     | valuename paramlist EQ seqexp
     { $$ = newNode($1.unionLoc($4), &BlockNode{Name:$1, Params:$2, Body: $4}) }
     | valuename paramlist EQ INDENT seqexp DEDENT
@@ -291,6 +293,8 @@ exp
     { $$ = newNode($1.Loc.Union($6.Loc), &IfNode{Cond:$2, True:$4, False:$6}) }
     | MATCH exp WITH ptnmatch
     { $$ = newNode($1.Loc.Union($3.Loc), &CaseNode{Exp:$2, Match:$4}) }
+    | TRY exp WITH ptnmatch
+    { $$ = newNode($1.Loc.Union($3.Loc), &TryNode{Exp:$2, Match:$4}) }
     | FUNCTION ptnmatch
     { $$ = newNode($1.Loc, &FunctionNode{Match:$2}) }
     | FUN multimatch %prec prec_fun
@@ -366,7 +370,10 @@ simple_exp
     | tuple { $$ = $1 }
     | array { $$ = $1 }
     | LPAREN exp RPAREN { $$ = $2 }
+    | LPAREN INDENT exp RPAREN { $$ = $3 }
+    | LPAREN INDENT exp DEDENT RPAREN { $$ = $3 }
     | BEGIN exp END { $$ = $2 }
+    | BEGIN INDENT exp DEDENT { $$ = $3 }
     | LPAREN exp COLON typexp RPAREN
     { $$ = newNode($1.Loc.Union($5.Loc), &TypeSpecifiedExpNode{Exp:$2, TypeExp:$4}) }
     | IF exp THEN INDENT seqexp DEDENT
@@ -375,14 +382,20 @@ simple_exp
     { $$ = newNode($1.Loc.Union($9.Loc), &IfNode{Cond:$2, True:$5, False:$9}) }
     | WHILE exp DO seqexp DONE
     { $$ = newNode($1.Loc.Union($5.Loc), &WhileNode{Cond:$2, Body:$4}) }
+    | WHILE exp DO INDENT seqexp DEDENT
+    { $$ = newNode($1.Loc.Union($6.Loc), &WhileNode{Cond:$2, Body:$5}) }
     | FOR valuename EQ exp TO exp DO seqexp DONE
     { $$ = newNode($1.Loc.Union($9.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirTo, Limit:$6, Body:$8}) }
+    | FOR valuename EQ exp TO exp DO INDENT seqexp DEDENT
+    { $$ = newNode($1.Loc.Union($10.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirTo, Limit:$6, Body:$9}) }
     | FOR valuename EQ exp DOWNTO exp DO seqexp DONE
     { $$ = newNode($1.Loc.Union($9.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirDownTo, Limit:$6, Body:$8}) }
+    | FOR valuename EQ exp DOWNTO exp DO INDENT seqexp DEDENT
+    { $$ = newNode($1.Loc.Union($10.Loc), &ForNode{Name:$2, Init:$4, Dir:ForDirDownTo, Limit:$6, Body:$9}) }
     | MATCH exp WITH INDENT ptnmatch DEDENT
     { $$ = newNode($1.Loc.Union($6.Loc), &CaseNode{Exp:$2, Match:$5}) }
-    | TRY exp WITH ptnmatch DONE
-    { $$ = newNode($1.Loc.Union($5.Loc), &TryNode{Exp:$2, Match:$4}) }
+    | TRY exp WITH INDENT ptnmatch DEDENT
+    { $$ = newNode($1.Loc.Union($6.Loc), &TryNode{Exp:$2, Match:$5}) }
     | simple_exp DOT_LPAREN exp RPAREN
     { $$ = newNode($1.Loc, &ArrayAccessNode{Array:$1, Index:$3}) }
 
