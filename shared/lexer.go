@@ -110,6 +110,9 @@ type Lexer struct {
 	line, col, offset int
 	start, end        Pos
 	terms             []string // terms of open and close
+	indent            int
+	indentLv          int
+	dedent            bool
 }
 
 func NewLexerFromFile(path string) *Lexer {
@@ -163,14 +166,46 @@ func (l *Lexer) addTerm(term string) {
 }
 
 func (s *Lexer) Scan() (tok int, lit string, loc *Loc) {
+dedent:
+	if s.dedent {
+		s.indentLv--
+		tok = DEDENT
+		pos := s.position()
+		loc = NewLoc(pos, pos)
+		loc.File = s.path
+		if s.indentLv == 0 {
+			s.dedent = false
+		}
+		return
+	}
+
 start:
-	s.skipWhitespace()
 	var start = s.position()
 	ch := s.peek()
 	switch ch {
 	case -1:
 		lit = "<EOF>"
 		tok = EOF
+	case '\n':
+		s.next()
+		size := s.scanIndent()
+		if size == 0 && s.indentLv > 0 {
+			s.dedent = true
+			s.indent = 0
+			goto dedent
+		} else if s.indent < size {
+			s.indentLv++
+			tok = INDENT
+		} else if s.indent > size {
+			s.indentLv--
+			tok = DEDENT
+		} else {
+			goto start
+		}
+		s.indent = size
+	case ' ':
+		s.skipWhitespace()
+		goto start
 	case '#':
 		s.skipSingleLineComment()
 		goto start
@@ -275,7 +310,7 @@ func isHexDigit(ch rune) bool {
 }
 
 func isWhitespace(ch rune) bool {
-	return ch == ' ' || ch == '\t' || ch == '\n'
+	return ch == ' '
 }
 
 func isNewline(ch rune) bool {
@@ -314,6 +349,21 @@ func (s *Lexer) isAtEOF() bool {
 
 func (s *Lexer) position() *Pos {
 	return &Pos{Line: s.line, Col: s.offset - s.col, Offset: s.offset}
+}
+
+func (s *Lexer) scanIndent() int {
+	lv := 0
+	for {
+		switch s.peek() {
+		case -1:
+			return 0
+		case ' ':
+			s.next()
+			lv++
+		default:
+			return lv
+		}
+	}
 }
 
 func (s *Lexer) skipWhitespace() {

@@ -14,7 +14,7 @@ package trompe
 %token<tok> ABSTRACT AND AS ASSERT BEGIN CONSTRAINT DO DONE DOWNTO ELSE END EXCEPTION EXTERNAL FALSE FOR FUN FUNCTION GOTO IF IMPORT IN LET MATCH MOD MODULE MUTABLE NOT OF OPEN OR OVERRIDE PARTIAL REC RETURN SIG STRUCT THEN TO TRAIT TRUE TRY TYPE USE VAL WHEN WHILE WITH WITHOUT
 %token<tok> ADD ADD_DOT SUB SUB_DOT MUL MUL_DOT DIV DIV_DOT REM POW EQ NE LE GE LT GT LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK DCOLON SEMI SEMI2 COLON COMMA DOT DOT2 DOT3  DOT_LPAREN QUOTE Q EP AMP TILDA OP
 %token<tok> DOL PIPE BAND BOR BXOR LSHIFT RSHIFT LARROW RARROW
-%token<tok> EOF
+%token<tok> INDENT DEDENT EOF
 
 %type<node> program def let pattern exp binexp param arg use excdef
 %type<node> simple_exp valuepath valuename constr constant tuple list array seqexp match ptnmatch_head
@@ -28,6 +28,7 @@ package trompe
 %nonassoc prec_let prec_fun prec_try prec_raw_typexp
 %right SEMI
 %right prec_if
+%left DEDENT
 %right ELSE
 %nonassoc AS
 %right RARROW
@@ -175,6 +176,9 @@ let
     { $$ = newNode($1.unionLoc($3), &LetBindingNode{Ptn:$1, Body:$3}) }
     | valuename paramlist EQ seqexp
     { $$ = newNode($1.unionLoc($4), &BlockNode{Name:$1, Params:$2, Body: $4}) }
+    | valuename paramlist EQ INDENT seqexp DEDENT
+    { $$ = newNode($1.unionLoc($5), &BlockNode{Name:$1, Params:$2, Body: $5}) }
+
 
 pattern
     : valuename
@@ -281,6 +285,10 @@ exp
     { $$ = newNode($1.Loc, &LetNode{Public:false, Rec:false, Bindings:$2, Body:$4}) }
     | LET REC letbind IN exp %prec prec_let
     { $$ = newNode($1.Loc, &LetNode{Public:false, Rec:true, Bindings:$3, Body:$5}) }
+    | IF exp THEN exp %prec prec_if
+    { $$ = newNode($1.Loc.Union($4.Loc), &IfNode{Cond:$2, True:$4}) }
+    | IF exp THEN exp ELSE exp %prec prec_if
+    { $$ = newNode($1.Loc.Union($6.Loc), &IfNode{Cond:$2, True:$4, False:$6}) }
     | SOME simple_exp { $$ = newNode($1.Loc, &OptionNode{Value:$2}) }
     | simple_exp DOT_LPAREN exp RPAREN LARROW simple_exp
     { $$ = newNode($1.Loc, &ArrayAccessNode{Array:$1, Index:$3, Set: $6}) }
@@ -338,10 +346,10 @@ simple_exp
     | BEGIN exp END { $$ = $2 }
     | LPAREN exp COLON typexp RPAREN
     { $$ = newNode($1.Loc.Union($5.Loc), &TypeSpecifiedExpNode{Exp:$2, TypeExp:$4}) }
-    | IF exp THEN seqexp END
-    { $$ = newNode($1.Loc.Union($5.Loc), &IfNode{Cond:$2, True:$4}) }
-    | IF exp THEN seqexp ELSE seqexp END
-    { $$ = newNode($1.Loc.Union($7.Loc), &IfNode{Cond:$2, True:$4, False:$6}) }
+    | IF exp THEN INDENT seqexp DEDENT
+    { $$ = newNode($1.Loc.Union($6.Loc), &IfNode{Cond:$2, True:$5}) }
+    | IF exp THEN INDENT seqexp DEDENT ELSE INDENT seqexp DEDENT
+    { $$ = newNode($1.Loc.Union($9.Loc), &IfNode{Cond:$2, True:$5, False:$9}) }
     | WHILE exp DO seqexp DONE
     { $$ = newNode($1.Loc.Union($5.Loc), &WhileNode{Cond:$2, Body:$4}) }
     | FOR valuename EQ exp TO exp DO seqexp DONE
