@@ -110,6 +110,7 @@ type Lexer struct {
 	line, col, offset int
 	start, end        Pos
 	terms             []string // terms of open and close
+	nextIdent         bool
 	indent            *Indent
 	numDedents        int
 }
@@ -182,30 +183,26 @@ dedent:
 		return
 	}
 
-start:
-	var start = s.position()
-	ch := s.peek()
-	switch ch {
-	case -1:
-		lit = "<EOF>"
-		tok = EOF
-	case '\n':
+indent:
+	if s.nextIdent {
 		s.skipNewlines()
 		size := s.scanIndent()
-		if s.peek() == '#' {
-			s.skipSingleLineComment()
-			goto start
-		} else if s.indent.Size < size {
+		Debugf("indent size %d", size)
+		if s.indent.Size < size {
+			s.nextIdent = false
 			s.indent = &Indent{Size: size, Prev: s.indent}
 			tok = INDENT
+			Debugf("INDENT")
+			return
 		} else if s.indent.Size == size {
-			goto start
+			s.nextIdent = false
 		} else {
 			n := 0
 			in := s.indent
 			for in != nil {
 				if in.Size == size {
 					s.numDedents = n
+					s.nextIdent = false
 					goto dedent
 				}
 				in = in.Prev
@@ -214,6 +211,21 @@ start:
 			panic(fmt.Errorf("Line %d: invalid indent size %d",
 				s.position().Line+1, size))
 		}
+	}
+
+start:
+	s.skipWhitespace()
+	var start = s.position()
+	ch := s.peek()
+	Debugf("ch = '%c'", ch)
+	switch ch {
+	case -1:
+		lit = "<EOF>"
+		tok = EOF
+	case '\n':
+		s.next()
+		s.nextIdent = true
+		goto indent
 	case ' ':
 		s.skipWhitespace()
 		goto start
@@ -365,9 +377,16 @@ func (s *Lexer) position() *Pos {
 func (s *Lexer) scanIndent() int {
 	size := 0
 	for {
+		Debugf("peek '%c'", s.peek())
 		switch s.peek() {
 		case -1:
 			return size
+		case '\n':
+			s.next()
+			size = 0
+		case '#':
+			s.skipSingleLineComment()
+			size = 0
 		case ' ':
 			s.next()
 			size++
