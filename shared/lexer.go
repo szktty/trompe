@@ -110,6 +110,14 @@ type Lexer struct {
 	line, col, offset int
 	start, end        Pos
 	terms             []string // terms of open and close
+	nextIdent         bool
+	indent            *Indent
+	numDedents        int
+}
+
+type Indent struct {
+	Size int
+	Prev *Indent
 }
 
 func NewLexerFromFile(path string) *Lexer {
@@ -121,6 +129,7 @@ func NewLexerFromFile(path string) *Lexer {
 	l.src = bytes.Runes(b)
 	l.path = path
 	l.terms = make([]string, 0)
+	l.indent = &Indent{}
 	return l
 }
 
@@ -163,6 +172,45 @@ func (l *Lexer) addTerm(term string) {
 }
 
 func (s *Lexer) Scan() (tok int, lit string, loc *Loc) {
+dedent:
+	if s.numDedents > 0 {
+		s.numDedents--
+		s.indent = s.indent.Prev
+		tok = DEDENT
+		pos := s.position()
+		loc = NewLoc(pos, pos)
+		loc.File = s.path
+		return
+	}
+
+indent:
+	if s.nextIdent {
+		s.skipNewlines()
+		size := s.scanIndent()
+		if s.indent.Size < size {
+			s.nextIdent = false
+			s.indent = &Indent{Size: size, Prev: s.indent}
+			tok = INDENT
+			return
+		} else if s.indent.Size == size {
+			s.nextIdent = false
+		} else {
+			n := 0
+			in := s.indent
+			for in != nil {
+				if in.Size == size {
+					s.numDedents = n
+					s.nextIdent = false
+					goto dedent
+				}
+				in = in.Prev
+				n++
+			}
+			panic(fmt.Errorf("Line %d: invalid indent size %d",
+				s.position().Line+1, size))
+		}
+	}
+
 start:
 	s.skipWhitespace()
 	var start = s.position()
@@ -171,6 +219,13 @@ start:
 	case -1:
 		lit = "<EOF>"
 		tok = EOF
+	case '\n':
+		s.next()
+		s.nextIdent = true
+		goto indent
+	case ' ':
+		s.skipWhitespace()
+		goto start
 	case '#':
 		s.skipSingleLineComment()
 		goto start
@@ -275,7 +330,7 @@ func isHexDigit(ch rune) bool {
 }
 
 func isWhitespace(ch rune) bool {
-	return ch == ' ' || ch == '\t' || ch == '\n'
+	return ch == ' '
 }
 
 func isNewline(ch rune) bool {
@@ -316,8 +371,35 @@ func (s *Lexer) position() *Pos {
 	return &Pos{Line: s.line, Col: s.offset - s.col, Offset: s.offset}
 }
 
+func (s *Lexer) scanIndent() int {
+	size := 0
+	for {
+		switch s.peek() {
+		case -1:
+			return size
+		case '\n':
+			s.next()
+			size = 0
+		case '#':
+			s.skipSingleLineComment()
+			size = 0
+		case ' ':
+			s.next()
+			size++
+		default:
+			return size
+		}
+	}
+}
+
 func (s *Lexer) skipWhitespace() {
 	for isWhitespace(s.peek()) {
+		s.next()
+	}
+}
+
+func (s *Lexer) skipNewlines() {
+	for isNewline(s.peek()) {
 		s.next()
 	}
 }

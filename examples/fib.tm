@@ -3,6 +3,5 @@ let rec fib n =
     n
   else
     fib (n - 1) + fib (n - 2)
-  end
 
 ;; print_int $ fib 30
