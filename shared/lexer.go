@@ -187,12 +187,10 @@ indent:
 	if s.nextIdent {
 		s.skipNewlines()
 		size := s.scanIndent()
-		Debugf("indent size %d", size)
 		if s.indent.Size < size {
 			s.nextIdent = false
 			s.indent = &Indent{Size: size, Prev: s.indent}
 			tok = INDENT
-			Debugf("INDENT")
 			return
 		} else if s.indent.Size == size {
 			s.nextIdent = false
@@ -217,7 +215,6 @@ start:
 	s.skipWhitespace()
 	var start = s.position()
 	ch := s.peek()
-	Debugf("ch = '%c'", ch)
 	switch ch {
 	case -1:
 		lit = "<EOF>"
@@ -377,7 +374,6 @@ func (s *Lexer) position() *Pos {
 func (s *Lexer) scanIndent() int {
 	size := 0
 	for {
-		Debugf("peek '%c'", s.peek())
 		switch s.peek() {
 		case -1:
 			return size
