@@ -261,7 +261,7 @@ type PtnSomeNode struct {
 	Ptn *Node
 }
 
-type LabelParamNode struct {
+type LabeledParamNode struct {
 	Name *Word
 	Ptn  *Node
 }

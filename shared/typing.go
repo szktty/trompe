@@ -163,12 +163,14 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		// check labeled arguments
 		var labels []string
 		for _, tparam := range tparams {
-			if _, ok := tparam.Desc.(*TypedLabelParamNode); ok {
+			if _, ok := tparam.Desc.(*TypedLabeledParamNode); ok {
 				labels = make([]string, len(tparams))
 				for i, tparam := range tparams {
 					var name string
-					if desc, ok := tparam.Desc.(*TypedLabelParamNode); ok {
+					if desc, ok := tparam.Desc.(*TypedLabeledParamNode); ok {
 						name = desc.Name
+					} else {
+						name = TyconUnlabeledName
 					}
 					labels[i] = name
 				}
@@ -561,16 +563,26 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				head = head1
 				tail = tail1
 			case TyconTagLabeledArrow:
-				key, ok := targ.Desc.(*TypedLabeledArgNode)
-				if !ok {
-					return nil, RuntimeErrorf(targ.Loc,
-						"labels were omitted in the application of this function:\n       %s",
-						StringOfType(funTy1))
+				var label string
+				if label1, ok := targ.Desc.(*TypedLabeledArgNode); ok {
+					label = label1.Name
+				} else if _, ok := targ.Desc.(*TypedIdentNode); ok {
+					label = TyconUnlabeledName
+				} else {
+					Panicf("error %s", targ.Desc)
 				}
-				Debugf("labeled arraw = %s, %s", ReprOfType(funTy1), key.Name)
-				head1, tail1, ok := PartialLabeledArrow(key.Name, funTy1)
-				if !ok {
-					return nil, TooManyArgsError(texp.Loc, expTy)
+				Debugf("labeled arraw = %s, %s", ReprOfType(funTy1), label)
+				/*
+					if !ok {
+						return nil, RuntimeErrorf(targ.Loc,
+							"labels were omitted in the application of this function:\n       %s",
+							StringOfType(funTy1))
+					}
+				*/
+				head1, tail1, err := PartialLabeledArrow(label, funTy1)
+				if err != nil {
+					//return nil, TooManyArgsError(texp.Loc, expTy)
+					return nil, err
 				}
 				head = head1
 				tail = tail1
@@ -1043,13 +1055,13 @@ func (inf *inferer) inferParam(param *Node) (*TypedNode, error) {
 		ty = inf.env.NewMeta()
 		inf.env.AddVarType(desc.Name, ty)
 		tparam = &TypedPtnIdentNode{Name: desc.Name}
-	case *LabelParamNode:
+	case *LabeledParamNode:
 		tptn, err := inf.inferParam(desc.Ptn)
 		if err != nil {
 			return nil, err
 		}
 		ty = tptn.Type
-		tparam = &TypedLabelParamNode{Name: desc.Name.Value, Ptn: tptn}
+		tparam = &TypedLabeledParamNode{Name: desc.Name.Value, Ptn: tptn}
 	default:
 		panic(fmt.Errorf("not impl %s", desc))
 	}

@@ -666,7 +666,7 @@ func (azer *Analyzer) AnalyzeParam(param *TypedNode) {
 	switch ptn := param.Desc.(type) {
 	case *TypedPtnIdentNode:
 		azer.Current.AddNewArg(ptn.Name)
-	case *TypedLabelParamNode:
+	case *TypedLabeledParamNode:
 		azer.AnalyzeParam(ptn.Ptn)
 	default:
 		panic(fmt.Errorf("not impl %s", ptn))

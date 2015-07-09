@@ -251,11 +251,11 @@ paramlist
 param
     : pattern { $$ = $1 }
     | LABELR pattern
-    { $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:$2}) }
+    { $$ = newNode($1.Loc, &LabeledParamNode{Name:$1, Ptn:$2}) }
     | LABELL
     {
         ptn := newNode($1.Loc, &PtnIdentNode{Name:$1.Value})
-        $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:ptn})
+        $$ = newNode($1.Loc, &LabeledParamNode{Name:$1, Ptn:ptn})
     }
 
 /* TODO
@@ -522,8 +522,13 @@ args
 
 arg
     : simple_exp { $$ = $1 }
-    | LIDENT COLON simple_exp
-    { $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:$3}) }
+    | LABELR simple_exp
+    { $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:$2}) }
+    | LABELL
+    {
+        exp := newNode($1.Loc, &IdentNode{Name:$1.Value})
+        $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:exp})
+    }
 
 typdef
     : TYPE typdefbody {}

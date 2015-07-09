@@ -121,7 +121,7 @@ func writeTycon(tyvars []string, ty *TypeApp, tycon Tycon, buf *bytes.Buffer,
 		for i := 0; i < len(ty.Args); i++ {
 			if i < len(tycon.Names) {
 				label := tycon.Names[i]
-				if label != "" {
+				if label != TyconUnlabeledName {
 					buf.WriteString(label + ":")
 				}
 				occur = writeType(tyvars, ty.Args[i], buf, occur)
@@ -131,7 +131,7 @@ func writeTycon(tyvars []string, ty *TypeApp, tycon Tycon, buf *bytes.Buffer,
 			}
 		}
 		if !outer {
-			buf.WriteString("(")
+			buf.WriteString(")")
 		}
 	case *TyconTyFun:
 		occur = append(occur, tycon)
@@ -276,12 +276,8 @@ func writeReprOfTycon(desc Tycon, buf *bytes.Buffer, occur []interface{}) []inte
 		buf.WriteString("Arrow")
 	case *TyconLabeledArrow:
 		buf.WriteString("LabeledArrow([")
-		for i, kw := range tycon.Names {
-			if kw == "" {
-				buf.WriteString("*")
-			} else {
-				buf.WriteString(kw)
-			}
+		for i, label := range tycon.Names {
+			buf.WriteString(label)
 			if i+1 < len(tycon.Names) {
 				buf.WriteString(", ")
 			}

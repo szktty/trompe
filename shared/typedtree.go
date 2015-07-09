@@ -125,7 +125,7 @@ type TypedPtnListConsNode struct {
 	Head, Tail *TypedNode
 }
 
-type TypedLabelParamNode struct {
+type TypedLabeledParamNode struct {
 	Name string
 	Ptn  *TypedNode
 }
