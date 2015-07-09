@@ -11,6 +11,7 @@ package trompe
 }
 
 %token<word> WILDCARD LIDENT UIDENT CHAR INT FLOAT STRING REGEXP SOME NONE
+%token<word> LABELL LABELR
 %token<tok> ABSTRACT AND AS ASSERT BEGIN CONSTRAINT DO DONE DOWNTO ELSE END EXCEPTION EXTERNAL FALSE FOR FUN FUNCTION GOTO IF IMPORT IN LET MATCH MOD MODULE MUTABLE NOT OF OPEN OR OVERRIDE PARTIAL REC RETURN SIG STRUCT THEN TO TRAIT TRUE TRY TYPE USE VAL WHEN WHILE WITH WITHOUT
 %token<tok> ADD ADD_DOT SUB SUB_DOT MUL MUL_DOT DIV DIV_DOT REM POW EQ NE LE GE LT GT LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK DCOLON SEMI SEMI2 COLON COMMA DOT DOT2 DOT3  DOT_LPAREN QUOTE Q EP AMP TILDA OP
 %token<tok> DOL PIPE BAND BOR BXOR LSHIFT RSHIFT LARROW RARROW
@@ -249,12 +250,12 @@ paramlist
 
 param
     : pattern { $$ = $1 }
-    | LIDENT COLON pattern
-    { $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:$3}) }
-    | COLON LIDENT
+    | LABELR pattern
+    { $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:$2}) }
+    | LABELL
     {
-        ptn := newNode($1.Loc, &PtnIdentNode{Name:$2.Value})
-        $$ = newNode($1.Loc, &LabelParamNode{Name:$2, Ptn:ptn})
+        ptn := newNode($1.Loc, &PtnIdentNode{Name:$1.Value})
+        $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:ptn})
     }
 
 /* TODO

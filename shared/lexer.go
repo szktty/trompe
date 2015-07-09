@@ -251,9 +251,22 @@ start:
 		lit = string(ch)
 		tok = keywords[lit]
 		s.next()
-	case '+', '-', '*', '/', '%', '=', '<', '>', '~', '^', '&', '|', ':', '$':
+	case '+', '-', '*', '/', '%', '=', '<', '>', '~', '^', '&', '|', '$':
 		lit = s.scanOperator()
 		tok = keywords[lit]
+	case ':':
+		s.next()
+		ch := s.peek()
+		switch {
+		case ch == ':':
+			s.next()
+			tok = COLON2
+		case isLetter(ch):
+			lit = s.scanIdent()
+			tok = LABELL
+		default:
+			tok = COLON
+		}
 	case ';':
 		s.next()
 		if s.peek() == ';' {
@@ -284,7 +297,16 @@ start:
 					s.addTerm(lit)
 				}
 			} else if lit == strings.ToLower(lit) {
-				tok = LIDENT
+				if s.peek() == ':' {
+					if s.npeek(2) == ':' {
+						tok = LIDENT
+					} else {
+						s.next()
+						tok = LABELR
+					}
+				} else {
+					tok = LIDENT
+				}
 			} else {
 				tok = UIDENT
 			}
