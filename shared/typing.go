@@ -155,21 +155,25 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		}
 
 		// params
-		args := make([]Type, len(desc.Params))
-		tparams := make([]*TypedNode, len(desc.Params))
-		for i, param := range desc.Params {
-			var ty Type
-			var tparam interface{}
-			switch ptn := param.Desc.(type) {
-			case *PtnIdentNode:
-				ty = inf.env.NewMeta()
-				inf.env.AddVarType(ptn.Name, ty)
-				tparam = &TypedPtnIdentNode{Name: ptn.Name}
-			default:
-				panic(fmt.Errorf("not impl %s", ptn))
+		tparams, err := inf.inferParams(desc.Params)
+		if err != nil {
+			return nil, err
+		}
+
+		// check labeled arguments
+		var labels []string
+		for _, tparam := range tparams {
+			if _, ok := tparam.Desc.(*TypedLabelParamNode); ok {
+				labels = make([]string, len(tparams))
+				for i, tparam := range tparams {
+					var name string
+					if desc, ok := tparam.Desc.(*TypedLabelParamNode); ok {
+						name = desc.Name
+					}
+					labels[i] = name
+				}
+				break
 			}
-			args[i] = ty
-			tparams[i] = NewTypedNode(param.Loc, ty, tparam)
 		}
 
 		// body
@@ -177,6 +181,7 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		if err != nil {
 			return nil, err
 		}
+		args := TypesOfTypedNodes(tparams)
 		args = append(args, tbody.Type)
 		gargs := make([]Type, len(args))
 		tvenv := NewTyvarEnv()
@@ -188,8 +193,14 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 			gargs[i] = g
 		}
 
+		// type constructor
+		var tycon Tycon = TcArrow
+		if labels != nil {
+			tycon = &TyconKeyArrow{Keywords: labels}
+		}
+
 		// type
-		ty := TApp(TcArrow, gargs)
+		ty := TApp(tycon, gargs)
 		if len(tvenv.Tyvars) > 0 {
 			ty = TPoly(tvenv.Tyvars, ty)
 		}
@@ -553,7 +564,7 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				key, ok := targ.Desc.(*TypedKeywordNode)
 				if !ok {
 					return nil, RuntimeErrorf(targ.Loc,
-						"keywords were omitted in the application of this function:\n       %s",
+						"labels were omitted in the application of this function:\n       %s",
 						StringOfType(funTy1))
 				}
 				Debugf("key arraw = %s, %s", ReprOfType(funTy1), key.Keyword)
@@ -1010,6 +1021,39 @@ func (inf *inferer) inferPattern(ptn *Node, expTy Type) (*TypedNode, error) {
 		return nil, err
 	}
 	return NewTypedNode(ptn.Loc, expTy, tnode), nil
+}
+
+func (inf *inferer) inferParams(params []*Node) ([]*TypedNode, error) {
+	tparams := make([]*TypedNode, len(params))
+	for i, param := range params {
+		tparam, err := inf.inferParam(param)
+		if err != nil {
+			return nil, err
+		}
+		tparams[i] = tparam
+	}
+	return tparams, nil
+}
+
+func (inf *inferer) inferParam(param *Node) (*TypedNode, error) {
+	var ty Type
+	var tparam interface{}
+	switch desc := param.Desc.(type) {
+	case *PtnIdentNode:
+		ty = inf.env.NewMeta()
+		inf.env.AddVarType(desc.Name, ty)
+		tparam = &TypedPtnIdentNode{Name: desc.Name}
+	case *LabelParamNode:
+		tptn, err := inf.inferParam(desc.Ptn)
+		if err != nil {
+			return nil, err
+		}
+		ty = tptn.Type
+		tparam = &TypedLabelParamNode{Name: desc.Name.Value, Ptn: tptn}
+	default:
+		panic(fmt.Errorf("not impl %s", desc))
+	}
+	return NewTypedNode(param.Loc, ty, tparam), nil
 }
 
 func (inf *inferer) inferBinexp(pnode *Node, desc interface{}, left *Node, right *Node) (*TypedNode, error) {

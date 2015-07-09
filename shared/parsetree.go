@@ -261,6 +261,11 @@ type PtnSomeNode struct {
 	Ptn *Node
 }
 
+type LabelParamNode struct {
+	Name *Word
+	Ptn  *Node
+}
+
 type AppNode struct {
 	Exp  *Node
 	Args []*Node

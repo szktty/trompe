@@ -125,6 +125,11 @@ type TypedPtnListConsNode struct {
 	Head, Tail *TypedNode
 }
 
+type TypedLabelParamNode struct {
+	Name string
+	Ptn  *TypedNode
+}
+
 type TypedAppNode struct {
 	Exp  *TypedNode
 	Args []*TypedNode
@@ -331,4 +336,12 @@ func (node *TypedNode) NameExn() string {
 	} else {
 		panic("node does not have Name member")
 	}
+}
+
+func TypesOfTypedNodes(nodes []*TypedNode) []Type {
+	tys := make([]Type, len(nodes))
+	for i, node := range nodes {
+		tys[i] = node.Type
+	}
+	return tys
 }

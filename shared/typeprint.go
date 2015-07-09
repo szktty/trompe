@@ -120,7 +120,10 @@ func writeTycon(tyvars []string, ty *TypeApp, tycon Tycon, buf *bytes.Buffer,
 		}
 		for i := 0; i < len(ty.Args); i++ {
 			if i < len(tycon.Keywords) {
-				buf.WriteString(tycon.Keywords[i] + ":")
+				label := tycon.Keywords[i]
+				if label != "" {
+					buf.WriteString(label + ":")
+				}
 				occur = writeType(tyvars, ty.Args[i], buf, occur)
 				buf.WriteString(" -> ")
 			} else {
@@ -274,7 +277,11 @@ func writeReprOfTycon(desc Tycon, buf *bytes.Buffer, occur []interface{}) []inte
 	case *TyconKeyArrow:
 		buf.WriteString("KeyArrow([")
 		for i, kw := range tycon.Keywords {
-			buf.WriteString(kw)
+			if kw == "" {
+				buf.WriteString("*")
+			} else {
+				buf.WriteString(kw)
+			}
 			if i+1 < len(tycon.Keywords) {
 				buf.WriteString(", ")
 			}

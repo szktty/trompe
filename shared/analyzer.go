@@ -657,14 +657,19 @@ func (azer *Analyzer) Analyze(node *TypedNode) {
 }
 
 func (azer *Analyzer) AnalyzeParamList(params []*TypedNode) {
-	// TODO: other patterns
 	for _, param := range params {
-		switch ptn := param.Desc.(type) {
-		case *TypedPtnIdentNode:
-			azer.Current.AddNewArg(ptn.Name)
-		default:
-			panic(fmt.Errorf("not impl %s", ptn))
-		}
+		azer.AnalyzeParam(param)
+	}
+}
+func (azer *Analyzer) AnalyzeParam(param *TypedNode) {
+	// TODO: other patterns
+	switch ptn := param.Desc.(type) {
+	case *TypedPtnIdentNode:
+		azer.Current.AddNewArg(ptn.Name)
+	case *TypedLabelParamNode:
+		azer.AnalyzeParam(ptn.Ptn)
+	default:
+		panic(fmt.Errorf("not impl %s", ptn))
 	}
 }
 

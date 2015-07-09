@@ -54,6 +54,7 @@ package trompe
 %right UIDENT
 %nonassoc prec_simple_typexp
 %nonassoc LIDENT
+%nonassoc COLON
 %left LPAREN LBRACE LBRACK
 
 %nonassoc RPAREN
@@ -248,6 +249,14 @@ paramlist
 
 param
     : pattern { $$ = $1 }
+    | LIDENT COLON pattern
+    { $$ = newNode($1.Loc, &LabelParamNode{Name:$1, Ptn:$3}) }
+    | COLON LIDENT
+    {
+        ptn := newNode($1.Loc, &PtnIdentNode{Name:$2.Value})
+        $$ = newNode($1.Loc, &LabelParamNode{Name:$2, Ptn:ptn})
+    }
+
 /* TODO
     | KEYWORD {}
     | LPAREN KEYWORD RPAREN {}
