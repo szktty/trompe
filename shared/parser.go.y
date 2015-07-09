@@ -626,8 +626,8 @@ simple_typexp
     { $$ = newNode($1.Loc, &TypeParamConstrNode{Exps:ConsNodeList($2, $3), Constr:$5}) }
 
 label
-    : Q KEYWORD { $$ = newNode($1.Loc, &LabelNode{Opt:true, Name:$2}) }
-    | KEYWORD { $$ = newNode($1.Loc, &LabelNode{Name:$1}) }
+    : Q LIDENT COLON { $$ = newNode($1.Loc, &LabelNode{Opt:true, Name:$2}) }
+    | LIDENT COLON { $$ = newNode($1.Loc, &LabelNode{Name:$1}) }
 
 typexplist_ast
     : MUL typexp { $$ = NewNodeList($2) }
