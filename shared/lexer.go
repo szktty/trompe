@@ -283,19 +283,6 @@ start:
 					FUNCTION, FUN, END, DONE:
 					s.addTerm(lit)
 				}
-				/*
-					} else if s.peek() == ':' {
-						if s.npeek(2) == ':' {
-							if lit == strings.ToLower(lit) {
-								tok = LIDENT
-							} else {
-								tok = UIDENT
-							}
-						} else {
-							s.next()
-							tok = KEYWORD
-						}
-				*/
 			} else if lit == strings.ToLower(lit) {
 				tok = LIDENT
 			} else {
