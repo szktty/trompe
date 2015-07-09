@@ -196,7 +196,7 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		// type constructor
 		var tycon Tycon = TcArrow
 		if labels != nil {
-			tycon = &TyconKeyArrow{Keywords: labels}
+			tycon = &TyconLabeledArrow{Names: labels}
 		}
 
 		// type
@@ -457,13 +457,13 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				pnode.Loc.StartString(), desc.Name)
 		}
 
-	case *KeywordNode:
+	case *LabeledArgNode:
 		texp, err := inf.infer(desc.Exp)
 		if err != nil {
 			return nil, err
 		}
 		return NewTypedNode(pnode.Loc, texp.Type,
-			&TypedKeywordNode{Keyword: desc.Keyword.Value, Exp: texp}), nil
+			&TypedLabeledArgNode{Name: desc.Name.Value, Exp: texp}), nil
 
 	case *AppNode:
 		texp, err := inf.infer(desc.Exp)
@@ -549,10 +549,10 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 			var head, tail Type
 			switch funApp.Tycon.TyconTag() {
 			case TyconTagArrow:
-				if key, ok := targ.Desc.(*TypedKeywordNode); ok {
+				if arg, ok := targ.Desc.(*TypedLabeledArgNode); ok {
 					return nil, RuntimeErrorf(targ.Loc,
-						"The function applied to this argument has type `%s'. This argument cannot be applied with keyword `%s'",
-						StringOfType(funTy1), key.Keyword)
+						"The function applied to this argument has type `%s'. This argument cannot be applied with label `%s'",
+						StringOfType(funTy1), arg.Name)
 				}
 				head1, tail1, ok := PartialArrow(funTy1)
 				if !ok {
@@ -560,15 +560,15 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				}
 				head = head1
 				tail = tail1
-			case TyconTagKeyArrow:
-				key, ok := targ.Desc.(*TypedKeywordNode)
+			case TyconTagLabeledArrow:
+				key, ok := targ.Desc.(*TypedLabeledArgNode)
 				if !ok {
 					return nil, RuntimeErrorf(targ.Loc,
 						"labels were omitted in the application of this function:\n       %s",
 						StringOfType(funTy1))
 				}
-				Debugf("key arraw = %s, %s", ReprOfType(funTy1), key.Keyword)
-				head1, tail1, ok := PartialKeyArrow(key.Keyword, funTy1)
+				Debugf("labeled arraw = %s, %s", ReprOfType(funTy1), key.Name)
+				head1, tail1, ok := PartialLabeledArrow(key.Name, funTy1)
 				if !ok {
 					return nil, TooManyArgsError(texp.Loc, expTy)
 				}

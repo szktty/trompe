@@ -147,9 +147,9 @@ type TypedIdentNode struct {
 	Name string
 }
 
-type TypedKeywordNode struct {
-	Keyword string
-	Exp     *TypedNode
+type TypedLabeledArgNode struct {
+	Name string
+	Exp  *TypedNode
 }
 
 type TypedUnitNode struct{}

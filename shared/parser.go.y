@@ -521,7 +521,8 @@ args
 
 arg
     : simple_exp { $$ = $1 }
-    | KEYWORD simple_exp { $$ = newNode($1.Loc, &KeywordNode{Keyword:$1, Exp:$2}) }
+    | LIDENT COLON simple_exp
+    { $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:$3}) }
 
 typdef
     : TYPE typdefbody {}

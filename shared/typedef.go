@@ -49,7 +49,7 @@ const (
 	TyconTagTuple
 	TyconTagModule
 	TyconTagArrow
-	TyconTagKeyArrow
+	TyconTagLabeledArrow
 	TyconTagVariant
 	TyconTagVariantTag
 	TyconTagUnique
@@ -111,8 +111,8 @@ type TyconUnique struct {
 	ID    int
 }
 
-type TyconKeyArrow struct {
-	Keywords []string
+type TyconLabeledArrow struct {
+	Names []string
 }
 
 var TyvarNames = []string{
@@ -198,8 +198,8 @@ func (tycon *TyconArrow) TyconTag() int {
 	return TyconTagArrow
 }
 
-func (tycon *TyconKeyArrow) TyconTag() int {
-	return TyconTagKeyArrow
+func (tycon *TyconLabeledArrow) TyconTag() int {
+	return TyconTagLabeledArrow
 }
 
 func (tycon *TyconTyFun) TyconTag() int {
@@ -394,16 +394,16 @@ func PartialArrow(ty Type) (head Type, tail Type, ok bool) {
 	}
 }
 
-func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
+func PartialLabeledArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
 	switch desc := ty.(type) {
 	case *TypeMeta:
 		if desc.Type != nil {
-			return PartialKeyArrow(kw, desc.Type)
+			return PartialLabeledArrow(kw, desc.Type)
 		} else {
 			return nil, nil, false
 		}
 	case *TypePoly:
-		if head, tail, ok := PartialKeyArrow(kw, desc.Type); ok {
+		if head, tail, ok := PartialLabeledArrow(kw, desc.Type); ok {
 			return head, reassignTyvars(tail), true
 		} else {
 			return nil, nil, false
@@ -412,7 +412,7 @@ func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
 		switch tycon := desc.Tycon.(type) {
 		case *TyconTyFun:
 			panic("error")
-		case *TyconKeyArrow:
+		case *TyconLabeledArrow:
 			switch len(desc.Args) {
 			case 0:
 				panic("invalid no arguments keyarrow")
@@ -420,7 +420,7 @@ func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
 				panic("invalid 1 argument keyarrow")
 			default:
 				i := -1
-				for j, kw1 := range tycon.Keywords {
+				for j, kw1 := range tycon.Names {
 					if kw == kw1 {
 						i = j
 						break
@@ -433,9 +433,9 @@ func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
 				argLen := len(desc.Args)
 				tailKws := make([]string, 0)
 				tailArgs := make([]Type, 0)
-				for j := 0; j < len(tycon.Keywords); j++ {
+				for j := 0; j < len(tycon.Names); j++ {
 					if i != j {
-						tailKws = append(tailKws, tycon.Keywords[j])
+						tailKws = append(tailKws, tycon.Names[j])
 						tailArgs = append(tailArgs, desc.Args[j])
 					}
 				}
@@ -444,7 +444,7 @@ func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
 				if argLen == 2 {
 					return desc.Args[0], desc.Args[1], true
 				} else {
-					return desc.Args[i], TApp(TcKeyArrow(tailKws), tailArgs), true
+					return desc.Args[i], TApp(TcLabeledArrow(tailKws), tailArgs), true
 				}
 			}
 		default:
@@ -542,7 +542,7 @@ func TypeArrowOfType(ty Type) (*TypeApp, bool) {
 		return nil, false
 	case *TypeApp:
 		switch desc.Tycon.(type) {
-		case *TyconArrow, *TyconKeyArrow:
+		case *TyconArrow, *TyconLabeledArrow:
 			return desc, true
 		default:
 			return nil, false

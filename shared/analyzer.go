@@ -491,7 +491,7 @@ func (azer *Analyzer) Analyze(node *TypedNode) {
 			}
 		*/
 
-	case *TypedKeywordNode:
+	case *TypedLabeledArgNode:
 		azer.Analyze(desc.Exp)
 
 	case *TypedSeqExpNode:

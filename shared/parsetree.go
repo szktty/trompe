@@ -271,9 +271,9 @@ type AppNode struct {
 	Args []*Node
 }
 
-type KeywordNode struct {
-	Keyword *Word
-	Exp     *Node
+type LabeledArgNode struct {
+	Name *Word
+	Exp  *Node
 }
 
 type SeqExpNode struct {
