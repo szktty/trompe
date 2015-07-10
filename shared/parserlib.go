@@ -32,7 +32,7 @@ func (l *Parser) Lex(lval *yySymType) int {
 	switch tok {
 	case EOF:
 		return 0
-	case LIDENT, UIDENT, INT, FLOAT, STRING, CHAR, REGEXP, KEYWORD:
+	case LIDENT, UIDENT, INT, FLOAT, STRING, CHAR, REGEXP, LABELL, LABELR:
 		lval.word = &Word{Loc: loc, Value: lit}
 	default:
 		lval.tok = Token{tok: tok, lit: lit, Loc: loc}

@@ -66,12 +66,12 @@ func TcUnique(tycon Tycon) Tycon {
 	return u
 }
 
-func TcKeyArrow(kws []string) Tycon {
-	return &TyconKeyArrow{Keywords: kws}
+func TcLabeledArrow(labels []string) Tycon {
+	return &TyconLabeledArrow{Names: labels}
 }
 
-func TcKeyArrowv(kws ...string) Tycon {
-	return TcKeyArrow(kws)
+func TcLabeledArrowv(labels ...string) Tycon {
+	return TcLabeledArrow(labels)
 }
 
 var TUnit = &TypeApp{Tycon: &TyconUnit{}}

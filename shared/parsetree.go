@@ -261,14 +261,19 @@ type PtnSomeNode struct {
 	Ptn *Node
 }
 
+type LabeledParamNode struct {
+	Name *Word
+	Ptn  *Node
+}
+
 type AppNode struct {
 	Exp  *Node
 	Args []*Node
 }
 
-type KeywordNode struct {
-	Keyword *Word
-	Exp     *Node
+type LabeledArgNode struct {
+	Name *Word
+	Exp  *Node
 }
 
 type SeqExpNode struct {

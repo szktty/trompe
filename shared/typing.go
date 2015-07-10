@@ -155,21 +155,27 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		}
 
 		// params
-		args := make([]Type, len(desc.Params))
-		tparams := make([]*TypedNode, len(desc.Params))
-		for i, param := range desc.Params {
-			var ty Type
-			var tparam interface{}
-			switch ptn := param.Desc.(type) {
-			case *PtnIdentNode:
-				ty = inf.env.NewMeta()
-				inf.env.AddVarType(ptn.Name, ty)
-				tparam = &TypedPtnIdentNode{Name: ptn.Name}
-			default:
-				panic(fmt.Errorf("not impl %s", ptn))
+		tparams, err := inf.inferParams(desc.Params)
+		if err != nil {
+			return nil, err
+		}
+
+		// check labeled arguments
+		var labels []string
+		for _, tparam := range tparams {
+			if _, ok := tparam.Desc.(*TypedLabeledParamNode); ok {
+				labels = make([]string, len(tparams))
+				for i, tparam := range tparams {
+					var name string
+					if desc, ok := tparam.Desc.(*TypedLabeledParamNode); ok {
+						name = desc.Name
+					} else {
+						name = TyconUnlabeledName
+					}
+					labels[i] = name
+				}
+				break
 			}
-			args[i] = ty
-			tparams[i] = NewTypedNode(param.Loc, ty, tparam)
 		}
 
 		// body
@@ -177,6 +183,7 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 		if err != nil {
 			return nil, err
 		}
+		args := TypesOfTypedNodes(tparams)
 		args = append(args, tbody.Type)
 		gargs := make([]Type, len(args))
 		tvenv := NewTyvarEnv()
@@ -188,8 +195,14 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 			gargs[i] = g
 		}
 
+		// type constructor
+		var tycon Tycon = TcArrow
+		if labels != nil {
+			tycon = &TyconLabeledArrow{Names: labels}
+		}
+
 		// type
-		ty := TApp(TcArrow, gargs)
+		ty := TApp(tycon, gargs)
 		if len(tvenv.Tyvars) > 0 {
 			ty = TPoly(tvenv.Tyvars, ty)
 		}
@@ -446,13 +459,13 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				pnode.Loc.StartString(), desc.Name)
 		}
 
-	case *KeywordNode:
+	case *LabeledArgNode:
 		texp, err := inf.infer(desc.Exp)
 		if err != nil {
 			return nil, err
 		}
 		return NewTypedNode(pnode.Loc, texp.Type,
-			&TypedKeywordNode{Keyword: desc.Keyword.Value, Exp: texp}), nil
+			&TypedLabeledArgNode{Name: desc.Name.Value, Exp: texp}), nil
 
 	case *AppNode:
 		texp, err := inf.infer(desc.Exp)
@@ -538,10 +551,10 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 			var head, tail Type
 			switch funApp.Tycon.TyconTag() {
 			case TyconTagArrow:
-				if key, ok := targ.Desc.(*TypedKeywordNode); ok {
+				if arg, ok := targ.Desc.(*TypedLabeledArgNode); ok {
 					return nil, RuntimeErrorf(targ.Loc,
-						"The function applied to this argument has type `%s'. This argument cannot be applied with keyword `%s'",
-						StringOfType(funTy1), key.Keyword)
+						"The function applied to this argument has type `%s'. This argument cannot be applied with label `%s'",
+						StringOfType(funTy1), arg.Name)
 				}
 				head1, tail1, ok := PartialArrow(funTy1)
 				if !ok {
@@ -549,17 +562,27 @@ func (inf *inferer) infer(pnode *Node) (*TypedNode, error) {
 				}
 				head = head1
 				tail = tail1
-			case TyconTagKeyArrow:
-				key, ok := targ.Desc.(*TypedKeywordNode)
-				if !ok {
-					return nil, RuntimeErrorf(targ.Loc,
-						"keywords were omitted in the application of this function:\n       %s",
-						StringOfType(funTy1))
+			case TyconTagLabeledArrow:
+				var label string
+				if label1, ok := targ.Desc.(*TypedLabeledArgNode); ok {
+					label = label1.Name
+				} else if _, ok := targ.Desc.(*TypedIdentNode); ok {
+					label = TyconUnlabeledName
+				} else {
+					Panicf("error %s", targ.Desc)
 				}
-				Debugf("key arraw = %s, %s", ReprOfType(funTy1), key.Keyword)
-				head1, tail1, ok := PartialKeyArrow(key.Keyword, funTy1)
-				if !ok {
-					return nil, TooManyArgsError(texp.Loc, expTy)
+				Debugf("labeled arraw = %s, %s", ReprOfType(funTy1), label)
+				/*
+					if !ok {
+						return nil, RuntimeErrorf(targ.Loc,
+							"labels were omitted in the application of this function:\n       %s",
+							StringOfType(funTy1))
+					}
+				*/
+				head1, tail1, err := PartialLabeledArrow(label, funTy1)
+				if err != nil {
+					//return nil, TooManyArgsError(texp.Loc, expTy)
+					return nil, err
 				}
 				head = head1
 				tail = tail1
@@ -1010,6 +1033,39 @@ func (inf *inferer) inferPattern(ptn *Node, expTy Type) (*TypedNode, error) {
 		return nil, err
 	}
 	return NewTypedNode(ptn.Loc, expTy, tnode), nil
+}
+
+func (inf *inferer) inferParams(params []*Node) ([]*TypedNode, error) {
+	tparams := make([]*TypedNode, len(params))
+	for i, param := range params {
+		tparam, err := inf.inferParam(param)
+		if err != nil {
+			return nil, err
+		}
+		tparams[i] = tparam
+	}
+	return tparams, nil
+}
+
+func (inf *inferer) inferParam(param *Node) (*TypedNode, error) {
+	var ty Type
+	var tparam interface{}
+	switch desc := param.Desc.(type) {
+	case *PtnIdentNode:
+		ty = inf.env.NewMeta()
+		inf.env.AddVarType(desc.Name, ty)
+		tparam = &TypedPtnIdentNode{Name: desc.Name}
+	case *LabeledParamNode:
+		tptn, err := inf.inferParam(desc.Ptn)
+		if err != nil {
+			return nil, err
+		}
+		ty = tptn.Type
+		tparam = &TypedLabeledParamNode{Name: desc.Name.Value, Ptn: tptn}
+	default:
+		panic(fmt.Errorf("not impl %s", desc))
+	}
+	return NewTypedNode(param.Loc, ty, tparam), nil
 }
 
 func (inf *inferer) inferBinexp(pnode *Node, desc interface{}, left *Node, right *Node) (*TypedNode, error) {

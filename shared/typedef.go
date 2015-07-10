@@ -1,5 +1,9 @@
 package trompe
 
+import (
+	"fmt"
+)
+
 type Type interface {
 	// this method is to avoid using interface{} to prevent type error
 	TypeTag() int
@@ -49,7 +53,7 @@ const (
 	TyconTagTuple
 	TyconTagModule
 	TyconTagArrow
-	TyconTagKeyArrow
+	TyconTagLabeledArrow
 	TyconTagVariant
 	TyconTagVariantTag
 	TyconTagUnique
@@ -111,9 +115,11 @@ type TyconUnique struct {
 	ID    int
 }
 
-type TyconKeyArrow struct {
-	Keywords []string
+type TyconLabeledArrow struct {
+	Names []string
 }
+
+var TyconUnlabeledName = "*"
 
 var TyvarNames = []string{
 	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
@@ -198,8 +204,8 @@ func (tycon *TyconArrow) TyconTag() int {
 	return TyconTagArrow
 }
 
-func (tycon *TyconKeyArrow) TyconTag() int {
-	return TyconTagKeyArrow
+func (tycon *TyconLabeledArrow) TyconTag() int {
+	return TyconTagLabeledArrow
 }
 
 func (tycon *TyconTyFun) TyconTag() int {
@@ -394,64 +400,67 @@ func PartialArrow(ty Type) (head Type, tail Type, ok bool) {
 	}
 }
 
-func PartialKeyArrow(kw string, ty Type) (head Type, tail Type, ok bool) {
+func PartialLabeledArrow(label string, ty Type) (head Type, tail Type, err error) {
 	switch desc := ty.(type) {
 	case *TypeMeta:
 		if desc.Type != nil {
-			return PartialKeyArrow(kw, desc.Type)
+			return PartialLabeledArrow(label, desc.Type)
 		} else {
-			return nil, nil, false
+			panic("error")
 		}
 	case *TypePoly:
-		if head, tail, ok := PartialKeyArrow(kw, desc.Type); ok {
-			return head, reassignTyvars(tail), true
+		head, tail, err := PartialLabeledArrow(label, desc.Type)
+		if err != nil {
+			return nil, nil, err
 		} else {
-			return nil, nil, false
+			return head, reassignTyvars(tail), err
 		}
 	case *TypeApp:
 		switch tycon := desc.Tycon.(type) {
 		case *TyconTyFun:
 			panic("error")
-		case *TyconKeyArrow:
+		case *TyconLabeledArrow:
 			switch len(desc.Args) {
 			case 0:
-				panic("invalid no arguments keyarrow")
+				panic("invalid no arguments labeled arrow")
 			case 1:
-				panic("invalid 1 argument keyarrow")
+				panic("invalid 1 argument labeled arrow")
 			default:
 				i := -1
-				for j, kw1 := range tycon.Keywords {
-					if kw == kw1 {
+				for j, label1 := range tycon.Names {
+					if label == label1 {
 						i = j
 						break
 					}
 				}
 				if i < 0 {
-					return nil, nil, false
+					return nil, nil, fmt.Errorf(
+						"labels were omitted in the application of this function: %s",
+						StringOfType(ty))
 				}
 
 				argLen := len(desc.Args)
-				tailKws := make([]string, 0)
+				tailLabels := make([]string, 0)
 				tailArgs := make([]Type, 0)
-				for j := 0; j < len(tycon.Keywords); j++ {
+				for j := 0; j < len(tycon.Names); j++ {
 					if i != j {
-						tailKws = append(tailKws, tycon.Keywords[j])
+						tailLabels = append(tailLabels, tycon.Names[j])
 						tailArgs = append(tailArgs, desc.Args[j])
 					}
 				}
 				tailArgs = append(tailArgs, desc.Args[argLen-1])
 
 				if argLen == 2 {
-					return desc.Args[0], desc.Args[1], true
+					return desc.Args[0], desc.Args[1], nil
 				} else {
-					return desc.Args[i], TApp(TcKeyArrow(tailKws), tailArgs), true
+					return desc.Args[i], TApp(TcLabeledArrow(tailLabels), tailArgs), nil
 				}
 			}
 		default:
-			return nil, nil, false
+			panic("error")
 		}
 	default:
-		return nil, nil, false
+		panic("error")
 	}
 }
 
@@ -542,7 +551,7 @@ func TypeArrowOfType(ty Type) (*TypeApp, bool) {
 		return nil, false
 	case *TypeApp:
 		switch desc.Tycon.(type) {
-		case *TyconArrow, *TyconKeyArrow:
+		case *TyconArrow, *TyconLabeledArrow:
 			return desc, true
 		default:
 			return nil, false

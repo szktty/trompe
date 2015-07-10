@@ -10,7 +10,8 @@ package trompe
     wordlist []*Word
 }
 
-%token<word> WILDCARD LIDENT UIDENT KEYWORD CHAR INT FLOAT STRING REGEXP SOME NONE
+%token<word> WILDCARD LIDENT UIDENT CHAR INT FLOAT STRING REGEXP SOME NONE
+%token<word> LABELL LABELR
 %token<tok> ABSTRACT AND AS ASSERT BEGIN CONSTRAINT DO DONE DOWNTO ELSE END EXCEPTION EXTERNAL FALSE FOR FUN FUNCTION GOTO IF IMPORT IN LET MATCH MOD MODULE MUTABLE NOT OF OPEN OR OVERRIDE PARTIAL REC RETURN SIG STRUCT THEN TO TRAIT TRUE TRY TYPE USE VAL WHEN WHILE WITH WITHOUT
 %token<tok> ADD ADD_DOT SUB SUB_DOT MUL MUL_DOT DIV DIV_DOT REM POW EQ NE LE GE LT GT LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK DCOLON SEMI SEMI2 COLON COMMA DOT DOT2 DOT3  DOT_LPAREN QUOTE Q EP AMP TILDA OP
 %token<tok> DOL PIPE BAND BOR BXOR LSHIFT RSHIFT LARROW RARROW
@@ -54,6 +55,7 @@ package trompe
 %right UIDENT
 %nonassoc prec_simple_typexp
 %nonassoc LIDENT
+%nonassoc COLON
 %left LPAREN LBRACE LBRACK
 
 %nonassoc RPAREN
@@ -248,6 +250,14 @@ paramlist
 
 param
     : pattern { $$ = $1 }
+    | LABELR pattern
+    { $$ = newNode($1.Loc, &LabeledParamNode{Name:$1, Ptn:$2}) }
+    | LABELL
+    {
+        ptn := newNode($1.Loc, &PtnIdentNode{Name:$1.Value})
+        $$ = newNode($1.Loc, &LabeledParamNode{Name:$1, Ptn:ptn})
+    }
+
 /* TODO
     | KEYWORD {}
     | LPAREN KEYWORD RPAREN {}
@@ -512,7 +522,13 @@ args
 
 arg
     : simple_exp { $$ = $1 }
-    | KEYWORD simple_exp { $$ = newNode($1.Loc, &KeywordNode{Keyword:$1, Exp:$2}) }
+    | LABELR simple_exp
+    { $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:$2}) }
+    | LABELL
+    {
+        exp := newNode($1.Loc, &IdentNode{Name:$1.Value})
+        $$ = newNode($1.Loc, &LabeledArgNode{Name:$1, Exp:exp})
+    }
 
 typdef
     : TYPE typdefbody {}
@@ -616,8 +632,8 @@ simple_typexp
     { $$ = newNode($1.Loc, &TypeParamConstrNode{Exps:ConsNodeList($2, $3), Constr:$5}) }
 
 label
-    : Q KEYWORD { $$ = newNode($1.Loc, &LabelNode{Opt:true, Name:$2}) }
-    | KEYWORD { $$ = newNode($1.Loc, &LabelNode{Name:$1}) }
+    : Q LIDENT COLON { $$ = newNode($1.Loc, &LabelNode{Opt:true, Name:$2}) }
+    | LIDENT COLON { $$ = newNode($1.Loc, &LabelNode{Name:$1}) }
 
 typexplist_ast
     : MUL typexp { $$ = NewNodeList($2) }
