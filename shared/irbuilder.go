@@ -12,6 +12,8 @@ type IRBuilder struct {
 	Name   string
 }
 
+var NormalFrameSize = 12
+
 func NewIRBuilder(parent *IRBuilder, scope *LocalScope) *IRBuilder {
 	return &IRBuilder{Parent: parent, Bytes: NewBytecodeBuilder(),
 		Scope: scope}
@@ -19,6 +21,11 @@ func NewIRBuilder(parent *IRBuilder, scope *LocalScope) *IRBuilder {
 
 func (bld *IRBuilder) CompiledCode() *CompiledCode {
 	bytes, frameSize := bld.Bytes.Generate()
+	if frameSize <= ExtraNumSlots {
+		frameSize = 0
+	} else if frameSize <= NormalFrameSize {
+		frameSize = NormalFrameSize
+	}
 	return &CompiledCode{File: "<none>", Name: bld.Name,
 		Lines: make([]LineInfo, 0),
 		Bytes: bytes, NumArgs: bld.Scope.NumArgs(),

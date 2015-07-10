@@ -5,109 +5,33 @@ import (
 )
 
 type Context struct {
-	State  *State
-	Parent *Context
-	Module *Module
-	Block  *BlockClosure
-	Pc     int
-	Ptr    int
-	Stack  []Value
+	State   *State
+	Parent  *Context
+	Module  *Module
+	Block   *BlockClosure
+	Args    []Value
+	Pc      int
+	BasePtr int
+	Ptr     int
+}
+
+func (state *State) NewContext(mod *Module, parent *Context,
+	block *BlockClosure, args []Value) *Context {
+	code := block.Code
+	if len(args) != code.NumArgs {
+		Panicf("arity must be %d", code.NumArgs)
+	}
+	return &Context{State: state, Module: mod, Parent: parent,
+		Block: block, Args: args, BasePtr: state.Stack.Ptr,
+		Ptr: code.NumArgs + code.NumTemps - 1}
 }
 
 func (ctx *Context) Const(i int) Value {
 	return ctx.Block.Code.Consts[i]
 }
 
-func (ctx *Context) Top() Value {
-	return ctx.Stack[ctx.Ptr]
-}
-
-func (ctx *Context) TopArray() []Value {
-	if v, ok := ctx.Top().([]Value); ok {
-		return v
-	} else {
-		panic("not array")
-	}
-}
-
-func (ctx *Context) Push(obj Value) {
-	if v, ok := obj.(int); ok {
-		obj = int64(v)
-	}
-	ctx.Ptr++
-	ctx.Stack[ctx.Ptr] = obj
-}
-
-func (ctx *Context) PushLocal(i int) {
-	ctx.Push(ctx.Stack[i])
-}
-
-func (ctx *Context) PushLocalIndirect(b int) {
-	ary := ctx.Stack[b/16].([]Value)
-	ctx.Push(ary[b%16])
-}
-
 func (ctx *Context) PushConst(i int) {
-	ctx.Push(ctx.Block.Code.Consts[i])
-}
-
-func (ctx *Context) PushUnit() {
-	ctx.Push(UnitValue)
-}
-
-func (ctx *Context) PushNil() {
-	ctx.Push(NilValue)
-}
-
-func (ctx *Context) PushBool(v bool) {
-	ctx.Push(v)
-}
-
-func (ctx *Context) Pop() Value {
-	ctx.Ptr--
-	return ctx.Stack[ctx.Ptr+1]
-}
-
-func (ctx *Context) SwapPop() {
-	ctx.Stack[ctx.Ptr-1] = ctx.Stack[ctx.Ptr]
-	ctx.Ptr--
-}
-
-func (ctx *Context) PopBool() bool {
-	return ctx.Pop().(bool)
-}
-
-func (ctx *Context) PopInt() int64 {
-	if v, ok := ctx.Pop().(int64); ok {
-		return v
-	} else {
-		panic("not int")
-	}
-}
-
-func (ctx *Context) PopArray() []Value {
-	if v, ok := ctx.Pop().([]Value); ok {
-		return v
-	} else {
-		panic("not array")
-	}
-}
-
-func (ctx *Context) PopValues(n int) []Value {
-	vs := make([]Value, n)
-	for i := 0; i < n; i++ {
-		vs[n-1-i] = ctx.Pop()
-	}
-	return vs
-}
-
-func (ctx *Context) StorePopLocal(i int) {
-	ctx.Stack[i] = ctx.Pop()
-}
-
-func (ctx *Context) StorePopLocalIndirect(b int) {
-	ary := ctx.Stack[b/16].([]Value)
-	ary[b%16] = ctx.Pop()
+	ctx.State.Stack.Push(ctx.Block.Code.Consts[i])
 }
 
 func (ctx *Context) ValidateJumpBackward(i int) {
@@ -117,8 +41,8 @@ func (ctx *Context) ValidateJumpBackward(i int) {
 }
 
 func (ctx *Context) CompareValues() (ComparisonResult, error) {
-	v2 := ctx.Pop()
-	v1 := ctx.Pop()
+	v2 := ctx.State.Stack.Pop()
+	v1 := ctx.State.Stack.Pop()
 	if res, ok := CompareValues(v1, v2); ok {
 		return res, nil
 	} else {
@@ -127,40 +51,57 @@ func (ctx *Context) CompareValues() (ComparisonResult, error) {
 	}
 }
 
-// TODO
-func (ctx *Context) Eval(blk *BlockClosure, args []Value) (Value, error) {
-	return nil, fmt.Errorf("error")
-}
-
-func (state *State) Exec(mod *Module, parent *Context, block *BlockClosure, args []Value) (Value, error) {
-	code := block.Code
-	var ctx Context
-	ctx.State = state
-	ctx.Parent = parent
-	ctx.Module = mod
-	ctx.Block = block
-	ctx.Ptr = code.NumArgs + code.NumTemps - 1
-	// +2 will be for frameless functions (not yet implemented)
-	ctx.Stack = make([]Value, code.NumLocals()+code.FrameSize+2)
-	Debugf("eval start %d on %d", ctx.Ptr, len(ctx.Stack))
-
+func (state *State) Exec(ctx *Context) (Value, error) {
 	logExec := LogGroupEnabled(LogGroupExec)
 	var bcDescs map[int]string
+	var funToApply interface{}
+	var argsToApply []Value
+	var block *BlockClosure
+	var code *CompiledCode
+	var stack *Stack
+	var numSlots int
+
+apply:
+	if funToApply == nil {
+		goto init
+	}
+	Debugf("apply %s", StringOfValue(funToApply))
+	switch desc := funToApply.(type) {
+	case *BlockClosure:
+		ctx = state.NewContext(ctx.Module, ctx, desc, argsToApply)
+		goto init
+	case Primitive:
+		ret, err := desc(state, ctx, argsToApply)
+		if err != nil {
+			return nil, err
+		}
+		state.Stack.Push(ret)
+		goto loophead
+	default:
+		Panicf("not function %s", funToApply)
+	}
+
+init:
+	block = ctx.Block
+	code = block.Code
+	stack = state.Stack
+	numSlots = code.NumLocals() + code.FrameSize
+	if stack.Ptr+numSlots > stack.Capa {
+		stack.Increase(numSlots)
+	}
+	Debugf("eval start %d on %d", stack.Ptr, stack.Capa)
+
 	if logExec {
 		_, descs := code.StringsOfBytes(false)
 		bcDescs = descs
 		Logf(LogGroupExec, "exec %s", code.Name)
 	}
 
-	if len(args) == code.NumArgs {
-		for i := 0; i < code.NumArgs; i++ {
-			ctx.Stack[i] = args[i]
-			if logExec {
-				Logf(LogGroupExec, "arg %d: %s", i, StringOfValue(args[i]))
-			}
+	for i := 0; i < code.NumArgs; i++ {
+		stack.Slots[ctx.BasePtr+i] = ctx.Args[i]
+		if logExec {
+			Logf(LogGroupExec, "arg %d: %s", i, StringOfValue(ctx.Args[i]))
 		}
-	} else {
-		panic("arity not equal")
 	}
 
 loophead:
@@ -172,7 +113,7 @@ loophead:
 		Debugf("%d %s", ctx.Pc, bcDescs[ctx.Pc])
 		if ctx.Ptr >= 0 {
 			for i := ctx.Ptr; i >= 0; i-- {
-				Debugf("    at %d: %s", i, StringOfValue(ctx.Stack[i]))
+				//Debugf("    at %d: %s", i, StringOfValue(ctx.Stack[i]))
 			}
 		}
 	}
@@ -180,14 +121,14 @@ loophead:
 	ctx.Pc++
 	switch {
 	case OpLoadLocal0 <= bc && bc <= OpMaxLoadLocal:
-		ctx.PushLocal(bc - OpLoadLocal0)
+		stack.PushLocal(bc - OpLoadLocal0)
 	case OpLoadGlobal0 <= bc && bc <= OpMaxLoadGlobal:
 		name := ctx.Const(bc - OpLoadGlobal0).(string)
 		v, ok := ctx.Module.FindFieldValue(name)
 		if !ok {
 			Panicf("field %s is not found", name)
 		}
-		ctx.Push(v)
+		stack.Push(v)
 	case OpLoadConst0 <= bc && bc <= OpMaxLoadConst:
 		ctx.PushConst(bc - OpLoadConst0)
 	case OpLoadValue0 <= bc && bc <= OpMaxLoadValue:
@@ -196,72 +137,58 @@ loophead:
 		if err != nil {
 			return nil, err
 		}
-		ctx.Push(f)
+		stack.Push(f)
 	case OpLoadInt0 <= bc && bc <= OpMaxLoadInt:
-		ctx.Push(bc - OpLoadInt0)
+		stack.Push(bc - OpLoadInt0)
 	case OpLoadIndirect0 <= bc && bc <= OpMaxLoadIndirect:
-		ary := ctx.TopArray()
-		ctx.Push(ary[bc-OpLoadIndirect0])
+		ary := stack.TopArray()
+		stack.Push(ary[bc-OpLoadIndirect0])
 	case OpPopLoadIndirect0 <= bc && bc <= OpMaxPopLoadIndirect:
-		ary := ctx.PopArray()
-		ctx.Push(ary[bc-OpPopLoadIndirect0])
+		ary := stack.PopArray()
+		stack.Push(ary[bc-OpPopLoadIndirect0])
 	case OpStorePopLocal0 <= bc && bc <= OpMaxStorePopLocal:
-		ctx.StorePopLocal(bc - OpStorePopLocal0)
+		stack.StorePopLocal(bc - OpStorePopLocal0)
 	case OpStorePopGlobal0 <= bc && bc <= OpMaxStorePopGlobal:
 		name := ctx.Const(bc - OpStorePopGlobal0).(string)
-		ctx.Module.SetFieldValue(name, ctx.Pop())
+		ctx.Module.SetFieldValue(name, stack.Pop())
 	case OpShortBranchFalse0 <= bc && bc <= OpMaxShortBranchFalse:
-		if ctx.Pop() == false {
+		if stack.Pop() == false {
 			ctx.Pc += bc - OpShortBranchFalse0
 		}
 	case OpShortJump0 <= bc && bc <= OpMaxShortJump:
 		ctx.Pc += bc - OpShortJump0 + 1
 	case OpApply1 <= bc && bc <= OpMaxApply:
-		args := ctx.PopValues(bc - OpApply1 + 1)
-		f := ctx.Pop()
-		Debugf("apply %s", StringOfValue(f))
-		ret, err := state.Apply(&ctx, f, args)
-		if err != nil {
-			return nil, err
-		} else {
-			Debugf("return")
-			ctx.Push(ret)
-		}
+		argsToApply = stack.PopValues(bc - OpApply1 + 1)
+		funToApply = stack.Pop()
+		goto apply
 	case OpApplyDirect1_0 <= bc && bc <= OpMaxApplyDirect1:
-		args := ctx.PopValues(1)
-		f := ctx.Stack[bc-OpApplyDirect1_0]
-		Debugf("apply %s", StringOfValue(f))
-		ret, err := state.Apply(&ctx, f, args)
-		if err != nil {
-			return nil, err
-		} else {
-			Debugf("return")
-			ctx.Push(ret)
-		}
+		argsToApply = stack.PopValues(1)
+		funToApply = stack.Slots[ctx.BasePtr+bc-OpApplyDirect1_0]
+		goto apply
 	default:
 		switch bc {
 		case OpLoadUnit:
-			ctx.PushUnit()
+			stack.PushUnit()
 		case OpLoadNil:
-			ctx.PushNil()
+			stack.PushNil()
 		case OpLoadHead:
-			list := ctx.Top().(*List)
-			ctx.Push(list.Head)
+			list := stack.Top().(*List)
+			stack.Push(list.Head)
 		case OpPopLoadTail:
-			list := ctx.Pop().(*List)
-			ctx.Push(list.Tail)
+			list := stack.Pop().(*List)
+			stack.Push(list.Tail)
 		case OpLoadTrue:
-			ctx.PushBool(true)
+			stack.PushBool(true)
 		case OpLoadFalse:
-			ctx.PushBool(false)
+			stack.PushBool(false)
 		case OpPop:
-			ctx.Pop()
+			stack.Pop()
 		case OpSwapPop:
-			ctx.SwapPop()
+			stack.SwapPop()
 		case OpDup:
-			ctx.Push(ctx.Top())
+			stack.Push(stack.Top())
 		case OpReturn:
-			return ctx.Top(), nil
+			return stack.Top(), nil
 		case OpReturnUnit:
 			return UnitValue, nil
 		case OpReturnTrue:
@@ -269,93 +196,93 @@ loophead:
 		case OpReturnFalse:
 			return false, nil
 		case OpAdd:
-			ctx.Push(ctx.PopInt() + ctx.PopInt())
+			stack.Push(stack.PopInt() + stack.PopInt())
 		case OpSub:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.Push(v1 - v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.Push(v1 - v2)
 		case OpMul:
-			ctx.Push(ctx.PopInt() * ctx.PopInt())
+			stack.Push(stack.PopInt() * stack.PopInt())
 		case OpDiv:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.Push(v1 / v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.Push(v1 / v2)
 		case OpMod:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.Push(v1 % v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.Push(v1 % v2)
 		case OpEq:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res == OrderedSame)
+			stack.PushBool(res == OrderedSame)
 		case OpNe:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res != OrderedSame)
+			stack.PushBool(res != OrderedSame)
 		case OpLe:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res != OrderedAscending)
+			stack.PushBool(res != OrderedAscending)
 		case OpLt:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res == OrderedDescending)
+			stack.PushBool(res == OrderedDescending)
 		case OpGe:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res != OrderedDescending)
+			stack.PushBool(res != OrderedDescending)
 		case OpGt:
 			res, err := ctx.CompareValues()
 			if err != nil {
 				return nil, err
 			}
-			ctx.PushBool(res == OrderedAscending)
+			stack.PushBool(res == OrderedAscending)
 		case OpEqInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 == v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 == v2)
 		case OpNeInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 != v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 != v2)
 		case OpLtInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 < v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 < v2)
 		case OpLeInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 <= v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 <= v2)
 		case OpGtInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 > v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 > v2)
 		case OpGeInts:
-			v2 := ctx.PopInt()
-			v1 := ctx.PopInt()
-			ctx.PushBool(v1 >= v2)
+			v2 := stack.PopInt()
+			v1 := stack.PopInt()
+			stack.PushBool(v1 >= v2)
 		case OpAdd1:
-			v := ctx.PopInt()
-			ctx.Push(v + 1)
+			v := stack.PopInt()
+			stack.Push(v + 1)
 		case OpSub1:
-			v := ctx.PopInt()
-			ctx.Push(v - 1)
+			v := stack.PopInt()
+			stack.Push(v - 1)
 		case OpCountValues:
-			switch vs := ctx.Top().(type) {
+			switch vs := stack.Top().(type) {
 			case []Value:
-				ctx.Push(len(vs))
+				stack.Push(len(vs))
 			case *List:
-				ctx.Push(vs.Length())
+				stack.Push(vs.Length())
 			default:
 				panic("the top value of the stack must be an array or list")
 			}
@@ -374,63 +301,63 @@ twoByteCode:
 	case OpLongJump0 <= bc && bc <= OpMaxLongJump:
 		ctx.Pc += (bc-OpLongJump4)*256 + b1
 	case OpLongBranchTrue0 <= bc && bc <= OpMaxLongBranchTrue:
-		if ctx.PopBool() {
+		if stack.PopBool() {
 			ctx.Pc += (bc-OpLongBranchTrue0)*256 + b1
 		}
 	case OpLongBranchFalse0 <= bc && bc <= OpMaxLongBranchFalse:
-		if !ctx.PopBool() {
+		if !stack.PopBool() {
 			ctx.Pc += (bc-OpLongBranchFalse0)*256 + b1
 		}
 	default:
 		switch bc {
 		case OpLoadLocalIndirect:
-			ctx.PushLocalIndirect(b1)
+			stack.PushLocalIndirect(b1)
 		case OpXLoadIndirect:
-			ary := ctx.TopArray()
-			ctx.Push(ary[b1])
+			ary := stack.TopArray()
+			stack.Push(ary[b1])
 		case OpXStorePopLocal:
-			ctx.StorePopLocal(b1)
+			stack.StorePopLocal(b1)
 		case OpStorePopLocalIndirect:
-			ctx.StorePopLocalIndirect(b1)
+			stack.StorePopLocalIndirect(b1)
 		case OpXStorePopGlobal:
 			name := ctx.Const(b1).(string)
-			ctx.Module.SetFieldValue(name, ctx.Pop())
+			ctx.Module.SetFieldValue(name, stack.Pop())
 		case OpXLoadInt:
-			ctx.Push(b1)
+			stack.Push(b1)
 		case OpBranchNe:
-			v2 := ctx.Pop()
-			v1 := ctx.Pop()
+			v2 := stack.Pop()
+			v1 := stack.Pop()
 			res, ok := CompareValues(v1, v2)
 			if !ok || (ok && res != OrderedSame) {
 				ctx.Pc += b1 + 1
 			}
 		case OpBranchNeSizes:
-			v2 := len(ctx.PopArray())
-			v1 := len(ctx.PopArray())
+			v2 := len(stack.PopArray())
+			v1 := len(stack.PopArray())
 			if v1 != v2 {
 				ctx.Pc += b1 + 1
 			}
 		case OpCreateArray:
 			ary := make([]Value, b1+1)
-			ctx.Push(ary)
+			stack.Push(ary)
 		case OpConsArray:
-			ary := ctx.PopValues(b1 + 1)
-			ctx.Push(ary)
+			ary := stack.PopValues(b1 + 1)
+			stack.Push(ary)
 		case OpConsList:
-			list := NewListFromArray(ctx.PopValues(b1 + 1))
-			ctx.Push(list)
+			list := NewListFromArray(stack.PopValues(b1 + 1))
+			stack.Push(list)
 		case OpCopyValues:
 			if b1 != len(block.Copied) {
 				Panicf("number of copied values %d of the block is not equal to bytecode %d", len(block.Copied), b1)
 			}
 			for i := 0; i < b1; i++ {
-				ctx.Push(block.Copied[i])
+				stack.Push(block.Copied[i])
 			}
 		case OpFullBlock:
 			code := ctx.Const(b1).(*CompiledCode)
 			blk := NewBlockClosure(code)
-			blk.Context = &ctx
-			ctx.Push(blk)
+			blk.Context = ctx
+			stack.Push(blk)
 		default:
 			goto threeByteCode
 		}
@@ -442,24 +369,24 @@ threeByteCode:
 	ctx.Pc++
 	switch bc {
 	case OpXXLoadInt:
-		ctx.Push(b1*256 + b2)
+		stack.Push(b1*256 + b2)
 	case OpCopyingBlock, OpFullCopyingBlock:
 		code := ctx.Const(b1).(*CompiledCode)
 		blk := NewBlockClosure(code)
-		blk.Copied = ctx.PopValues(b2)
-		ctx.Push(blk)
+		blk.Copied = stack.PopValues(b2)
+		stack.Push(blk)
 		if bc == OpFullCopyingBlock {
-			blk.Context = &ctx
+			blk.Context = ctx
 		}
 	case OpPrimitive:
 		key := ctx.Const(b1).(string)
-		args := ctx.PopValues(b2)
+		args := stack.PopValues(b2)
 		if f, ok := PrimMap[key]; ok {
-			ret, err := f(state, parent, args)
+			ret, err := f(state, ctx, args)
 			if err != nil {
 				return nil, err
 			}
-			ctx.Push(ret)
+			stack.Push(ret)
 		} else {
 			return nil, fmt.Errorf("primitive `%s' is not found", key)
 		}

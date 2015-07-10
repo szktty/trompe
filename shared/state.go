@@ -8,6 +8,7 @@ import (
 type State struct {
 	Root       *Module
 	SearchPath []string
+	Stack      *Stack
 }
 
 func Init() {
@@ -20,7 +21,8 @@ func Init() {
 
 func NewState() *State {
 	root := ModuleTrompe()
-	return &State{Root: root, SearchPath: SearchPath()}
+	return &State{Root: root, SearchPath: SearchPath(),
+		Stack: NewStack(NormalFrameSize)}
 }
 
 func (state *State) NewTopEnv() (*Env, bool) {
@@ -80,11 +82,12 @@ func (state *State) FindFieldValueOfPath(path *NamePath) (Value, error) {
 }
 
 func (state *State) Apply(parent *Context, f Value, args []Value) (Value, error) {
-	switch fv := f.(type) {
+	switch desc := f.(type) {
 	case *BlockClosure:
-		return state.Exec(parent.Module, parent, fv, args)
+		ctx := state.NewContext(parent.Module, parent, desc, args)
+		return state.Exec(ctx)
 	case Primitive:
-		return fv(state, parent, args)
+		return desc(state, parent, args)
 	default:
 		return nil, fmt.Errorf("value %s is not applicable", StringOfValue(f))
 	}

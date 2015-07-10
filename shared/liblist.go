@@ -65,7 +65,10 @@ func List_iter(state *State, parent *Context, args []Value) (Value, error) {
 	list := args[0].(*List)
 	blk := args[1].(*BlockClosure)
 	for list != NilValue {
-		state.Exec(parent.Module, parent, blk, []Value{list.Head})
+		_, err := state.Apply(parent, blk, []Value{list.Head})
+		if err != nil {
+			return nil, err
+		}
 		list = list.Tail
 	}
 	return UnitValue, nil

@@ -47,7 +47,8 @@ func (state *State) LoadFile(fpath string, phase int, opts []*optarg.Option) (*M
 	if code != nil {
 		state.Root.AddModule(m)
 		block := NewBlockClosure(code)
-		res, err := state.Exec(m, nil, block, nil)
+		ctx := state.NewContext(m, nil, block, nil)
+		res, err := state.Exec(ctx)
 		if err != nil {
 			return nil, err
 		}
