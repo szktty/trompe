@@ -12,7 +12,6 @@ type Context struct {
 	Args    []Value
 	Pc      int
 	BasePtr int
-	Ptr     int
 }
 
 func (state *State) NewContext(mod *Module, parent *Context,
@@ -22,8 +21,7 @@ func (state *State) NewContext(mod *Module, parent *Context,
 		Panicf("arity must be %d", code.NumArgs)
 	}
 	return &Context{State: state, Module: mod, Parent: parent,
-		Block: block, Args: args, BasePtr: state.Stack.Ptr,
-		Ptr: code.NumArgs + code.NumTemps - 1}
+		Block: block, Args: args, BasePtr: state.Stack.Ptr}
 }
 
 func (ctx *Context) Const(i int) Value {
@@ -32,6 +30,16 @@ func (ctx *Context) Const(i int) Value {
 
 func (ctx *Context) PushConst(i int) {
 	ctx.State.Stack.Push(ctx.Block.Code.Consts[i])
+}
+
+func (ctx *Context) Return(v Value) {
+	if ctx.Parent != nil {
+		ctx.State.Stack.BasePtr = ctx.Parent.BasePtr
+	} else {
+		ctx.State.Stack.BasePtr = -1
+	}
+	ctx.State.Stack.Ptr = ctx.BasePtr
+	ctx.State.Stack.Push(v)
 }
 
 func (ctx *Context) ValidateJumpBackward(i int) {
@@ -56,19 +64,21 @@ func (state *State) Exec(ctx *Context) (Value, error) {
 	var bcDescs map[int]string
 	var funToApply interface{}
 	var argsToApply []Value
-	var block *BlockClosure
-	var code *CompiledCode
-	var stack *Stack
 	var numSlots int
+	stack := state.Stack
 
 apply:
 	if funToApply == nil {
 		goto init
 	}
 	Debugf("apply %s", StringOfValue(funToApply))
+	for i := 0; i <= stack.Ptr; i++ {
+		Debugf("    at %d: %s", i, StringOfValue(stack.Slots[i]))
+	}
 	switch desc := funToApply.(type) {
 	case *BlockClosure:
 		ctx = state.NewContext(ctx.Module, ctx, desc, argsToApply)
+		stack.BasePtr = stack.Ptr
 		goto init
 	case Primitive:
 		ret, err := desc(state, ctx, argsToApply)
@@ -82,38 +92,48 @@ apply:
 	}
 
 init:
-	block = ctx.Block
-	code = block.Code
-	stack = state.Stack
-	numSlots = code.NumLocals() + code.FrameSize
+	numSlots = ctx.Block.Code.NumLocals() + ctx.Block.Code.FrameSize
+	Debugf("stack grow if %d+%d > %d", stack.Ptr, numSlots, stack.Capa)
 	if stack.Ptr+numSlots > stack.Capa {
 		stack.Increase(numSlots)
 	}
 	Debugf("eval start %d on %d", stack.Ptr, stack.Capa)
 
 	if logExec {
-		_, descs := code.StringsOfBytes(false)
+		_, descs := ctx.Block.Code.StringsOfBytes(false)
 		bcDescs = descs
-		Logf(LogGroupExec, "exec %s", code.Name)
+		Logf(LogGroupExec, "==> exec %s", ctx.Block.Code.Name)
 	}
 
-	for i := 0; i < code.NumArgs; i++ {
-		stack.Slots[ctx.BasePtr+i] = ctx.Args[i]
+	for i := 0; i < ctx.Block.Code.NumArgs; i++ {
+		stack.Push(ctx.Args[i])
 		if logExec {
-			Logf(LogGroupExec, "arg %d: %s", i, StringOfValue(ctx.Args[i]))
+			Logf(LogGroupExec, "    arg %d: %s", i, StringOfValue(ctx.Args[i]))
 		}
 	}
+	stack.Ptr += ctx.Block.Code.NumArgs + ctx.Block.Code.NumTemps
 
 loophead:
-	if ctx.Pc+1 > len(code.Bytes) {
-		panic("return instruction must be needed")
+	for ctx.Pc+1 > len(ctx.Block.Code.Bytes) {
+		Debugf("<== return")
+		ctx = ctx.Parent
+		if ctx == nil {
+			return stack.Top(), nil
+		}
+		if logExec {
+			_, descs := ctx.Block.Code.StringsOfBytes(false)
+			bcDescs = descs
+		}
 	}
-	bc := int(code.Bytes[ctx.Pc])
+	bc := int(ctx.Block.Code.Bytes[ctx.Pc])
 	if logExec {
 		Debugf("%d %s", ctx.Pc, bcDescs[ctx.Pc])
-		if ctx.Ptr >= 0 {
-			for i := ctx.Ptr; i >= 0; i-- {
-				//Debugf("    at %d: %s", i, StringOfValue(ctx.Stack[i]))
+		for i := stack.Ptr; i >= 0; i-- {
+			v := StringOfValue(stack.Slots[i])
+			if i == ctx.BasePtr+1 {
+				Debugf(" -- at %d: %s", i, v)
+			} else {
+				Debugf("    at %d: %s", i, v)
 			}
 		}
 	}
@@ -188,13 +208,17 @@ loophead:
 		case OpDup:
 			stack.Push(stack.Top())
 		case OpReturn:
-			return stack.Top(), nil
+			ctx.Return(stack.Top())
+			goto loophead
 		case OpReturnUnit:
-			return UnitValue, nil
+			ctx.Return(UnitValue)
+			goto loophead
 		case OpReturnTrue:
-			return true, nil
+			ctx.Return(true)
+			goto loophead
 		case OpReturnFalse:
-			return false, nil
+			ctx.Return(false)
+			goto loophead
 		case OpAdd:
 			stack.Push(stack.PopInt() + stack.PopInt())
 		case OpSub:
@@ -295,7 +319,7 @@ loophead:
 	goto loophead
 
 twoByteCode:
-	b1 := int(code.Bytes[ctx.Pc])
+	b1 := int(ctx.Block.Code.Bytes[ctx.Pc])
 	ctx.Pc++
 	switch {
 	case OpLongJump0 <= bc && bc <= OpMaxLongJump:
@@ -347,11 +371,11 @@ twoByteCode:
 			list := NewListFromArray(stack.PopValues(b1 + 1))
 			stack.Push(list)
 		case OpCopyValues:
-			if b1 != len(block.Copied) {
-				Panicf("number of copied values %d of the block is not equal to bytecode %d", len(block.Copied), b1)
+			if b1 != len(ctx.Block.Copied) {
+				Panicf("number of copied values %d of the block is not equal to bytecode %d", len(ctx.Block.Copied), b1)
 			}
 			for i := 0; i < b1; i++ {
-				stack.Push(block.Copied[i])
+				stack.Push(ctx.Block.Copied[i])
 			}
 		case OpFullBlock:
 			code := ctx.Const(b1).(*CompiledCode)
@@ -365,7 +389,7 @@ twoByteCode:
 	goto loophead
 
 threeByteCode:
-	b2 := int(code.Bytes[ctx.Pc])
+	b2 := int(ctx.Block.Code.Bytes[ctx.Pc])
 	ctx.Pc++
 	switch bc {
 	case OpXXLoadInt:

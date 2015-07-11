@@ -1,16 +1,17 @@
 package trompe
 
 type Stack struct {
-	Slots []Value
-	Capa  int
-	Ptr   int
+	Slots   []Value
+	Capa    int
+	BasePtr int
+	Ptr     int
 }
 
 var ExtraNumSlots = 4
 
 func NewStack(capa int) *Stack {
 	capa += ExtraNumSlots
-	return &Stack{Slots: make([]Value, capa), Capa: capa, Ptr: -1}
+	return &Stack{Slots: make([]Value, capa), Capa: capa, BasePtr: -1, Ptr: -1}
 }
 
 func (s *Stack) Increase(size int) {
@@ -41,11 +42,11 @@ func (s *Stack) Push(obj Value) {
 }
 
 func (s *Stack) PushLocal(i int) {
-	s.Push(s.Slots[i])
+	s.Push(s.Slots[s.BasePtr+1+i])
 }
 
 func (s *Stack) PushLocalIndirect(b int) {
-	ary := s.Slots[b/16].([]Value)
+	ary := s.Slots[s.BasePtr+1+b/16].([]Value)
 	s.Push(ary[b%16])
 }
 
@@ -100,10 +101,10 @@ func (s *Stack) PopValues(n int) []Value {
 }
 
 func (s *Stack) StorePopLocal(i int) {
-	s.Slots[i] = s.Pop()
+	s.Slots[s.BasePtr+1+i] = s.Pop()
 }
 
 func (s *Stack) StorePopLocalIndirect(b int) {
-	ary := s.Slots[b/16].([]Value)
+	ary := s.Slots[s.BasePtr+1+b/16].([]Value)
 	ary[b%16] = s.Pop()
 }
