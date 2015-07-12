@@ -103,7 +103,7 @@ init:
 	}
 
 	for i := 0; i < ctx.Block.Code.NumArgs; i++ {
-		stack.Push(ctx.Args[i])
+		stack.Slots[stack.Ptr+1+i] = ctx.Args[i]
 		if logExec {
 			Logf(LogGroupExec, "    arg %d: %s", i, StringOfValue(ctx.Args[i]))
 		}
