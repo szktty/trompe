@@ -72,9 +72,6 @@ apply:
 		goto init
 	}
 	Debugf("apply %s", StringOfValue(funToApply))
-	for i := 0; i <= stack.Ptr; i++ {
-		Debugf("    at %d: %s", i, StringOfValue(stack.Slots[i]))
-	}
 	switch desc := funToApply.(type) {
 	case *BlockClosure:
 		ctx = state.NewContext(ctx.Module, ctx, desc, argsToApply)
@@ -92,9 +89,9 @@ apply:
 	}
 
 init:
-	numSlots = ctx.Block.Code.NumLocals() + ctx.Block.Code.FrameSize
-	Debugf("stack grow if %d+%d > %d", stack.Ptr, numSlots, stack.Capa)
-	if stack.Ptr+numSlots > stack.Capa {
+	numSlots = ctx.Block.Code.NumLocals() + ctx.Block.Code.FrameSize + ExtraNumSlots
+	Debugf("stack grow if %d+%d > %d", stack.Ptr+1, numSlots, stack.Capa)
+	if stack.Ptr+1+numSlots >= stack.Capa {
 		stack.Increase(numSlots)
 	}
 	Debugf("eval start %d on %d", stack.Ptr, stack.Capa)
