@@ -73,6 +73,10 @@ let command =
            Printf.printf "Error: No input files\n";
            exit 1
        with
+       | Typing.Type_mismatch e ->
+         Printf.printf "Error: Type mismatch: expected: %s, actual: %s\n"
+           (Type.to_string e.mismatch_ex)
+           (Type.to_string e.mismatch_ac)
        | e -> raise e)
 
 let () =
