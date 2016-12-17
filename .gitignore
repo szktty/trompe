@@ -1,29 +1,40 @@
-# Compiled Object files, Static and Dynamic libs (Shared Objects)
-*.o
+*.annot
+*.cmo
+*.cma
+*.cmi
 *.a
-*.so
+*.o
+*.cmt
+*.cmti
+*.cmx
+*.cmxs
+*.cmxa
+*.omc
+*.opt
+.omakedb
+.omakedb.lock
 
-# Folders
-_obj
-_test
+# ocamlbuild working directory
+_build/
 
-# Architecture specific extensions/prefixes
-*.[568vq]
-[568vq].out
+# ocamlbuild targets
+*.byte
+*.native
 
-*.cgo1.go
-*.cgo2.c
-_cgo_defun.c
-_cgo_gotypes.go
-_cgo_export.*
+# oasis generated files
+setup.data
+setup.log
 
-_testmain.go
+# menhir generated files
+*parser.ml
+*parser.mli
+*lexer.ml
+*lexer.mli
+*.automaton
+*.conflicts
 
-.DS_Store
-*.exe
-*.test
-*.prof
-shared/parser.go
-y.output
-*.swp
+# generated programs
 trompe
+
+# others
+.*.swp

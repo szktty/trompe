@@ -5,21 +5,141 @@ This is developed for handy scripting to clean up chores, which enables quick st
 
 Current version is pre-pre-pre-alpha. See examples/ for more detail.
 
-# License
+## License
 
 Trompe is licensed under the Apache License, Version 2.0.
 
-# Installation
+## Requirements
+
+- OCaml 4.04+
+- OPAM 1.2.2
+- Core
+- OMake 0.9.8.6-0.rc1
+- Menhir
+
+## Installation
+
+Do at directory repository toplevel.
 
 ```
-$ go get github.com/szktty/trompe
-$ make
+$ opam pin add omake 0.9.8.6-0.rc1
+$ opam pin add trompe .
 ```
 
-# Files
+## Grammar
 
-- .tm (implementation file)
-- .tmi (interface file)
+### Comments
+
+```
+# comment end of line
+```
+
+### Unit
+
+```
+()
+```
+
+### Boolean
+
+```
+true
+false
+```
+
+### Integers
+
+```
+12345
+```
+
+### Floating-Point Numbers
+
+```
+123.45
+0e10
+```
+
+### Strings
+
+```
+"hello, world!"
+```
+
+### Lists
+
+```
+[]
+[1, 2, 3]
+```
+
+### Tuple
+
+```
+(1, 2, 3)
+```
+
+### Closure
+
+### Calling Functions
+
+```
+f()
+f(1, 2 , 3)
+```
+
+### Block
+
+```
+do
+  ...
+end
+```
+
+### Variable Bindings
+
+```
+let x = 1
+```
+
+### Defining Functions
+
+```
+def f(x) 
+  x + 1
+end
+```
+
+### Conditions
+
+```
+if n == 0 then
+  show("zero")
+else 
+  show("other")
+end
+```
+
+### Loop
+
+```
+for i in 1..15 do
+  show(i)
+end
+```
+
+### Pattern Matching
+
+```
+case i do
+  | 0 -> "0"
+  | 1 -> "1"
+  | 2 -> "2"
+  | _ -> "_"
+end
+```
+
+### Type Annotations
 
 # TODO
 
@@ -27,13 +147,12 @@ $ make
 - Partial application
 - Records
 - Variants
-- Reference type (``ref``)
-- Labeled arguments
+- References and dereferences
 - Operator definition
 - Exception handling
 - Modules and traits
 - Tail call optimization
 
-# Author
+## Author
 
 SUZUKI Tetsuya (tetsuya.suzuki@gmail.com)

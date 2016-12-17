@@ -1,0 +1,26 @@
+opam-version: "1.2"
+version: "0.1.0"
+authors: "SUZUKI Tetsuya <tetsuya.suzuki@gmail.com>"
+maintainer: "SUZUKI Tetsuya <tetsuya.suzuki@gmail.com>"
+homepage: "https://github.com/szktty/trompe"
+bug-reports: "https://github.com/szktty/trompe/issues"
+dev-repo: "https://github.com/szktty/trompe.git"
+license: "Apache License, Version 2.0"
+build: [
+  [ "omake" "PREFIX=%{prefix}%" ]
+]
+install: [
+  [ "omake" "install" "PREFIX=%{prefix}%" ]
+]
+remove: [
+  [ "omake" "uninstall" "PREFIX=%{prefix}%" ]
+]
+depends: [
+  "ocamlfind"
+  "omake" { = "0.9.8.6-0.rc1" }
+  "menhir"
+  "core"
+]
+available: [
+  ocaml-version >= "4.04.0"
+]
