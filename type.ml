@@ -16,12 +16,30 @@ and desc = [
   | `Module of module_
                 *)
   | `Var of t option ref
+  | `Instance of int
 ]
 
 and module_ = {
   mod_name : string;
   mod_attrs : t String.Map.t;
 }
+
+module Env = struct
+
+  type env = {
+    mutable refs : t option ref list;
+  }
+
+  let create () = { refs = [] }
+
+  let instantiate env ref =
+    match List.findi env.refs ~f:(fun _ ref' -> phys_equal ref ref') with
+    | Some (n, _) -> `Instance n
+    | None ->
+      env.refs <- ref :: env.refs;
+      `Instance (List.length env.refs)
+
+end
 
 let create loc ty =
   Located.create loc ty
@@ -48,4 +66,4 @@ let rec to_string (ty:t) =
                 *)
   | `Var { contents = None } -> "?"
   | `Var { contents = Some ty } -> "?" ^ to_string ty
-
+  | `Instance n -> Int.to_string n

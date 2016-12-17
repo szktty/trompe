@@ -8,7 +8,7 @@ type unity_exn = {
 }
 
 type mismatch = {
-  mismatch_e: Ast.t;
+  mismatch_node: Ast.t;
   mismatch_ex : Type.t;
   mismatch_ac : Type.t;
 }
@@ -19,7 +19,7 @@ exception Deref_error of Type.t * string
 
 (* for pretty printing (and type normalization) *)
 (* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
-let rec deref_type (ty:Type.t) : Type.t =
+let rec deref_type env (ty:Type.t) : Type.t =
   let create = Located.create ty.loc in
   match ty.desc with
       (*
@@ -27,22 +27,19 @@ let rec deref_type (ty:Type.t) : Type.t =
   | `Tuple(ts) -> `Tuple(List.map deref_typ ts)
   | `Array(t) -> `Array(deref_typ t)
        *)
-  | `List ty -> create @@ `List (deref_type ty)
-  | `Var { contents = None } ->
-    (* TODO: ここを a, b, c, ... にしたい
-     * Map か何かに ref を登録する
-    *)
-    raise @@ Deref_error (ty, "uninstantiated type variable")
+  | `List ty -> create @@ `List (deref_type env ty)
+  | `Var ({ contents = None } as ref) ->
+    create @@ Type.Env.instantiate env ref
   | `Var ({ contents = Some ty } as ref) ->
-    let ty' = deref_type ty in
+    let ty' = deref_type env ty in
     ref := Some ty';
     ty'
   | _ -> ty
 
 let rec deref_id_type x ty = (x, deref_type ty)
 
-let rec deref_term (e:Ast.t) : Ast.t =
-  let map = List.map ~f:deref_term in
+let rec deref_term env (e:Ast.t) : Ast.t =
+  let map = List.map ~f:(deref_term env) in
   let desc = match e.desc with
     | `Nop
     | `Unit
@@ -53,13 +50,18 @@ let rec deref_term (e:Ast.t) : Ast.t =
     | `Range _ -> e.desc
 
     | `Chunk es -> `Chunk (map es)
-    | `Return e -> `Return (deref_term e)
+    | `Return e -> `Return (deref_term env e)
+
     | `Fundef fdef ->
-      `Fundef { fdef with
-                fdef_block = List.map fdef.fdef_block  ~f:deref_term }
+      `Fundef { fdef with fdef_block = map fdef.fdef_block }
+
+    | `Funcall call ->
+      `Funcall { fc_fun = deref_term env call.fc_fun;
+                 fc_args = map call.fc_args }
+
     | `Var path ->
       begin match path.np_prefix with
-        | None -> `Var { path with np_type = deref_type path.np_type }
+        | None -> `Var { path with np_type = deref_type env path.np_type }
         | Some _ -> failwith "not yet supported"
       end
 
@@ -210,6 +212,14 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
         end;
         (env, ty_desc)
 
+      | `Funcall call ->
+        let ex_fun = easy_infer env call.fc_fun in
+        let args = List.map call.fc_args ~f:(easy_infer env) in
+        let ret = Type.create_tyvar e.loc in
+        let ac_fun = Type.create e.loc (`Fun (args, ret)) in
+        unify ~ex:ex_fun ~ac:ac_fun;
+        (env, ex_fun.desc)
+
       | `Var path ->
         begin match Ast.(path.np_prefix) with
           | Some _ -> failwith "not yet supported"
@@ -286,11 +296,11 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
   with
   | Unify_error { uniexn_ex = ex; uniexn_ac = ac } ->
     raise @@ Type_mismatch {
-      mismatch_e = deref_term e;
-      mismatch_ex = deref_type ex;
-      mismatch_ac = deref_type ac;
+      mismatch_node = deref_term (Type.Env.create ()) e;
+      mismatch_ex = deref_type (Type.Env.create ()) ex;
+      mismatch_ac = deref_type (Type.Env.create ()) ac;
     }
 
 let run (e:Ast.t) : Ast.t =
   ignore @@ infer String.Map.empty e;
-  deref_term e
+  deref_term (Type.Env.create ()) e
