@@ -15,6 +15,11 @@ module Error = struct
 
 end
 
+let top_modules : t String.Map.t ref = ref String.Map.empty
+
+let register m =
+  top_modules := String.Map.add !top_modules ~key:m.name ~data:m
+
 let find_module name =
   String.Map.find !Module.top_modules name
 

@@ -1,7 +1,7 @@
 open Core.Std
 
 type t = [
-  | `Module of module_
+  | `Module of t Module.t
   | `Unit
   | `Bool of bool
   | `String of string
@@ -10,33 +10,18 @@ type t = [
   | `Range of (int * int)
   | `List of t list
   | `Tuple of t list
-  | `Fun of (Ast.fundef * env)
+  | `Fun of (Ast.fundef * t Env.t)
   | `Prim of string
   | `Ref of t ref
   | `Enum of (string, t) Ast.enum
   | `Exn of user_error
 ]
 
-and primitive = context -> env -> t list -> (env * t)
-
-and module_ = {
-  mod_parent : module_ option;
-  mod_name : string;
-  mod_vals : t String.Map.t; (* TODO: env があるから不要では？ *)
-  mod_env : env;
-  mod_submods : module_ list;
-}
+and primitive = context -> t Env.t -> t list -> t
 
 and context = {
   ctx_parent : context option;
   ctx_call : Ast.t option;
-}
-
-and env = {
-  env_parent : env option;
-  env_map : t String.Map.t;
-  mutable env_imports : module_ list;
-  env_target : module_ option;
 }
 
 and l_exn = {

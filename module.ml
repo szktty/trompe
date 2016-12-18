@@ -1,32 +1,30 @@
 open Core.Std
 
-type t = Lang.module_
+type 'a t = {
+  parent : 'a t option;
+  name : string;
+  mutable env : 'a Env.t;
+  mutable submods : 'a t list;
+}
 
-let top_modules : t String.Map.t ref = ref String.Map.empty
-
-let register m =
-  top_modules := String.Map.add !top_modules ~key:Lang.(m.mod_name) ~data:m
-
-let create ?parent name env =
-  { Lang.mod_parent = parent;
-    mod_name = name;
-    mod_vals = String.Map.empty;
-    mod_env = env;
-    mod_submods = [];
+let create ?parent ?(submods=[]) name env =
+  { parent = parent;
+    name = name;
+    env = env;
+    submods = [];
   }
 
-(* -> (t, (t * string)) Result *)
-let rec find_submodule (m : t) ?(prefix=[]) name =
+let rec find_submodule ?(prefix=[]) m name =
   match prefix with
   | fst :: rest ->
     begin match find_submodule m fst with
       | Result.Error _ as e -> e
-      | Result.Ok sub -> find_submodule sub ~prefix:rest name
+      | Result.Ok sub -> find_submodule ~prefix:rest sub name
     end
   | [] ->
-    match List.find m.mod_submods ~f:(fun m -> m.mod_name = name) with
+    match List.find m.submods ~f:(fun m -> m.name = name) with
     | None -> Result.Error (m, name)
     | Some sub -> Result.Ok sub
 
-let add_value m ~key ~data =
-  Lang.{ m with mod_vals = String.Map.add m.mod_vals ~key ~data }
+let add_attr m ~name ~value =
+  m.env <- Env.add_attr m.env name value

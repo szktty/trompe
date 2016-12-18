@@ -6,7 +6,7 @@ let prim_show ctx env args =
   | None -> failwith "must be an argument"
   | Some arg ->
     Printf.printf "%s\n" (Lang.to_string arg);
-    (env, `Unit)
+    `Unit
 
 let install () =
   Primitive.register [

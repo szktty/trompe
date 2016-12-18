@@ -1,44 +1,44 @@
 open Core.Std
 
-type t = Lang.env
+type 'a t = {
+  parent : 'a t option;
+  attrs : 'a String.Map.t;
+  imports : 'a t list;
+}
 
-let debug env =
+let debug env ~f =
   let open Printf in
   printf "env{";
-  String.Map.iteri Lang.(env.env_map)
+  String.Map.iteri env.attrs
     ~f:(fun ~key ~data ->
-        printf "%s=%s; " key (Lang.to_string data));
+        printf "%s=%s; " key (f data));
   printf "}\n"
 
-let import_module env m =
-  Lang.(env.env_imports <- List.rev (m :: env.env_imports))
+let import env =
+  { env with imports = List.rev (env :: env.imports) }
 
 (* TODO: import したモジュールも探す *)
-let rec find_value env name =
-  (*printf "Env.find_value: %s from " name;debug env;*)
-  match String.Map.find Lang.(env.env_map) name with
+let rec find_attr env name =
+  (*printf "Env.find_attr: %s from " name;debug env;*)
+  match String.Map.find env.attrs name with
   | Some _ as res -> res
   | None ->
-    match List.find_mapi env.env_imports
-            ~f:(fun _ m -> find_value m.mod_env name) with
+    match List.find_mapi env.imports
+            ~f:(fun _ env -> find_attr env name) with
     | Some _ as v -> v
     | None ->
-      match env.env_parent with
+      match env.parent with
       | None -> None
-      | Some env -> find_value env name
+      | Some env -> find_attr env name
 
-let add_value env name value =
-  Lang.({ env with env_map = String.Map.add env.env_map ~key:name ~data:value })
+let add_attr env name value =
+  { env with attrs = String.Map.add env.attrs ~key:name ~data:value }
 
-let add_values env assocs =
-  List.fold_left assocs ~init:env
-    ~f:(fun env (key, value) -> add_value env key value)
+let add_attrs env attrs =
+  List.fold_left attrs ~init:env
+    ~f:(fun env (name, value) -> add_attr env name value)
 
-(* target = env が属するモジュール *)
-let create ?(imports=[]) ?target ?parent ?(values=[]) () =
-  let env = { Lang.env_parent = parent;
-              env_map = String.Map.empty;
-              env_imports = imports;
-              env_target = target }
-  in
-  add_values env values
+let create ?(imports=[]) ?parent ?(attrs=[]) () =
+  { parent = parent;
+    attrs = String.Map.of_alist_reduce attrs ~f:(fun _ b -> b);
+    imports = imports }
