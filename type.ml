@@ -66,4 +66,4 @@ let rec to_string (ty:t) =
                 *)
   | `Var { contents = None } -> "?"
   | `Var { contents = Some ty } -> "?" ^ to_string ty
-  | `Instance n -> Int.to_string n
+  | `Instance n -> "?" ^ Int.to_string n

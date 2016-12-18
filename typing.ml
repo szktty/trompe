@@ -223,7 +223,7 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
       | `Var path ->
         begin match Ast.(path.np_prefix) with
           | Some _ -> failwith "not yet supported"
-          | None -> (env, path.np_type.desc)
+          | None -> (env, path.np_type.desc) (* TODO: ·¿´Ä¶­¤«¤é¸¡º÷¤¹¤ë *)
         end
                 (*
     | Not(e) ->
