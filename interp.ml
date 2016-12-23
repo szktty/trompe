@@ -15,13 +15,13 @@ module Error = struct
 
 end
 
-let top_modules : t String.Map.t ref = ref String.Map.empty
+let top_modules : Value.module_ String.Map.t ref = ref String.Map.empty
 
-let register m =
+let register (m:Value.module_) =
   top_modules := String.Map.add !top_modules ~key:m.name ~data:m
 
 let find_module name =
-  String.Map.find !Module.top_modules name
+  String.Map.find !top_modules name
 
 let rec eval ctx env node =
   let open Ast in
@@ -50,9 +50,9 @@ let rec eval ctx env node =
 
   let eval_fundef ctx env value def_node def args =
     let env = Env.create ~parent:env () in
-    let env = Env.add_value env def.fdef_name.desc value in
+    let env = Env.add_attr env def.fdef_name.desc value in
     let env = List.fold2_exn def.fdef_params args ~init:env
-        ~f:(fun env param arg -> Env.add_value env param.desc arg) in
+        ~f:(fun env param arg -> Env.add_attr env param.desc arg) in
     let ctx = Context.create (Some ctx) (Some def_node) in
     let (_, values) = eval_exps ctx env def.fdef_block in
     values
@@ -84,7 +84,7 @@ let rec eval ctx env node =
 
   | `Fundef def ->
     let v = `Fun (def, env) in
-    let env = Env.add_value env def.fdef_name.desc v in
+    let env = Env.add_attr env def.fdef_name.desc v in
     (env, v)
 
   | `If if_ ->
@@ -117,7 +117,7 @@ let rec eval ctx env node =
     in
     let rec iter env start end_ =
       if start <= end_ then begin
-        let env' = Env.add_value env for_.for_var.desc (`Int start) in
+        let env' = Env.add_attr env for_.for_var.desc (`Int start) in
         ignore @@ eval_exps ctx env' for_.for_block;
         iter env' (op start) end_
       end
@@ -131,7 +131,7 @@ let rec eval ctx env node =
         ~f:(fun _ cls ->
             let env = match cls.case_cls_var with
               | None -> env
-              | Some var_ -> Env.add_value env var_.desc value
+              | Some var_ -> Env.add_attr env var_.desc value
             in
             match eval_ptn ctx env value cls.case_cls_ptn with
             | None -> None
@@ -165,7 +165,7 @@ let rec eval ctx env node =
       | `Prim name ->
         begin match Primitive.find name with
           | None -> failwith ("unknown primitive: " ^ name)
-          | Some f -> f ctx env args
+          | Some f -> (env, f ctx env args)
         end
       | `Fun (def, fenv) ->
         validate_nargs (List.length def.fdef_params) (List.length args);
@@ -208,13 +208,13 @@ let rec eval ctx env node =
           | None -> []
           | Some args -> args
         in
-        f ctx env fargs
+        (env, f ctx env fargs)
       | _ -> failwith ("unknown directive: " ^ name.desc)
     end;
 
   | `Var np ->
     (* TODO: get module from path *)
-    begin match Env.find_value env np.np_name.desc with
+    begin match Env.find_attr env np.np_name.desc with
       | None -> Error.raise ctx
                   (Exn.of_reason Name_error ("not found var: " ^ np.np_name.desc))
       (*failwith ("not found var: " ^ np.np_name.desc)*)
@@ -224,7 +224,7 @@ let rec eval ctx env node =
   | `Refdef (name, init) ->
     let (_, value) = eval ctx env init in
     let refval = `Ref (ref value) in
-    let env = Env.add_value env name.desc refval in
+    let env = Env.add_attr env name.desc refval in
     (env, refval)
 
   | `Assign (var_, exp) ->
@@ -243,7 +243,7 @@ let rec eval ctx env node =
     end
 
   | `Deref_var name ->
-    begin match Env.find_value env name.desc with
+    begin match Env.find_attr env name.desc with
       | None -> failwith ("not found var: " ^ name.desc)
       | Some v ->
         match v with
@@ -275,10 +275,10 @@ and eval_ptn ctx env value ptn =
     if name.desc = "_" then
       Some env
     else
-      Some (Env.add_value env name.desc value)
+      Some (Env.add_attr env name.desc value)
 
   | (`Pin name, _) ->
-    begin match Env.find_value env name.desc with
+    begin match Env.find_attr env name.desc with
       | None -> failwith "not found pin variable" (* TODO: exception *)
       | Some pin -> test equal env pin value
     end
@@ -302,9 +302,10 @@ and eval_ptn ctx env value ptn =
 
 let run node =
   let ctx = Context.create None None in
-  let env = Env.create () in
-  String.Map.iteri !Module.top_modules
-    ~f:(fun ~key ~data -> Env.import_module env data);
+  let env = String.Map.fold !top_modules
+      ~init:(Env.create ())
+      ~f:(fun ~key ~data env -> Env.import env data.env)
+  in
   ignore @@ eval ctx env node
 
 module Primitive = struct

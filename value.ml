@@ -1,7 +1,7 @@
 open Core.Std
 
 type t = [
-  | `Module of t Module.t
+  | `Module of module_
   | `Unit
   | `Bool of bool
   | `String of string
@@ -10,14 +10,14 @@ type t = [
   | `Range of (int * int)
   | `List of t list
   | `Tuple of t list
-  | `Fun of (Ast.fundef * t Env.t)
+  | `Fun of (Ast.fundef * env)
   | `Prim of string
   | `Ref of t ref
   | `Enum of (string, t) Ast.enum
   | `Exn of user_error
 ]
 
-and primitive = context -> t Env.t -> t list -> t
+and primitive = context -> env -> t list -> t
 
 and context = {
   ctx_parent : context option;
@@ -42,6 +42,15 @@ and user_error = {
   user_error_value : t option;
   user_error_reason : string option;
 }
+
+and module_ = t Module.t
+
+and env = t Env.t
+
+let top_modules : module_ list ref = ref []
+
+let register m =
+  top_modules := m :: !top_modules
 
 let rec to_string value =
 

@@ -14,8 +14,8 @@ let debug env ~f =
         printf "%s=%s; " key (f data));
   printf "}\n"
 
-let import env =
-  { env with imports = List.rev (env :: env.imports) }
+let import env m =
+  { env with imports = List.rev (m :: env.imports) }
 
 (* TODO: import したモジュールも探す *)
 let rec find_attr env name =

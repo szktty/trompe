@@ -12,8 +12,8 @@ let install () =
   Primitive.register [
     ("show", prim_show);
   ];
-  let env = Env.create ~values:[
+  let env = Env.create ~attrs:[
       ("show", `Prim "show");
     ] ()
   in
-  Module.(register @@ create "Kernel" env)
+  Interp.register @@ Module.create "Kernel" env
