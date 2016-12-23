@@ -19,6 +19,8 @@ and desc = [
   | `Instance of int
 ]
 
+and module_ = t Module.t
+
 module Env = struct
 
   type env = {
