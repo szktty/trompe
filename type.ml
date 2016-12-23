@@ -19,11 +19,6 @@ and desc = [
   | `Instance of int
 ]
 
-and module_ = {
-  mod_name : string;
-  mod_attrs : t String.Map.t;
-}
-
 module Env = struct
 
   type env = {
