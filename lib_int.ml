@@ -1,5 +1,5 @@
 open Core.Std
-open Lang
+open Value
 
 let prim_to_string ctx env args =
   Interp.Primitive.(

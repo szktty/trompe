@@ -163,4 +163,4 @@ let rec equal x y =
   | L_fun of (Ast.fundef * env)
   | L_prim of (string * primitive)
                                     *)
-  | _ -> failwith "Lang.equal not support"
+  | _ -> failwith "Value.equal not support"

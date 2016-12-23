@@ -1,5 +1,5 @@
 open Core.Std
-open Lang
+open Value
 
 module Error = struct
 

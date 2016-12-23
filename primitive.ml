@@ -1,7 +1,7 @@
 open Core.Std
-open Lang
+open Value
 
-let g_prims : Lang.primitive String.Map.t ref = ref String.Map.empty
+let g_prims : Value.primitive String.Map.t ref = ref String.Map.empty
 
 let register prims =
   List.iter prims ~f:(fun (name, f) ->

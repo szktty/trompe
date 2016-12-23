@@ -1,11 +1,11 @@
 open Core.Std
-open Lang
+open Value
 
 let prim_show ctx env args =
   match List.hd args with
   | None -> failwith "must be an argument"
   | Some arg ->
-    Printf.printf "%s\n" (Lang.to_string arg);
+    Printf.printf "%s\n" (Value.to_string arg);
     `Unit
 
 let install () =

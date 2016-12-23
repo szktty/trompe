@@ -161,8 +161,6 @@ FILES[] =
 	config
 	env
 	interp
-	lang
-	lang_exn
 	lexer
 	located
 	location
@@ -173,6 +171,7 @@ FILES[] =
 	type
 	typing
 	utils
+	value
 	lib
 	lib_kernel
 	lib_int

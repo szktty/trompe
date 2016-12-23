@@ -61,8 +61,8 @@ let command =
              begin try Interp.run node with
                (* TODO: ファイル名はどこから取得？コンテキストか？ *)
                | Interp.Error.E e ->
-                 Printf.printf "Error: %s: " (Lang.Exn.name e.exn);
-                 begin match Lang.Exn.reason e.exn with
+                 Printf.printf "Error: %s: " (Value.Exn.name e.exn);
+                 begin match Value.Exn.reason e.exn with
                    | None -> ()
                    | Some s -> Printf.printf "%s" s
                  end;
