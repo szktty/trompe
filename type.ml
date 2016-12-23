@@ -44,7 +44,13 @@ let create loc ty =
 let create_tyvar loc =
   Located.create loc (`Var (ref None))
 
-let rec to_string (ty:t) =
+let var_names = [|
+  "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n";
+  "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z";
+|]
+
+let rec to_string ?(debug=false) (ty:t) =
+  let to_string = to_string ~debug in
   match ty.desc with
   | `Unit -> "Unit"
   | `Bool -> "Bool"
@@ -61,6 +67,24 @@ let rec to_string (ty:t) =
                (*
   | `Module of module_
                 *)
-  | `Var { contents = None } -> "?"
-  | `Var { contents = Some ty } -> "?" ^ to_string ty
-  | `Instance n -> "?" ^ Int.to_string n
+  | `Var { contents = None } ->
+    if debug then
+      "?"
+    else
+      failwith "uninstantiated type"
+  | `Var { contents = Some ty } ->
+    if debug then
+      "?" ^ to_string ty
+    else
+      to_string ty
+  | `Instance n ->
+    if debug then
+      "?" ^ Int.to_string n
+    else begin
+      if Array.length var_names <= n then
+        failwith ("too much type variables: " ^ Int.to_string n)
+      else
+        Array.get var_names n
+    end
+
+let to_repr ty = to_string ~debug:true ty
