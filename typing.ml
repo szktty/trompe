@@ -30,19 +30,25 @@ let find_module name =
 let rec deref_type env (ty:Type.t) : Type.t =
   let create = Located.create ty.loc in
   match ty.desc with
+  | `App (tycon, args) ->
+    create @@ `App (tycon, List.map args ~f:(deref_type env))
+  | `Meta { contents = None } ->
+    failwith "uninstantiated"
+  | `Meta ({ contents = Some ty } as ref) ->
+    let ty' = deref_type env ty in
+    ref := Some ty';
+    ty'
+  | `Poly (tyvars, ty) ->
+    create @@ `Poly (tyvars, deref_type env ty)
+  | `Var _ -> ty
+
+and deref_tycon env = function
       (*
   | `Fun(t1s, t2) -> `Fun(List.map deref_typ t1s, deref_typ t2)
   | `Tuple(ts) -> `Tuple(List.map deref_typ ts)
   | `Array(t) -> `Array(deref_typ t)
        *)
-  | `List ty -> create @@ `List (deref_type env ty)
-  | `Var ({ contents = None } as ref) ->
-    create @@ Type.Env.instantiate env ref
-  | `Var ({ contents = Some ty } as ref) ->
-    let ty' = deref_type env ty in
-    ref := Some ty';
-    ty'
-  | _ -> ty
+  | tycon -> tycon
 
 let rec deref_id_type x ty = (x, deref_type ty)
 
@@ -107,43 +113,41 @@ let rec deref_term env (e:Ast.t) : Ast.t =
 
 let rec occur (ref:t option ref) (ty:Type.t) : bool =
   match ty.desc with
-  | `Fun (params, ret) ->
-    List.exists params ~f:(occur ref) || occur ref ret
-  | `List ty -> occur ref ty
-  (*| `Tuple tys -> List.exists tys ~f:(occur ref) *)
-  | `Var ref2 when phys_equal ref ref2 -> true
-  | `Var { contents = None } -> false
-  | `Var { contents = Some t2 } -> occur ref t2
-  | _ -> false
+  | `App (tycon, args) ->
+    begin match occur_tycon ref tycon with
+      | false -> false
+      | true -> List.exists args ~f:(occur ref)
+    end
+  | `Meta ref2 when phys_equal ref ref2 -> true
+  | `Meta { contents = None } -> false
+  | `Meta { contents = Some t2 } -> occur ref t2
+  | _ -> failwith "not impl"
+
+and occur_tycon ref = function
+  | `List | `Fun -> true
+  | `Tyfun (_, ty) -> occur ref ty
+  | _ -> failwith "not impl"
 
 (* 型が合うように、型変数への代入をする (caml2html: typing_unify) *)
 let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
   match ex.desc, ac.desc with
-  | `Unit, `Unit
-  | `Bool, `Bool
-  | `Int, `Int
-  | `Float, `Float
-  | `String, `String -> ()
-  | `List ex, `List ac -> unify ~ex ~ac
-  | `Tuple ty1s, `Tuple ty2s when List.length ty1s = List.length ty2s ->
-    List.iter2_exn ty1s ty2s ~f:(fun ty1 ty2 -> unify ~ex:ty1 ~ac:ty2)
-  | `Fun (param1s, ret1), `Fun (param2s, ret2)
-    when List.length param1s = List.length param2s ->
-    List.iter2_exn param1s param2s
-      ~f:(fun param1 param2 -> unify ~ex:param1 ~ac:param2);
-    unify ~ex:ret1 ~ac:ret2
+  | `App (`Unit, []), `App (`Unit, [])
+  | `App (`Bool, []), `App (`Bool, [])
+  | `App (`Int, []), `App (`Int, [])
+  | `App (`Float, []), `App (`Float, [])
+  | `App (`String, []), `App (`String, [])
+  | `App (`Range, []), `App (`Range, []) -> ()
 
-      (*
-  | `Fun(t1s, t1'), `Fun(t2s, t2') ->
-    (try List.iter2 unify t1s t2s
-     with Invalid_argument("List.iter2") -> raise (Unify_error(t1, t2)));
-    unify t1' t2'
-  | `Tuple(t1s), `Tuple(t2s) ->
-    (try List.iter2 unify t1s t2s
-     with Invalid_argument("List.iter2") -> raise (Unify_error(t1, t2)))
-  | `Array(t1), `Array(t2) -> unify t1 t2
-       *)
-  | `Var ex, `Var ac when phys_equal ex ac -> ()
+  | `App (`List, [ex]), `App (`List, [ac])
+  | `App (`Option, [ex]), `App (`Option, [ac]) -> unify ~ex ~ac
+
+  | `App (`Tuple, exs), `App (`Tuple, acs)
+  | `App (`Fun, exs), `App (`Fun, acs)
+    when List.length exs = List.length acs ->
+    List.iter2_exn exs acs ~f:(fun ex ac -> unify ~ex ~ac)
+
+  | `Meta ex, `Meta ac when phys_equal ex ac ->
+    ()
                                         (*
   | `Var({ contents = Some(t1') }), _ -> unify t1' t2
   | _, `Var({ contents = Some(t2') }) -> unify t1 t2'
