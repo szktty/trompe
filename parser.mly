@@ -321,8 +321,11 @@ var:
         np_type = Type.create_tyvar $1.loc }
   }
   | prefix_exp DOT LIDENT
-  { less @@ `Var { np_prefix = Some $1; np_name = $3;
- np_type = Type.create_tyvar $3.loc } }
+  { less @@ `Var {
+        np_prefix = Some $1;
+        np_name = $3;
+        np_type = Type.create_metavar $3.loc }
+  }
   | prefix_exp DOT UIDENT
   { less @@ `Path { np_prefix = Some $1; np_name = $3;
  np_type = Type.create_tyvar $3.loc } }

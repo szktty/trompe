@@ -3,88 +3,66 @@ open Core.Std
 type t = desc Located.t
 
 and desc = [
+  | `App of tycon * t list
+  | `Var of tyvar
+  | `Poly of tyvar list * t
+  | `Meta of metavar
+]
+
+and tycon = [
   | `Unit
   | `Bool
   | `Int
   | `Float
   | `String
-  | `List of t
-  | `Tuple of t list
+  | `List
+  | `Tuple
   | `Range
-  | `Fun of t list * t
-               (*
-  | `Module of module_
-                *)
-  | `Var of t option ref
-  | `Instance of int
+  | `Option
+  | `Struct of string list
+  | `Enum of string list
+  | `Fun
+  | `Tyfun of tyvar list * t
+  | `Unique of tycon * int
 ]
 
+and tyvar = int
+
+and metavar = t option ref
+
 and module_ = t Module.t
-
-module Env = struct
-
-  type env = {
-    mutable refs : t option ref list;
-  }
-
-  let create () = { refs = [] }
-
-  let instantiate env ref =
-    match List.findi env.refs ~f:(fun _ ref' -> phys_equal ref ref') with
-    | Some (n, _) -> `Instance n
-    | None ->
-      env.refs <- ref :: env.refs;
-      `Instance (List.length env.refs)
-
-end
 
 let create loc ty =
   Located.create loc ty
 
-let create_tyvar loc =
-  Located.create loc (`Var (ref None))
+let create_metavar loc =
+  Located.create loc (`Meta (ref None))
 
 let var_names = [|
   "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n";
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z";
 |]
 
-let rec to_string ?(debug=false) (ty:t) =
-  let to_string = to_string ~debug in
+let rec to_string (ty:t) =
   match ty.desc with
-  | `Unit -> "Unit"
-  | `Bool -> "Bool"
-  | `Int -> "Int"
-  | `Float -> "Float"
-  | `String -> "String"
-  | `List e -> "[" ^ to_string e ^ "]"
-  | `Tuple es ->
-    "(" ^ String.concat ~sep:", " (List.map es ~f:to_string) ^ ")"
-  | `Range -> "Range"
-  | `Fun (params, ret) ->
-    "((" ^ String.concat ~sep:", " (List.map params ~f:to_string) ^
-    ") -> " ^ to_string ret ^ ")"
-               (*
-  | `Module of module_
-                *)
-  | `Var { contents = None } ->
-    if debug then
-      "?"
-    else
-      failwith "uninstantiated type"
-  | `Var { contents = Some ty } ->
-    if debug then
-      "?" ^ to_string ty
-    else
-      to_string ty
-  | `Instance n ->
-    if debug then
-      "?" ^ Int.to_string n
-    else begin
-      if Array.length var_names <= n then
-        failwith ("too much type variables: " ^ Int.to_string n)
-      else
-        Array.get var_names n
-    end
-
-let to_repr ty = to_string ~debug:true ty
+  | `App (tycon, args) ->
+    let tycon_s = match tycon with
+      | `Unit -> "Unit"
+      | `Bool -> "Bool"
+      | `Int -> "Int"
+      | `Float -> "Float"
+      | `String -> "String"
+      | `List -> "List"
+      | `Tuple -> "Tuple"
+      | `Range -> "Range"
+      | `Fun -> "Fun"
+      | `Option -> "Option"
+      | _ -> failwith "not impl"
+    in
+    "App(" ^ tycon_s ^ ")"
+  | `Meta { contents = None } -> "Meta(_)"
+  | `Meta { contents = Some ty } -> "Meta(" ^ to_string ty ^ ")"
+  | `Var n -> "Var(" ^ Array.get var_names n ^ ")"
+  | `Poly (tyvars, ty) ->
+    let names = List.map tyvars ~f:(Array.get var_names) in
+    "Poly([" ^ (String.concat names ~sep:", ") ^ "], " ^ to_string ty ^ ")"
