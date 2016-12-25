@@ -32,8 +32,13 @@ and metavar = t option ref
 
 and module_ = t Module.t
 
-let create loc ty =
-  Located.create loc ty
+and env = t Env.t
+
+(* TODO: functor? *)
+module Env = Env
+
+let create loc desc =
+  Located.create loc desc
 
 let create_metavar loc =
   Located.create loc (`Meta (ref None))
@@ -42,6 +47,19 @@ let var_names = [|
   "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n";
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z";
 |]
+
+let app ?(args=[]) tycon = `App (tycon, args)
+let desc_unit = app `Unit
+let desc_bool = app `Bool
+let desc_int = app `Int
+let desc_float = app `Float
+let desc_string = app `String
+let desc_range = app `Range
+let desc_list e = app ~args:[e] `List
+let desc_tuple es = app ~args:es `Tuple
+let desc_option e = app ~args:[e] `Option
+let desc_fun params ret =
+  app ~args:(List.append params [ret]) `Fun
 
 let rec to_string (ty:t) =
   match ty.desc with

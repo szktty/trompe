@@ -38,8 +38,8 @@ let rec deref_type env (ty:Type.t) : Type.t =
     let ty' = deref_type env ty in
     ref := Some ty';
     ty'
-  | `Poly (tyvars, ty) ->
-    create @@ `Poly (tyvars, deref_type env ty)
+  | `Poly (metavars, ty) ->
+    create @@ `Poly (metavars, deref_type env ty)
   | `Var _ -> ty
 
 and deref_tycon env = function
@@ -162,18 +162,18 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
 
 (* 型推論ルーチン (caml2html: typing_g) *)
-let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
+let rec infer env (e:Ast.t) : (Type.env * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
-  let unit = Located.create e.loc `Unit in
+  let unit = Type.(create e.loc desc_unit) in
   let easy_infer env e = snd @@ infer env e in
   let infer_block env es =
-    List.fold_left es ~init:(env, Type.create e.loc `Unit)
+    List.fold_left es ~init:(env, unit)
       ~f:(fun (env, _) e -> infer env e)
   in
   try
-    let env, ty = match e.desc with
-      | `Nop -> (env, `Unit)
+    let env, desc = match e.desc with
+      | `Nop -> (env, desc_unit)
 
       | `Chunk es -> 
         let env, ty = List.fold_left es
@@ -184,37 +184,36 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
 
       | `Return e -> (env, (easy_infer env e).desc)
 
-      | `Unit -> (env, `Unit)
-      | `Bool _ -> (env, `Bool)
-      | `Int _ -> (env, `Int)
-      | `Float _ -> (env, `Float)
-      | `String _ -> (env, `String)
-      | `Range _ -> (env, `Range)
+      | `Unit -> (env, desc_unit)
+      | `Bool _ -> (env, desc_bool)
+      | `Int _ -> (env, desc_int)
+      | `Float _ -> (env, desc_float)
+      | `String _ -> (env, desc_string)
+      | `Range _ -> (env, desc_range)
 
       | `List es ->
         begin match es with
-          | [] -> (env, `List (Type.create_tyvar e.loc))
+          | [] -> (env, desc_list @@ create_metavar e.loc)
           | e :: es ->
             let base_ty = easy_infer env e in
             List.iter es ~f:(fun e ->
                 unify ~ex:base_ty ~ac:(easy_infer env e));
-            (env, `List base_ty)
+            (env, desc_list @@ base_ty)
         end
 
       | `Tuple es ->
-        (env, `Tuple (List.map es ~f:(easy_infer env)))
+        (env, desc_tuple (List.map es ~f:(easy_infer env)))
 
       | `Fundef fdef ->
         let params = List.map fdef.fdef_params
-            ~f:(fun param -> Type.create_tyvar param.loc)
+            ~f:(fun param -> Type.create_metavar param.loc)
         in
-        let ret = Type.create_tyvar e.loc in
-        let ty_desc = `Fun (params, ret) in
-        let ty = Type.create e.loc ty_desc in
-        let env = String.Map.add env ~key:fdef.fdef_name.desc ~data:ty in
+        let ret = Type.create_metavar e.loc in
+        let desc = desc_fun params ret in
+        let ty = Type.create e.loc desc in
+        let env = Env.add_attr env fdef.fdef_name.desc ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty ->
-                String.Map.add env ~key:name.desc ~data:ty)
+            ~f:(fun env name ty -> Env.add_attr env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with
@@ -222,13 +221,13 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
           | `Var ({ contents = None } as ref) -> ref := Some ret'
           | _ -> failwith "return type must be type variable"
         end;
-        (env, ty_desc)
+        (env, desc)
 
       | `Funcall call ->
         let ex_fun = easy_infer env call.fc_fun in
         let args = List.map call.fc_args ~f:(easy_infer env) in
-        let ret = Type.create_tyvar e.loc in
-        let ac_fun = Type.create e.loc (`Fun (args, ret)) in
+        let ret = Type.create_metavar e.loc in
+        let ac_fun = Type.create e.loc (desc_fun args ret) in
         unify ~ex:ex_fun ~ac:ac_fun;
         (env, ex_fun.desc)
 
@@ -302,7 +301,7 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
        *)
       | _ -> Ast.print e; failwith "TODO"
     in
-    let ty = Located.create e.loc ty in
+    let ty = Type.create e.loc desc in
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
     (env, ty)
   with
@@ -314,5 +313,5 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
     }
 
 let run (e:Ast.t) : Ast.t =
-  ignore @@ infer String.Map.empty e;
+  ignore @@ infer (Type.Env.create ()) e;
   deref_term (Type.Env.create ()) e
