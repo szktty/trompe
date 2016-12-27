@@ -26,7 +26,7 @@ and tycon = [
   | `Unique of tycon * int
 ]
 
-and tyvar = int
+and tyvar = string
 
 and metavar = t option ref
 
@@ -80,7 +80,88 @@ let rec to_string (ty:t) =
     "App(" ^ tycon_s ^ ")"
   | `Meta { contents = None } -> "Meta(_)"
   | `Meta { contents = Some ty } -> "Meta(" ^ to_string ty ^ ")"
-  | `Var n -> "Var(" ^ Array.get var_names n ^ ")"
+  | `Var name -> "Var(" ^ name ^ ")"
   | `Poly (tyvars, ty) ->
-    let names = List.map tyvars ~f:(Array.get var_names) in
-    "Poly([" ^ (String.concat names ~sep:", ") ^ "], " ^ to_string ty ^ ")"
+    "Poly([" ^ (String.concat tyvars ~sep:", ") ^ "], " ^ to_string ty ^ ")"
+
+module Spec = struct
+
+  type t = [
+    | `Tyvar of string
+    | `Unit
+    | `Bool
+    | `Int
+    | `Float
+    | `String
+    | `List of t
+    | `Tuple of t list
+    | `Range
+    | `Option of t
+    | `Fun of t list
+  ]
+
+  let unit = `Unit
+  let bool = `Bool
+  let int = `Int
+  let float = `Float
+  let string = `String
+  let list e = `List e
+  let tuple es = `Tuple es
+  let range = `Range
+  let option e = `Option e
+
+  let a = `Tyvar "a"
+  let b = `Tyvar "b"
+  let c = `Tyvar "c"
+  let d = `Tyvar "d"
+  let e = `Tyvar "e"
+
+  let (+>) x y =
+    match x with
+    | `Fun args -> `Fun (List.append args [y])
+    | _ -> `Fun [x; y]
+
+  let flat_tyvars tyvars =
+    let tyvars =
+      List.fold_left tyvars
+        ~init:[]
+        ~f:(fun accu tyvar ->
+            if List.existsi accu ~f:(fun _ e -> e = tyvar) then
+              accu
+            else
+              tyvar :: accu)
+    in
+    List.sort tyvars ~cmp:String.Caseless.descending
+
+  let collect_tyvars (spec:t) =
+    let rec f (tyvars:string list) spec =
+      match spec with
+      | `Unit -> tyvars, desc_unit
+      | `Bool -> tyvars, desc_bool
+      | `Int -> tyvars, desc_int
+      | `Float -> tyvars, desc_float
+      | `String -> tyvars, desc_string
+      | `Tyvar name -> (name :: tyvars), `Var name
+      | `List e ->
+        let tyvars', ty = f tyvars e in
+        tyvars', desc_list (Located.less ty)
+      | `Fun args ->
+        let tyvars', args' =
+          List.fold_left args ~init:(tyvars, [])
+            ~f:(fun (tyvars, args) arg ->
+                let tyvars', arg' = f tyvars arg in
+                tyvars', Located.less arg' :: args)
+        in
+        tyvars', `App (`Fun, List.rev args')
+      | _ -> failwith "not yet support"
+    in
+    f [] spec
+
+  let to_type spec =
+    match collect_tyvars spec with
+    | [], desc -> Located.less desc
+    | tyvars, desc ->
+      let tyvars = flat_tyvars tyvars in
+      Located.less @@ `Poly (tyvars, Located.less desc)
+
+end
