@@ -1,44 +1,53 @@
 open Core.Std
 
-type 'a t = {
-  parent : 'a t option;
-  attrs : 'a String.Map.t;
-  imports : 'a t list;
-}
+module type S = sig
 
-let debug env ~f =
-  let open Printf in
-  printf "env{";
-  String.Map.iteri env.attrs
-    ~f:(fun ~key ~data ->
-        printf "%s=%s; " key (f data));
-  printf "}\n"
+  type t
 
-let import env m =
-  { env with imports = List.rev (m :: env.imports) }
+  type data
 
-(* TODO: import したモジュールも探す *)
-let rec find_attr env name =
-  (*printf "Env.find_attr: %s from " name;debug env;*)
-  match String.Map.find env.attrs name with
-  | Some _ as res -> res
-  | None ->
-    match List.find_mapi env.imports
-            ~f:(fun _ env -> find_attr env name) with
-    | Some _ as v -> v
+  val create :
+    ?parent:t option
+    -> ?attrs:(string * data) list
+    -> unit
+    -> t
+
+  val find : t -> string -> data option
+  val add : t -> key:string -> data:data -> t
+
+  (* TODO:
+   * val debug : t -> unit
+   * val to_map : t -> data String.Map.t
+  *)
+
+end
+
+module Make(A : sig
+    type t
+    (* TODO: val string_of_data : t -> string *)
+  end) : S = struct
+
+  type data = A.t
+
+  type t = {
+    parent : t option;
+    attrs : A.t String.Map.t;
+  }
+
+  let create ?(parent=None) ?(attrs=[]) () =
+    { parent = parent;
+      attrs = String.Map.of_alist_reduce attrs ~f:(fun _ b -> b);
+    }
+
+  let rec find env key =
+    match String.Map.find env.attrs key with
+    | Some _ as res -> res
     | None ->
       match env.parent with
       | None -> None
-      | Some env -> find_attr env name
+      | Some env -> find env key
 
-let add_attr env name value =
-  { env with attrs = String.Map.add env.attrs ~key:name ~data:value }
+  let add env ~key ~data =
+    { env with attrs = String.Map.add env.attrs ~key ~data }
 
-let add_attrs env attrs =
-  List.fold_left attrs ~init:env
-    ~f:(fun env (name, value) -> add_attr env name value)
-
-let create ?(imports=[]) ?parent ?(attrs=[]) () =
-  { parent = parent;
-    attrs = String.Map.of_alist_reduce attrs ~f:(fun _ b -> b);
-    imports = imports }
+end

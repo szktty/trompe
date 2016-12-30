@@ -17,9 +17,10 @@ exception Unify_error of unity_exn
 exception Type_mismatch of mismatch
 exception Deref_error of Type.t * string
 
-let top_modules : Type.module_ String.Map.t ref = ref String.Map.empty
+(* TODO: deprecated *)
+let top_modules : Type.Module.t String.Map.t ref = ref String.Map.empty
 
-let register (m:Type.module_) =
+let register (m:Type.Module.t) =
   top_modules := String.Map.add !top_modules ~key:m.name ~data:m
 
 let find_module name =
@@ -162,7 +163,7 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
 
 (* 型推論ルーチン (caml2html: typing_g) *)
-let rec infer env (e:Ast.t) : (Type.env * Type.t) =
+let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
   let unit = Type.(create e.loc desc_unit) in
@@ -211,9 +212,9 @@ let rec infer env (e:Ast.t) : (Type.env * Type.t) =
         let ret = Type.create_metavar e.loc in
         let desc = desc_fun params ret in
         let ty = Type.create e.loc desc in
-        let env = Env.add_attr env fdef.fdef_name.desc ty in
+        let env = Type.Env.add env fdef.fdef_name.desc ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty -> Env.add_attr env name.desc ty)
+            ~f:(fun env name ty -> Type.Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with

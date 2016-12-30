@@ -2,6 +2,8 @@ open Core.Std
 
 type t = desc Located.t
 
+and _t = t
+
 and desc = [
   | `App of tycon * t list
   | `Var of tyvar
@@ -30,12 +32,12 @@ and tyvar = string
 
 and metavar = t option ref
 
-and module_ = t Module.t
+module Env = Env.Make(struct
+    type t = _t
+  end)
 
-and env = t Env.t
+module Module = Module.Make(Env)
 
-(* TODO: functor? *)
-module Env = Env
 
 let create loc desc =
   Located.create loc desc
