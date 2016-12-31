@@ -6,7 +6,7 @@ module type S = sig
   type env
   type data
 
-  val toplevel : t String.Map.t ref
+  val toplevel : t list ref
 
   val define : t -> unit
 
@@ -26,13 +26,13 @@ module type S = sig
 
   val namepath : t -> Namepath.t
 
-  val find_sub :
+  val find_module :
     ?prefix:string list
     -> t
     -> name:string
     -> (t, t * string) Result.t
 
-  val add_sub : t -> t -> unit
+  val add_module : t -> t -> unit
 
   val find_attr : t -> string -> data option
 
@@ -54,10 +54,10 @@ module Make(E: Env.S) : S = struct
     mutable imports : t list;
   }
 
-  let toplevel = ref String.Map.empty
+  let toplevel = ref []
 
   let define m =
-    toplevel := String.Map.add !toplevel ~key:m.name ~data:m
+    toplevel := m :: !toplevel
 
   let create ?(parent=None) ?(subs=[]) ?(imports=[]) ~name ~env =
     { parent; name; env; subs; imports }
@@ -78,19 +78,20 @@ module Make(E: Env.S) : S = struct
     | Some m ->
       Namepath.create ~prefix:(Some (namepath m)) m.name
 
-  let rec find_sub ?(prefix=[]) m ~name =
+  let rec find_module ?(prefix=[]) m ~name =
     match prefix with
     | fst :: rest ->
-      begin match find_sub m ~name:fst with
+      begin match find_module m ~name:fst with
         | Result.Error _ as e -> e
-        | Result.Ok sub -> find_sub ~prefix:rest sub ~name
+        | Result.Ok sub -> find_module ~prefix:rest sub ~name
       end
     | [] ->
-      match List.find m.subs ~f:(fun m -> m.name = name) with
+      let from = List.append m.subs !toplevel in
+      match List.find from ~f:(fun m -> m.name = name) with
       | None -> Result.Error (m, name)
-      | Some sub -> Result.Ok sub
+      | Some m -> Result.Ok m
 
-  let add_sub m x =
+  let add_module m x =
     m.subs <- x :: m.subs
 
   let rec find_attr m key =

@@ -15,14 +15,6 @@ module Error = struct
 
 end
 
-let top_modules : Value.module_ String.Map.t ref = ref String.Map.empty
-
-let register (m:Value.module_) =
-  top_modules := String.Map.add !top_modules ~key:m.name ~data:m
-
-let find_module name =
-  String.Map.find !top_modules name
-
 let rec eval ctx env node =
   let open Ast in
   let open Context in

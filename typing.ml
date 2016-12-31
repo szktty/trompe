@@ -17,15 +17,6 @@ exception Unify_error of unity_exn
 exception Type_mismatch of mismatch
 exception Deref_error of Type.t * string
 
-(* TODO: deprecated *)
-let top_modules : Type.Module.t String.Map.t ref = ref String.Map.empty
-
-let register (m:Type.Module.t) =
-  top_modules := String.Map.add !top_modules ~key:m.name ~data:m
-
-let find_module name =
-  String.Map.find !top_modules name
-
 (* for pretty printing (and type normalization) *)
 (* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
 let rec deref_type env (ty:Type.t) : Type.t =
