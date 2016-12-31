@@ -166,6 +166,7 @@ FILES[] =
 	location
 	main
 	module
+	namepath
 	parser
 	primitive
 	type
