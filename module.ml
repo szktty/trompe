@@ -6,6 +6,10 @@ module type S = sig
   type env
   type data
 
+  val toplevel : t String.Map.t ref
+
+  val define : t -> unit
+
   val create :
     ?parent:t option
     -> ?subs:t list
@@ -14,21 +18,26 @@ module type S = sig
     -> env:env
     -> t
 
+  val root : t -> t option
+
+  val is_root : t -> bool
+
+  val import : t -> t -> unit
+
+  val namepath : t -> Namepath.t
+
   val find_sub :
     ?prefix:string list
     -> t
     -> name:string
     -> (t, t * string) Result.t
 
+  val add_sub : t -> t -> unit
+
   val find_attr : t -> string -> data option
 
-  (* TODO:
-   * val root : t -> t option
-   * val is_root : t -> bool
-   * val namepath : t -> Namepath.t
-   * val import : t -> t -> unit
-   * val add_attr : t -> key:string -> data:data -> unit
-  *)
+  val add_attr : t -> key:string -> data:data -> unit
+
 end
 
 module Make(E: Env.S) : S = struct
@@ -45,15 +54,29 @@ module Make(E: Env.S) : S = struct
     mutable imports : t list;
   }
 
-                (*
-  let top_modules : t list ref = ref []
+  let toplevel = ref String.Map.empty
 
-  let register m =
-    top_modules := m :: !top_modules
-                 *)
+  let define m =
+    toplevel := String.Map.add !toplevel ~key:m.name ~data:m
 
   let create ?(parent=None) ?(subs=[]) ?(imports=[]) ~name ~env =
     { parent; name; env; subs; imports }
+
+  let rec root m =
+    match m.parent with
+    | None -> Some m
+    | Some m -> root m
+
+  let is_root m = Option.is_none m.parent
+
+  let import m x =
+    m.imports <- x :: m.imports
+
+  let rec namepath m =
+    match m.parent with
+    | None -> Namepath.create m.name
+    | Some m ->
+      Namepath.create ~prefix:(Some (namepath m)) m.name
 
   let rec find_sub ?(prefix=[]) m ~name =
     match prefix with
@@ -67,6 +90,9 @@ module Make(E: Env.S) : S = struct
       | None -> Result.Error (m, name)
       | Some sub -> Result.Ok sub
 
+  let add_sub m x =
+    m.subs <- x :: m.subs
+
   let rec find_attr m key =
     match E.find m.env key with
     | Some _ as res -> res
@@ -75,5 +101,8 @@ module Make(E: Env.S) : S = struct
               ~f:(fun _ m -> find_attr m key) with
       | Some _ as v -> v
       | None -> None
+
+  let add_attr m ~key ~data =
+    m.env <- E.add m.env ~key ~data
 
 end

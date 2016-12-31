@@ -13,18 +13,17 @@ module type S = sig
     -> t
 
   val find : t -> string -> data option
+
   val add : t -> key:string -> data:data -> t
 
-  (* TODO:
-   * val debug : t -> unit
-   * val to_map : t -> data String.Map.t
-  *)
+  val concat : t -> data String.Map.t
+
+  val debug : t -> f:(data -> string) -> unit
 
 end
 
 module Make(A : sig
     type t
-    (* TODO: val string_of_data : t -> string *)
   end) : S = struct
 
   type data = A.t
@@ -49,5 +48,32 @@ module Make(A : sig
 
   let add env ~key ~data =
     { env with attrs = String.Map.add env.attrs ~key ~data }
+
+  let concat env =
+    let rec f attrs accu =
+      String.Map.fold attrs ~init:accu
+        ~f:(fun ~key ~data accu -> String.Map.add accu ~key ~data)
+    in
+    f env.attrs String.Map.empty
+
+  let debug env ~f =
+    let print env indent =
+      let open Printf in
+      let indent_s = String.make (indent * 2) ' ' in
+      printf "%s{\n" indent_s;
+      String.Map.iteri env.attrs ~f:(fun ~key ~data ->
+          printf "%s  %s = %s\n" indent_s key (f data));
+      printf "%s}\n" indent_s
+    in
+    let rec f env indent =
+      let indent = match env.parent with
+        | None -> indent
+        | Some parent ->
+          f env indent;
+          indent + 1
+      in
+      print env indent
+    in
+    f env 0
 
 end
