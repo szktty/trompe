@@ -168,7 +168,6 @@ FILES[] =
 	module
 	namepath
 	parser
-	primitive
 	type
 	typing
 	utils

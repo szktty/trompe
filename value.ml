@@ -29,11 +29,14 @@ and user_error = {
 
 module Env = Env.Make(struct
 
-    type t = value
+    type data = t
 
   end)
 
-module Module = Module.Make(Env)
+module Module = Module.Make(struct
+    module Env = Env
+    type primitive = t list -> t
+  end)
 
 let rec to_string value =
   let open Printf in
@@ -74,9 +77,7 @@ module Context = struct
 
 end
 
-type primitive = Context.t -> Env.t -> t list -> t
-
-and l_exn = {
+type l_exn = {
   exn_desc : exn_desc;
   exn_reason : string option;
 }

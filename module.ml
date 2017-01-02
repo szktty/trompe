@@ -3,8 +3,9 @@ open Core.Std
 module type S = sig
 
   type t
-  type env
-  type data
+  type primitive
+
+  module Env : Env.S
 
   val toplevel : t list ref
 
@@ -14,7 +15,7 @@ module type S = sig
     ?parent:t option
     -> ?submodules:t list
     -> ?imports: t list
-    -> ?env:env option
+    -> ?env:Env.t option
     -> name:string
     -> unit
     -> t
@@ -37,25 +38,34 @@ module type S = sig
 
   val add_module : t -> t -> unit
 
-  val find_attr : t -> string -> data option
+  val find_attr : t -> string -> Env.data option
 
-  val add_attr : t -> key:string -> data:data -> unit
+  val add_attr : t -> key:string -> data:Env.data -> unit
+
+  val primitives : unit -> primitive String.Map.t
+
+  val add_primitive : name:string -> primitive:primitive -> unit
+
+  val find_primitive : string -> primitive option
 
 end
 
-module Make(E: Env.S) : S = struct
+module Make(A: sig
+    module Env : Env.S
+    type primitive
+  end) : S with type primitive = A.primitive = struct
 
-  type env = E.t
-
-  type data = E.data
+  type primitive = A.primitive
 
   type t = {
     parent : t option;
     name : string;
-    mutable env : env;
+    mutable env : A.Env.t;
     mutable submodules : t list;
     mutable imports : t list;
   }
+
+  module Env = A.Env
 
   let toplevel = ref []
 
@@ -65,7 +75,7 @@ module Make(E: Env.S) : S = struct
   let create ?(parent=None) ?(submodules=[]) ?(imports=[]) ?(env=None) ~name () =
     let env = match env with
       | Some env -> env
-      | None -> E.create ()
+      | None -> A.Env.create ()
     in
     { parent; name; env; submodules; imports }
 
@@ -104,7 +114,7 @@ module Make(E: Env.S) : S = struct
     m.submodules <- x :: m.submodules
 
   let rec find_attr m key =
-    match E.find m.env key with
+    match A.Env.find m.env key with
     | Some _ as res -> res
     | None ->
       match List.find_mapi m.imports
@@ -113,6 +123,16 @@ module Make(E: Env.S) : S = struct
       | None -> None
 
   let add_attr m ~key ~data =
-    m.env <- E.add m.env ~key ~data
+    m.env <- A.Env.add m.env ~key ~data
+
+  let prim_ref : primitive String.Map.t ref = ref String.Map.empty
+
+  let primitives () = !prim_ref
+
+  let add_primitive ~name ~primitive =
+    prim_ref := String.Map.add !prim_ref ~key:name ~data:primitive
+
+  let find_primitive name =
+    String.Map.find !prim_ref name
 
 end

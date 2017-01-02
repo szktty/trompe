@@ -25,15 +25,15 @@ module type S = sig
 end
 
 module Make(A : sig
-    type t
-  end) : S with type data = A.t = struct
+    type data
+  end) : S with type data = A.data = struct
 
   type t = {
     parent : t option;
-    attrs : A.t String.Map.t;
+    attrs : A.data String.Map.t;
   }
 
-  type data = A.t
+  type data = A.data
 
   let create ?(parent=None) ?(attrs=[]) () =
     { parent = parent;

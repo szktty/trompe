@@ -160,7 +160,7 @@ let rec eval ctx env node =
     (* TODO: create new context *)
     begin match f with
       | `Prim name ->
-        begin match Primitive.find name with
+        begin match Module.find_primitive name with
           | None -> failwith ("unknown primitive: " ^ name)
           | Some f -> (env, f ctx env args)
         end
