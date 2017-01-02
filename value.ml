@@ -35,26 +35,6 @@ module Env = Env.Make(struct
 
 module Module = Module.Make(Env)
 
-type primitive = context -> Env.t -> t list -> t
-
-and context = {
-  ctx_parent : context option;
-  ctx_call : Ast.t option;
-}
-
-and l_exn = {
-  exn_desc : exn_desc;
-  exn_reason : string option;
-}
-
-and exn_desc =
-  | Fatal_error
-  | Name_error
-  | Runtime_error
-  | Standard_error
-  | Value_error
-  | User_error of user_error
-
 let rec to_string value =
   let open Printf in
   let values_to_string values open_tag close_tag sep =
@@ -83,12 +63,31 @@ let rec to_string value =
 
 module Context = struct
 
-  type t = context
+  type t = {
+    belong : Module.t option;
+    parent : t option;
+    callee : Ast.t option;
+  }
 
-  let create parent call =
-    { ctx_parent = parent; ctx_call = call }
+  let create ?(belong=None) ?(parent=None) ?(callee=None) () =
+    { belong; parent; callee }
 
 end
+
+type primitive = Context.t -> Env.t -> t list -> t
+
+and l_exn = {
+  exn_desc : exn_desc;
+  exn_reason : string option;
+}
+
+and exn_desc =
+  | Fatal_error
+  | Name_error
+  | Runtime_error
+  | Standard_error
+  | Value_error
+  | User_error of user_error
 
 module Exn = struct
 

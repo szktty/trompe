@@ -2,6 +2,7 @@ open Core.Std
 
 module Context = Value.Context
 module Env = Value.Env
+module Module = Value.Module
 module Exn = Value.Exn
 module Op = Value.Op
 
@@ -49,7 +50,7 @@ let rec eval ctx env node =
     let env = Env.add env def.fdef_name.desc value in
     let env = List.fold2_exn def.fdef_params args ~init:env
         ~f:(fun env param arg -> Env.add env param.desc arg) in
-    let ctx = Context.create (Some ctx) (Some def_node) in
+    let ctx = Context.create ~parent:(Some ctx) ~callee:(Some def_node) () in
     let (_, values) = eval_exps ctx env def.fdef_block in
     values
   in
@@ -298,7 +299,8 @@ and eval_ptn ctx env value ptn =
   | _ -> failwith "eval pattern not impl"
 
 let run node =
-  let ctx = Context.create None None in
+  let m = Module.create ~name:"_" () in
+  let ctx = Context.create ~belong:(Some m) () in
   let env = Env.create () in
   ignore @@ eval ctx env node
 

@@ -12,11 +12,14 @@ module type S = sig
 
   val create :
     ?parent:t option
-    -> ?subs:t list
+    -> ?submodules:t list
     -> ?imports: t list
+    -> ?env:env option
     -> name:string
-    -> env:env
+    -> unit
     -> t
+
+  val name : t -> string
 
   val root : t -> t option
 
@@ -50,7 +53,7 @@ module Make(E: Env.S) : S = struct
     parent : t option;
     name : string;
     mutable env : env;
-    mutable subs : t list;
+    mutable submodules : t list;
     mutable imports : t list;
   }
 
@@ -59,8 +62,14 @@ module Make(E: Env.S) : S = struct
   let define m =
     toplevel := m :: !toplevel
 
-  let create ?(parent=None) ?(subs=[]) ?(imports=[]) ~name ~env =
-    { parent; name; env; subs; imports }
+  let create ?(parent=None) ?(submodules=[]) ?(imports=[]) ?(env=None) ~name () =
+    let env = match env with
+      | Some env -> env
+      | None -> E.create ()
+    in
+    { parent; name; env; submodules; imports }
+
+  let name m = m.name
 
   let rec root m =
     match m.parent with
@@ -86,13 +95,13 @@ module Make(E: Env.S) : S = struct
         | Result.Ok sub -> find_module ~prefix:rest sub ~name
       end
     | [] ->
-      let from = List.append m.subs !toplevel in
+      let from = List.append m.submodules !toplevel in
       match List.find from ~f:(fun m -> m.name = name) with
       | None -> Result.Error (m, name)
       | Some m -> Result.Ok m
 
   let add_module m x =
-    m.subs <- x :: m.subs
+    m.submodules <- x :: m.submodules
 
   let rec find_attr m key =
     match E.find m.env key with
