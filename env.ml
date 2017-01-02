@@ -16,6 +16,8 @@ module type S = sig
 
   val add : t -> key:string -> data:data -> t
 
+  val merge : t -> data String.Map.t -> t
+
   val concat : t -> data String.Map.t
 
   val debug : t -> f:(data -> string) -> unit
@@ -24,14 +26,14 @@ end
 
 module Make(A : sig
     type t
-  end) : S = struct
-
-  type data = A.t
+  end) : S with type data = A.t = struct
 
   type t = {
     parent : t option;
     attrs : A.t String.Map.t;
   }
+
+  type data = A.t
 
   let create ?(parent=None) ?(attrs=[]) () =
     { parent = parent;
@@ -48,6 +50,14 @@ module Make(A : sig
 
   let add env ~key ~data =
     { env with attrs = String.Map.add env.attrs ~key ~data }
+
+  let merge env map =
+    { env with attrs = String.Map.merge env.attrs map
+                   ~f:(fun ~key owner ->
+                       match owner with
+                       | `Left v | `Right v -> Some v
+                       | `Both (_, v2) -> Some v2)
+    }
 
   let concat env =
     let rec f attrs accu =

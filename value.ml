@@ -17,7 +17,7 @@ type t = [
   | `Exn of user_error
 ]
 
-and _t = t
+and value = t
 
 and capture = t String.Map.t
 
@@ -28,7 +28,9 @@ and user_error = {
 }
 
 module Env = Env.Make(struct
-    type t = _t
+
+    type t = value
+
   end)
 
 module Module = Module.Make(Env)
@@ -54,7 +56,6 @@ and exn_desc =
   | User_error of user_error
 
 let rec to_string value =
-
   let open Printf in
   let values_to_string values open_tag close_tag sep =
     let buf = Buffer.create 16 in
