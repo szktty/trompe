@@ -16,7 +16,7 @@
 		91143BF61E5B5BD00082C907 /* ModuleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BF51E5B5BD00082C907 /* ModuleManager.swift */; };
 		91143BF81E5B5DC10082C907 /* Function.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BF71E5B5DC10082C907 /* Function.swift */; };
 		91143BFA1E5B5F830082C907 /* Primitive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BF91E5B5F830082C907 /* Primitive.swift */; };
-		91143BFC1E5B60820082C907 /* TypeInferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BFB1E5B60820082C907 /* TypeInferenceEngine.swift */; };
+		91143BFC1E5B60820082C907 /* TypingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BFB1E5B60820082C907 /* TypingEngine.swift */; };
 		91143BFE1E5B609E0082C907 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BFD1E5B609E0082C907 /* Lexer.swift */; };
 		91143C001E5B60AA0082C907 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BFF1E5B60AA0082C907 /* Parser.swift */; };
 		91ED9B001E5A06AA0032BAEA /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ED9AFF1E5A06AA0032BAEA /* main.swift */; };
@@ -48,7 +48,7 @@
 		91143BF51E5B5BD00082C907 /* ModuleManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ModuleManager.swift; sourceTree = "<group>"; };
 		91143BF71E5B5DC10082C907 /* Function.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Function.swift; sourceTree = "<group>"; };
 		91143BF91E5B5F830082C907 /* Primitive.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Primitive.swift; sourceTree = "<group>"; };
-		91143BFB1E5B60820082C907 /* TypeInferenceEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TypeInferenceEngine.swift; sourceTree = "<group>"; };
+		91143BFB1E5B60820082C907 /* TypingEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TypingEngine.swift; sourceTree = "<group>"; };
 		91143BFD1E5B609E0082C907 /* Lexer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
 		91143BFF1E5B60AA0082C907 /* Parser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		91ED9AFC1E5A06AA0032BAEA /* Trompe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Trompe; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -132,7 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				91143BEA1E5B58710082C907 /* Type.swift */,
-				91143BFB1E5B60820082C907 /* TypeInferenceEngine.swift */,
+				91143BFB1E5B60820082C907 /* TypingEngine.swift */,
 			);
 			path = Typing;
 			sourceTree = "<group>";
@@ -214,7 +214,7 @@
 				91143BEF1E5B59380082C907 /* NamePath.swift in Sources */,
 				91143BF61E5B5BD00082C907 /* ModuleManager.swift in Sources */,
 				91143BFE1E5B609E0082C907 /* Lexer.swift in Sources */,
-				91143BFC1E5B60820082C907 /* TypeInferenceEngine.swift in Sources */,
+				91143BFC1E5B60820082C907 /* TypingEngine.swift in Sources */,
 				91ED9B0A1E5A09330032BAEA /* Node.swift in Sources */,
 				91143BF41E5B5AE30082C907 /* Context.swift in Sources */,
 				91ED9B081E5A07530032BAEA /* Location.swift in Sources */,
