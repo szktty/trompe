@@ -2,12 +2,12 @@ import Foundation
 
 class Env<T> {
     
-    weak var parentEnv: Env<T>?
+    weak var parent: Env<T>?
     var attributes: [String: T] = [:]
-    var importedEnvs: [Env<T>] = []
+    var imports: [Env<T>] = []
     
-    init(parentEnv: Env<T>? = nil) {
-        self.parentEnv = parentEnv
+    required init(parent: Env<T>? = nil) {
+        self.parent = parent
     }
     
 }

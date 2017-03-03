@@ -22,7 +22,7 @@ struct TypeAnnot {
     
 }
 
-indirect enum Type: Comparable {
+indirect enum Type {
 
     case `var`(TypeVar)
     case app(const: TypeConst, args: [TypeAnnot])
@@ -31,11 +31,6 @@ indirect enum Type: Comparable {
     case alias(namePath: NamePath, annot: TypeAnnot)
  
     static var int: Type = Type.app(const: .int, args: [])
-    
-    static func < (lhs: Type, rhs: Type) -> Bool {
-        // TODO
-        return true
-    }
     
     static func == (lhs: Type, rhs: Type) -> Bool {
         // TODO

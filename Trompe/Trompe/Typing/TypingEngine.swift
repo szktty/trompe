@@ -6,6 +6,8 @@ enum TypeError: Error {
 
 class TypingEngine {
     
+    var moduleManager: TypeModuleManager = TypeModuleManager()
+
     func unify(expected: TypeAnnot, actual: TypeAnnot) throws {
         if expected.type == actual.type {
             return
