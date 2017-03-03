@@ -27,6 +27,11 @@
 		911F96831E69DBCB00ED8936 /* Value.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ED9B0D1E5A0A940032BAEA /* Value.swift */; };
 		911F96841E69DBCB00ED8936 /* Type.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BEA1E5B58710082C907 /* Type.swift */; };
 		911F96851E69DBCB00ED8936 /* TypingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91143BFB1E5B60820082C907 /* TypingEngine.swift */; };
+		911F968D1E69E08600ED8936 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911F968C1E69E08600ED8936 /* AppDelegate.swift */; };
+		911F968F1E69E08600ED8936 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911F968E1E69E08600ED8936 /* ViewController.swift */; };
+		911F96911E69E08600ED8936 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 911F96901E69E08600ED8936 /* Assets.xcassets */; };
+		911F96941E69E08600ED8936 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 911F96921E69E08600ED8936 /* Main.storyboard */; };
+		911F969F1E69E08600ED8936 /* TrompePlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911F969E1E69E08600ED8936 /* TrompePlaygroundTests.swift */; };
 		91ED9B001E5A06AA0032BAEA /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ED9AFF1E5A06AA0032BAEA /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +42,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 911F965D1E69DB7300ED8936;
 			remoteInfo = TrompeCore;
+		};
+		911F969B1E69E08600ED8936 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91ED9AF41E5A06AA0032BAEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 911F96891E69E08600ED8936;
+			remoteInfo = TrompePlayground;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -71,6 +83,15 @@
 		911F96661E69DB7300ED8936 /* TrompeCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrompeCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		911F966B1E69DB7300ED8936 /* TrompeCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrompeCoreTests.swift; sourceTree = "<group>"; };
 		911F966D1E69DB7300ED8936 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		911F968A1E69E08600ED8936 /* TrompePlayground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrompePlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		911F968C1E69E08600ED8936 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		911F968E1E69E08600ED8936 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		911F96901E69E08600ED8936 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		911F96931E69E08600ED8936 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		911F96951E69E08600ED8936 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		911F969A1E69E08600ED8936 /* TrompePlaygroundTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrompePlaygroundTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		911F969E1E69E08600ED8936 /* TrompePlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrompePlaygroundTests.swift; sourceTree = "<group>"; };
+		911F96A01E69E08600ED8936 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		91ED9AFC1E5A06AA0032BAEA /* Trompe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Trompe; sourceTree = BUILT_PRODUCTS_DIR; };
 		91ED9AFF1E5A06AA0032BAEA /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		91ED9B071E5A07530032BAEA /* Location.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
@@ -92,6 +113,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				911F96671E69DB7300ED8936 /* TrompeCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		911F96871E69E08600ED8936 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		911F96971E69E08600ED8936 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,12 +185,35 @@
 			path = TrompeCoreTests;
 			sourceTree = "<group>";
 		};
+		911F968B1E69E08600ED8936 /* TrompePlayground */ = {
+			isa = PBXGroup;
+			children = (
+				911F968C1E69E08600ED8936 /* AppDelegate.swift */,
+				911F968E1E69E08600ED8936 /* ViewController.swift */,
+				911F96901E69E08600ED8936 /* Assets.xcassets */,
+				911F96921E69E08600ED8936 /* Main.storyboard */,
+				911F96951E69E08600ED8936 /* Info.plist */,
+			);
+			path = TrompePlayground;
+			sourceTree = "<group>";
+		};
+		911F969D1E69E08600ED8936 /* TrompePlaygroundTests */ = {
+			isa = PBXGroup;
+			children = (
+				911F969E1E69E08600ED8936 /* TrompePlaygroundTests.swift */,
+				911F96A01E69E08600ED8936 /* Info.plist */,
+			);
+			path = TrompePlaygroundTests;
+			sourceTree = "<group>";
+		};
 		91ED9AF31E5A06AA0032BAEA = {
 			isa = PBXGroup;
 			children = (
 				91ED9AFE1E5A06AA0032BAEA /* Trompe */,
 				911F965F1E69DB7300ED8936 /* TrompeCore */,
 				911F966A1E69DB7300ED8936 /* TrompeCoreTests */,
+				911F968B1E69E08600ED8936 /* TrompePlayground */,
+				911F969D1E69E08600ED8936 /* TrompePlaygroundTests */,
 				91ED9AFD1E5A06AA0032BAEA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -166,6 +224,8 @@
 				91ED9AFC1E5A06AA0032BAEA /* Trompe */,
 				911F965E1E69DB7300ED8936 /* TrompeCore.framework */,
 				911F96661E69DB7300ED8936 /* TrompeCoreTests.xctest */,
+				911F968A1E69E08600ED8936 /* TrompePlayground.app */,
+				911F969A1E69E08600ED8936 /* TrompePlaygroundTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -263,6 +323,41 @@
 			productReference = 911F96661E69DB7300ED8936 /* TrompeCoreTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		911F96891E69E08600ED8936 /* TrompePlayground */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 911F96A51E69E08600ED8936 /* Build configuration list for PBXNativeTarget "TrompePlayground" */;
+			buildPhases = (
+				911F96861E69E08600ED8936 /* Sources */,
+				911F96871E69E08600ED8936 /* Frameworks */,
+				911F96881E69E08600ED8936 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TrompePlayground;
+			productName = TrompePlayground;
+			productReference = 911F968A1E69E08600ED8936 /* TrompePlayground.app */;
+			productType = "com.apple.product-type.application";
+		};
+		911F96991E69E08600ED8936 /* TrompePlaygroundTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 911F96A61E69E08600ED8936 /* Build configuration list for PBXNativeTarget "TrompePlaygroundTests" */;
+			buildPhases = (
+				911F96961E69E08600ED8936 /* Sources */,
+				911F96971E69E08600ED8936 /* Frameworks */,
+				911F96981E69E08600ED8936 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				911F969C1E69E08600ED8936 /* PBXTargetDependency */,
+			);
+			name = TrompePlaygroundTests;
+			productName = TrompePlaygroundTests;
+			productReference = 911F969A1E69E08600ED8936 /* TrompePlaygroundTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		91ED9AFB1E5A06AA0032BAEA /* Trompe */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 91ED9B031E5A06AA0032BAEA /* Build configuration list for PBXNativeTarget "Trompe" */;
@@ -297,6 +392,15 @@
 						CreatedOnToolsVersion = 8.2;
 						ProvisioningStyle = Automatic;
 					};
+					911F96891E69E08600ED8936 = {
+						CreatedOnToolsVersion = 8.2;
+						ProvisioningStyle = Automatic;
+					};
+					911F96991E69E08600ED8936 = {
+						CreatedOnToolsVersion = 8.2;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 911F96891E69E08600ED8936;
+					};
 					91ED9AFB1E5A06AA0032BAEA = {
 						CreatedOnToolsVersion = 8.2;
 						ProvisioningStyle = Automatic;
@@ -309,6 +413,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 91ED9AF31E5A06AA0032BAEA;
 			productRefGroup = 91ED9AFD1E5A06AA0032BAEA /* Products */;
@@ -318,6 +423,8 @@
 				91ED9AFB1E5A06AA0032BAEA /* Trompe */,
 				911F965D1E69DB7300ED8936 /* TrompeCore */,
 				911F96651E69DB7300ED8936 /* TrompeCoreTests */,
+				911F96891E69E08600ED8936 /* TrompePlayground */,
+				911F96991E69E08600ED8936 /* TrompePlaygroundTests */,
 			);
 		};
 /* End PBXProject section */
@@ -331,6 +438,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		911F96641E69DB7300ED8936 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		911F96881E69E08600ED8936 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				911F96911E69E08600ED8936 /* Assets.xcassets in Resources */,
+				911F96941E69E08600ED8936 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		911F96981E69E08600ED8936 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -371,6 +494,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		911F96861E69E08600ED8936 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				911F968F1E69E08600ED8936 /* ViewController.swift in Sources */,
+				911F968D1E69E08600ED8936 /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		911F96961E69E08600ED8936 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				911F969F1E69E08600ED8936 /* TrompePlaygroundTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		91ED9AF81E5A06AA0032BAEA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -387,7 +527,23 @@
 			target = 911F965D1E69DB7300ED8936 /* TrompeCore */;
 			targetProxy = 911F96681E69DB7300ED8936 /* PBXContainerItemProxy */;
 		};
+		911F969C1E69E08600ED8936 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 911F96891E69E08600ED8936 /* TrompePlayground */;
+			targetProxy = 911F969B1E69E08600ED8936 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		911F96921E69E08600ED8936 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				911F96931E69E08600ED8936 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		911F966F1E69DB7300ED8936 /* Debug */ = {
@@ -463,6 +619,66 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+		911F96A11E69E08600ED8936 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = TrompePlayground/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = a.TrompePlayground;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		911F96A21E69E08600ED8936 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = TrompePlayground/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = a.TrompePlayground;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+		911F96A31E69E08600ED8936 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = TrompePlaygroundTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = a.TrompePlaygroundTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 3.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrompePlayground.app/Contents/MacOS/TrompePlayground";
+			};
+			name = Debug;
+		};
+		911F96A41E69E08600ED8936 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = TrompePlaygroundTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = a.TrompePlaygroundTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 3.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrompePlayground.app/Contents/MacOS/TrompePlayground";
 			};
 			name = Release;
 		};
@@ -580,12 +796,30 @@
 				911F96701E69DB7300ED8936 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		911F96741E69DB7300ED8936 /* Build configuration list for PBXNativeTarget "TrompeCoreTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				911F96711E69DB7300ED8936 /* Debug */,
 				911F96721E69DB7300ED8936 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		911F96A51E69E08600ED8936 /* Build configuration list for PBXNativeTarget "TrompePlayground" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				911F96A11E69E08600ED8936 /* Debug */,
+				911F96A21E69E08600ED8936 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		911F96A61E69E08600ED8936 /* Build configuration list for PBXNativeTarget "TrompePlaygroundTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				911F96A31E69E08600ED8936 /* Debug */,
+				911F96A41E69E08600ED8936 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};
