@@ -34,7 +34,8 @@ setup.log
 *.conflicts
 
 # generated programs
-trompe
 
 # others
 .*.swp
+*.xcuserdatad
+*.xcworkspace
