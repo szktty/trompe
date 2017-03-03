@@ -149,8 +149,7 @@
 				91143BF51E5B5BD00082C907 /* ModuleManager.swift */,
 				91143BEE1E5B59380082C907 /* NamePath.swift */,
 			);
-			name = Base;
-			path = ../Trompe/Base;
+			path = Base;
 			sourceTree = "<group>";
 		};
 		91143C011E5B60D70082C907 /* Nodes */ = {
@@ -158,8 +157,7 @@
 			children = (
 				91ED9B091E5A09330032BAEA /* Node.swift */,
 			);
-			name = Nodes;
-			path = ../Trompe/Nodes;
+			path = Nodes;
 			sourceTree = "<group>";
 		};
 		911F965F1E69DB7300ED8936 /* TrompeCore */ = {
@@ -245,8 +243,7 @@
 				91ED9B071E5A07530032BAEA /* Location.swift */,
 				91143BFF1E5B60AA0082C907 /* Parser.swift */,
 			);
-			name = Parser;
-			path = ../Trompe/Parser;
+			path = Parser;
 			sourceTree = "<group>";
 		};
 		91ED9B0B1E5A0A650032BAEA /* Typing */ = {
@@ -255,8 +252,7 @@
 				91143BEA1E5B58710082C907 /* Type.swift */,
 				91143BFB1E5B60820082C907 /* TypingEngine.swift */,
 			);
-			name = Typing;
-			path = ../Trompe/Typing;
+			path = Typing;
 			sourceTree = "<group>";
 		};
 		91ED9B0C1E5A0A750032BAEA /* Runtime */ = {
@@ -269,8 +265,7 @@
 				91143BF91E5B5F830082C907 /* Primitive.swift */,
 				91ED9B0D1E5A0A940032BAEA /* Value.swift */,
 			);
-			name = Runtime;
-			path = ../Trompe/Runtime;
+			path = Runtime;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
