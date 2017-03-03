@@ -9,23 +9,6 @@ Current version is pre-pre-pre-alpha. See examples/ for more detail.
 
 Trompe is licensed under the Apache License, Version 2.0.
 
-## Requirements
-
-- OCaml 4.04+
-- OPAM 1.2.2
-- Core
-- OMake 0.9.8.6-0.rc1
-- Menhir
-
-## Installation
-
-Do at directory repository toplevel.
-
-```
-$ opam pin add omake 0.9.8.6-0.rc1
-$ opam pin add trompe .
-```
-
 ## Grammar
 
 ### Comments
@@ -140,18 +123,6 @@ end
 ```
 
 ### Type Annotations
-
-# TODO
-
-- Library
-- Partial application
-- Records
-- Variants
-- References and dereferences
-- Operator definition
-- Exception handling
-- Modules and traits
-- Tail call optimization
 
 ## Author
 
