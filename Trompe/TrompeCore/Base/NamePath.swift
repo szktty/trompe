@@ -2,11 +2,10 @@ import Foundation
 
 class NamePath {
     
-    var owner: [String] = []
-    var base: String
-    
-    init(base: String) {
-        self.base = base
+    var components: [String]
+
+    init(_ components: [String] = []) {
+        self.components = components
     }
     
 }

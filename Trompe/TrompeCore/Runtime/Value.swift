@@ -9,6 +9,7 @@ indirect enum Value {
     case string
     case list(Value)
     case tuple([Value])
+    case option(Value?)
     case reference(ValueHolder)
     case function(Function)
     case primitive(Primitive)
