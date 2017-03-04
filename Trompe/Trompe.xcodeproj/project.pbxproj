@@ -32,6 +32,7 @@
 		911F96911E69E08600ED8936 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 911F96901E69E08600ED8936 /* Assets.xcassets */; };
 		911F96941E69E08600ED8936 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 911F96921E69E08600ED8936 /* Main.storyboard */; };
 		911F969F1E69E08600ED8936 /* TrompePlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911F969E1E69E08600ED8936 /* TrompePlaygroundTests.swift */; };
+		9124CEF21E6A945F00BE4BCD /* ModuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9124CEF11E6A945F00BE4BCD /* ModuleTests.swift */; };
 		91ED9B001E5A06AA0032BAEA /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ED9AFF1E5A06AA0032BAEA /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -92,6 +93,7 @@
 		911F969A1E69E08600ED8936 /* TrompePlaygroundTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrompePlaygroundTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		911F969E1E69E08600ED8936 /* TrompePlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrompePlaygroundTests.swift; sourceTree = "<group>"; };
 		911F96A01E69E08600ED8936 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9124CEF11E6A945F00BE4BCD /* ModuleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ModuleTests.swift; sourceTree = "<group>"; };
 		91ED9AFC1E5A06AA0032BAEA /* Trompe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Trompe; sourceTree = BUILT_PRODUCTS_DIR; };
 		91ED9AFF1E5A06AA0032BAEA /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		91ED9B071E5A07530032BAEA /* Location.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 		911F966A1E69DB7300ED8936 /* TrompeCoreTests */ = {
 			isa = PBXGroup;
 			children = (
+				9124CEF11E6A945F00BE4BCD /* ModuleTests.swift */,
 				911F966B1E69DB7300ED8936 /* TrompeCoreTests.swift */,
 				911F966D1E69DB7300ED8936 /* Info.plist */,
 			);
@@ -486,6 +489,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				911F966C1E69DB7300ED8936 /* TrompeCoreTests.swift in Sources */,
+				9124CEF21E6A945F00BE4BCD /* ModuleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -809,6 +813,7 @@
 				911F96A21E69E08600ED8936 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		911F96A61E69E08600ED8936 /* Build configuration list for PBXNativeTarget "TrompePlaygroundTests" */ = {
 			isa = XCConfigurationList;
@@ -817,6 +822,7 @@
 				911F96A41E69E08600ED8936 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		91ED9AF71E5A06AA0032BAEA /* Build configuration list for PBXProject "Trompe" */ = {
 			isa = XCConfigurationList;

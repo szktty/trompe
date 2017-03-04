@@ -1,21 +1,29 @@
 import Foundation
 
-class Module<T> {
+class Module<T>: Equatable {
+    
+    static func == (lhs: Module<T>, rhs: Module<T>) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
     
     weak var parent: Module<T>?
     var name: String?
-    var env: Env<T>
+    var env: Env<T> = Env()
     var submodules: [Module<T>] = []
     var imports: [Module<T>] = []
     
-    init(parent: Module<T>? = nil, name: String? = nil) {
-        self.parent = parent
+    var isRoot: Bool {
+        get { return parent == nil }
+    }
+    
+    init(name: String? = nil) {
         self.name = name
-        if let parent = parent {
-            env = Env(parent: parent.env)
-        } else {
-            env = Env()
-        }
+    }
+    
+    func add(module: Module<T>) {
+        module.parent = self
+        module.env.parent = env
+        submodules.append(module)
     }
     
     func find(name: String) -> Module<T>? {
