@@ -1,7 +1,7 @@
 import Foundation
 
 // type annotation
-struct TypeAnnot {
+class TypeAnnot {
     
     var location: Location?
     var type: Type
@@ -11,6 +11,7 @@ struct TypeAnnot {
         self.type = type
     }
     
+    static var bool: TypeAnnot = TypeAnnot(type: Type.bool)
     static var int: TypeAnnot = TypeAnnot(type: Type.int)
     
     static func alias(location: Location? = nil,
@@ -22,7 +23,7 @@ struct TypeAnnot {
     
 }
 
-indirect enum Type {
+indirect enum Type: Equatable {
 
     case `var`(TypeVar)
     case app(const: TypeConst, args: [TypeAnnot])
@@ -30,6 +31,7 @@ indirect enum Type {
     case meta(MetaType)
     case alias(namePath: NamePath, annot: TypeAnnot)
  
+    static var bool: Type = Type.app(const: .bool, args: [])
     static var int: Type = Type.app(const: .int, args: [])
     
     static func == (lhs: Type, rhs: Type) -> Bool {
@@ -43,7 +45,7 @@ class TypeVar {
     
 }
 
-enum TypeConst {
+enum TypeConst: Equatable {
 
     case unit
     case bool
@@ -52,9 +54,30 @@ enum TypeConst {
     case string
     case list(Type)
     case tuple([Type])
+    case option(Type)
     case ref(Type)
     case fun(args: [Type], `return`: Type)
     case exn(ExnType)
+    
+    static func == (lhs: TypeConst, rhs: TypeConst) -> Bool {
+        switch (lhs, rhs) {
+        case (.unit, .unit),
+             (.bool, .bool),
+             (.int, .int),
+             (.float, .float),
+             (.string, .string):
+            return true
+        case (.list(let a), .list(let b)),
+             (.option(let a), .option(let b)),
+             (.ref(let a), .ref(let b)):
+            return a == b
+        case (.tuple(let a), .tuple(let b)):
+            return a == b
+        default:
+            // TODO
+            return false
+        }
+    }
     
 }
 
