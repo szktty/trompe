@@ -29,15 +29,15 @@ class ModuleTests: XCTestCase {
     }
 
     func testParent() {
-        XCTAssert(m_a.parent == nil)
-        XCTAssert(m_b.parent == m_a!)
-        XCTAssert(m_c.parent == m_b!)
+        XCTAssertEqual(m_a.parent, nil)
+        XCTAssertEqual(m_b.parent, m_a!)
+        XCTAssertEqual(m_c.parent, m_b!)
     }
 
     func testFind() {
-        XCTAssert(m_a.find(name: "B") == m_b)
-        XCTAssert(m_b.find(name: "C") == m_c)
-        XCTAssert(m_a.find(name: "Z") == nil)
+        XCTAssertEqual(m_a.find(name: "B"), m_b)
+        XCTAssertEqual(m_b.find(name: "C"), m_c)
+        XCTAssertEqual(m_a.find(name: "Z"), nil)
     }
     
     func testPerformanceExample() {
