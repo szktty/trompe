@@ -17,32 +17,30 @@ exception Unify_error of unity_exn
 exception Type_mismatch of mismatch
 exception Deref_error of Type.t * string
 
-let top_modules : Type.module_ String.Map.t ref = ref String.Map.empty
-
-let register (m:Type.module_) =
-  top_modules := String.Map.add !top_modules ~key:m.name ~data:m
-
-let find_module name =
-  String.Map.find !top_modules name
-
 (* for pretty printing (and type normalization) *)
 (* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
 let rec deref_type env (ty:Type.t) : Type.t =
   let create = Located.create ty.loc in
   match ty.desc with
+  | `App (tycon, args) ->
+    create @@ `App (tycon, List.map args ~f:(deref_type env))
+  | `Meta { contents = None } ->
+    failwith "uninstantiated"
+  | `Meta ({ contents = Some ty } as ref) ->
+    let ty' = deref_type env ty in
+    ref := Some ty';
+    ty'
+  | `Poly (metavars, ty) ->
+    create @@ `Poly (metavars, deref_type env ty)
+  | `Var _ -> ty
+
+and deref_tycon env = function
       (*
   | `Fun(t1s, t2) -> `Fun(List.map deref_typ t1s, deref_typ t2)
   | `Tuple(ts) -> `Tuple(List.map deref_typ ts)
   | `Array(t) -> `Array(deref_typ t)
        *)
-  | `List ty -> create @@ `List (deref_type env ty)
-  | `Var ({ contents = None } as ref) ->
-    create @@ Type.Env.instantiate env ref
-  | `Var ({ contents = Some ty } as ref) ->
-    let ty' = deref_type env ty in
-    ref := Some ty';
-    ty'
-  | _ -> ty
+  | tycon -> tycon
 
 let rec deref_id_type x ty = (x, deref_type ty)
 
@@ -107,43 +105,41 @@ let rec deref_term env (e:Ast.t) : Ast.t =
 
 let rec occur (ref:t option ref) (ty:Type.t) : bool =
   match ty.desc with
-  | `Fun (params, ret) ->
-    List.exists params ~f:(occur ref) || occur ref ret
-  | `List ty -> occur ref ty
-  (*| `Tuple tys -> List.exists tys ~f:(occur ref) *)
-  | `Var ref2 when phys_equal ref ref2 -> true
-  | `Var { contents = None } -> false
-  | `Var { contents = Some t2 } -> occur ref t2
-  | _ -> false
+  | `App (tycon, args) ->
+    begin match occur_tycon ref tycon with
+      | false -> false
+      | true -> List.exists args ~f:(occur ref)
+    end
+  | `Meta ref2 when phys_equal ref ref2 -> true
+  | `Meta { contents = None } -> false
+  | `Meta { contents = Some t2 } -> occur ref t2
+  | _ -> failwith "not impl"
+
+and occur_tycon ref = function
+  | `List | `Fun -> true
+  | `Tyfun (_, ty) -> occur ref ty
+  | _ -> failwith "not impl"
 
 (* 型が合うように、型変数への代入をする (caml2html: typing_unify) *)
 let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
   match ex.desc, ac.desc with
-  | `Unit, `Unit
-  | `Bool, `Bool
-  | `Int, `Int
-  | `Float, `Float
-  | `String, `String -> ()
-  | `List ex, `List ac -> unify ~ex ~ac
-  | `Tuple ty1s, `Tuple ty2s when List.length ty1s = List.length ty2s ->
-    List.iter2_exn ty1s ty2s ~f:(fun ty1 ty2 -> unify ~ex:ty1 ~ac:ty2)
-  | `Fun (param1s, ret1), `Fun (param2s, ret2)
-    when List.length param1s = List.length param2s ->
-    List.iter2_exn param1s param2s
-      ~f:(fun param1 param2 -> unify ~ex:param1 ~ac:param2);
-    unify ~ex:ret1 ~ac:ret2
+  | `App (`Unit, []), `App (`Unit, [])
+  | `App (`Bool, []), `App (`Bool, [])
+  | `App (`Int, []), `App (`Int, [])
+  | `App (`Float, []), `App (`Float, [])
+  | `App (`String, []), `App (`String, [])
+  | `App (`Range, []), `App (`Range, []) -> ()
 
-      (*
-  | `Fun(t1s, t1'), `Fun(t2s, t2') ->
-    (try List.iter2 unify t1s t2s
-     with Invalid_argument("List.iter2") -> raise (Unify_error(t1, t2)));
-    unify t1' t2'
-  | `Tuple(t1s), `Tuple(t2s) ->
-    (try List.iter2 unify t1s t2s
-     with Invalid_argument("List.iter2") -> raise (Unify_error(t1, t2)))
-  | `Array(t1), `Array(t2) -> unify t1 t2
-       *)
-  | `Var ex, `Var ac when phys_equal ex ac -> ()
+  | `App (`List, [ex]), `App (`List, [ac])
+  | `App (`Option, [ex]), `App (`Option, [ac]) -> unify ~ex ~ac
+
+  | `App (`Tuple, exs), `App (`Tuple, acs)
+  | `App (`Fun, exs), `App (`Fun, acs)
+    when List.length exs = List.length acs ->
+    List.iter2_exn exs acs ~f:(fun ex ac -> unify ~ex ~ac)
+
+  | `Meta ex, `Meta ac when phys_equal ex ac ->
+    ()
                                         (*
   | `Var({ contents = Some(t1') }), _ -> unify t1' t2
   | _, `Var({ contents = Some(t2') }) -> unify t1 t2'
@@ -158,18 +154,18 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
 
 (* 型推論ルーチン (caml2html: typing_g) *)
-let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
+let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
-  let unit = Located.create e.loc `Unit in
+  let unit = Type.(create e.loc desc_unit) in
   let easy_infer env e = snd @@ infer env e in
   let infer_block env es =
-    List.fold_left es ~init:(env, Type.create e.loc `Unit)
+    List.fold_left es ~init:(env, unit)
       ~f:(fun (env, _) e -> infer env e)
   in
   try
-    let env, ty = match e.desc with
-      | `Nop -> (env, `Unit)
+    let env, desc = match e.desc with
+      | `Nop -> (env, desc_unit)
 
       | `Chunk es -> 
         let env, ty = List.fold_left es
@@ -180,37 +176,36 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
 
       | `Return e -> (env, (easy_infer env e).desc)
 
-      | `Unit -> (env, `Unit)
-      | `Bool _ -> (env, `Bool)
-      | `Int _ -> (env, `Int)
-      | `Float _ -> (env, `Float)
-      | `String _ -> (env, `String)
-      | `Range _ -> (env, `Range)
+      | `Unit -> (env, desc_unit)
+      | `Bool _ -> (env, desc_bool)
+      | `Int _ -> (env, desc_int)
+      | `Float _ -> (env, desc_float)
+      | `String _ -> (env, desc_string)
+      | `Range _ -> (env, desc_range)
 
       | `List es ->
         begin match es with
-          | [] -> (env, `List (Type.create_tyvar e.loc))
+          | [] -> (env, desc_list @@ create_metavar e.loc)
           | e :: es ->
             let base_ty = easy_infer env e in
             List.iter es ~f:(fun e ->
                 unify ~ex:base_ty ~ac:(easy_infer env e));
-            (env, `List base_ty)
+            (env, desc_list @@ base_ty)
         end
 
       | `Tuple es ->
-        (env, `Tuple (List.map es ~f:(easy_infer env)))
+        (env, desc_tuple (List.map es ~f:(easy_infer env)))
 
       | `Fundef fdef ->
         let params = List.map fdef.fdef_params
-            ~f:(fun param -> Type.create_tyvar param.loc)
+            ~f:(fun param -> Type.create_metavar param.loc)
         in
-        let ret = Type.create_tyvar e.loc in
-        let ty_desc = `Fun (params, ret) in
-        let ty = Type.create e.loc ty_desc in
-        let env = String.Map.add env ~key:fdef.fdef_name.desc ~data:ty in
+        let ret = Type.create_metavar e.loc in
+        let desc = desc_fun params ret in
+        let ty = Type.create e.loc desc in
+        let env = Type.Env.add env fdef.fdef_name.desc ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty ->
-                String.Map.add env ~key:name.desc ~data:ty)
+            ~f:(fun env name ty -> Type.Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with
@@ -218,13 +213,13 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
           | `Var ({ contents = None } as ref) -> ref := Some ret'
           | _ -> failwith "return type must be type variable"
         end;
-        (env, ty_desc)
+        (env, desc)
 
       | `Funcall call ->
         let ex_fun = easy_infer env call.fc_fun in
         let args = List.map call.fc_args ~f:(easy_infer env) in
-        let ret = Type.create_tyvar e.loc in
-        let ac_fun = Type.create e.loc (`Fun (args, ret)) in
+        let ret = Type.create_metavar e.loc in
+        let ac_fun = Type.create e.loc (desc_fun args ret) in
         unify ~ex:ex_fun ~ac:ac_fun;
         (env, ex_fun.desc)
 
@@ -298,7 +293,7 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
        *)
       | _ -> Ast.print e; failwith "TODO"
     in
-    let ty = Located.create e.loc ty in
+    let ty = Type.create e.loc desc in
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
     (env, ty)
   with
@@ -310,5 +305,5 @@ let rec infer env (e:Ast.t) : (Type.t String.Map.t * Type.t) =
     }
 
 let run (e:Ast.t) : Ast.t =
-  ignore @@ infer String.Map.empty e;
+  ignore @@ infer (Type.Env.create ()) e;
   deref_term (Type.Env.create ()) e

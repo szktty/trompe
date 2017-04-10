@@ -1,7 +1,7 @@
 open Core.Std
 
 type t = [
-  | `Module of module_
+  | `Module of string
   | `Unit
   | `Bool of bool
   | `String of string
@@ -10,32 +10,16 @@ type t = [
   | `Range of (int * int)
   | `List of t list
   | `Tuple of t list
-  | `Fun of (Ast.fundef * env)
+  | `Fun of (Ast.fundef * capture)
   | `Prim of string
   | `Ref of t ref
   | `Enum of (string, t) Ast.enum
   | `Exn of user_error
 ]
 
-and primitive = context -> env -> t list -> t
+and value = t
 
-and context = {
-  ctx_parent : context option;
-  ctx_call : Ast.t option;
-}
-
-and l_exn = {
-  exn_desc : exn_desc;
-  exn_reason : string option;
-}
-
-and exn_desc =
-  | Fatal_error
-  | Name_error
-  | Runtime_error
-  | Standard_error
-  | Value_error
-  | User_error of user_error
+and capture = t String.Map.t
 
 and user_error = {
   user_error_name : string;
@@ -43,17 +27,18 @@ and user_error = {
   user_error_reason : string option;
 }
 
-and module_ = t Module.t
+module Env = Env.Make(struct
 
-and env = t Env.t
+    type data = t
 
-let top_modules : module_ list ref = ref []
+  end)
 
-let register m =
-  top_modules := m :: !top_modules
+module Module = Module.Make(struct
+    module Env = Env
+    type primitive = t list -> t
+  end)
 
 let rec to_string value =
-
   let open Printf in
   let values_to_string values open_tag close_tag sep =
     let buf = Buffer.create 16 in
@@ -81,12 +66,29 @@ let rec to_string value =
 
 module Context = struct
 
-  type t = context
+  type t = {
+    belong : Module.t option;
+    parent : t option;
+    callee : Ast.t option;
+  }
 
-  let create parent call =
-    { ctx_parent = parent; ctx_call = call }
+  let create ?(belong=None) ?(parent=None) ?(callee=None) () =
+    { belong; parent; callee }
 
 end
+
+type l_exn = {
+  exn_desc : exn_desc;
+  exn_reason : string option;
+}
+
+and exn_desc =
+  | Fatal_error
+  | Name_error
+  | Runtime_error
+  | Standard_error
+  | Value_error
+  | User_error of user_error
 
 module Exn = struct
 
