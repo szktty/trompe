@@ -209,9 +209,9 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with
-          | `Var { contents = Some ret } -> unify ~ex:ret ~ac:ret'
-          | `Var ({ contents = None } as ref) -> ref := Some ret'
-          | _ -> failwith "return type must be type variable"
+          | `Meta { contents = Some ret } -> unify ~ex:ret ~ac:ret'
+          | `Meta ({ contents = None } as ref) -> ref := Some ret'
+          | _ -> failwith "return type must be meta variable"
         end;
         (env, desc)
 
