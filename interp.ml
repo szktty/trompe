@@ -162,7 +162,7 @@ let rec eval ctx env node =
       | `Prim name ->
         begin match Module.find_primitive name with
           | None -> failwith ("unknown primitive: " ^ name)
-          | Some f -> (env, f ctx env args)
+          | Some f -> (env, f args)
         end
       | `Fun (def, capture) ->
         validate_nargs (List.length def.fdef_params) (List.length args);
@@ -198,7 +198,7 @@ let rec eval ctx env node =
           | `String s -> s
           | v -> failwith ("primitive name must be string: " ^ (Value.to_string v))
         in
-        let f = match Primitive.find prim with
+        let f = match Module.find_primitive prim with
           | None -> failwith ("unknown primitive: " ^ prim)
           | Some f -> f
         in
@@ -206,7 +206,7 @@ let rec eval ctx env node =
           | None -> []
           | Some args -> args
         in
-        (env, f ctx env fargs)
+        (env, f fargs)
       | _ -> failwith ("unknown directive: " ^ name.desc)
     end;
 
@@ -325,7 +325,7 @@ module Primitive = struct
     | `Int value, `Int -> arg
     | _ -> failwith "type error"
 
-  let parse ctx args types =
+  let parse args types =
     if List.length args <> List.length types then begin
       List.map2_exn args types ~f:check_arg
     end else

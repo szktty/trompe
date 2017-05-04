@@ -1,7 +1,7 @@
 open Core.Std
 open Value
 
-let prim_show ctx env args =
+let prim_show args =
   match List.hd args with
   | None -> failwith "must be an argument"
   | Some arg ->
@@ -9,11 +9,10 @@ let prim_show ctx env args =
     `Unit
 
 let install () =
-  Primitive.register [
+  let primitives = [
     ("show", prim_show);
-  ];
-  let env = Env.create ~attrs:[
-      ("show", `Prim "show");
-    ] ()
+  ]
   in
-  Interp.register @@ Module.create "Kernel" env
+  List.iter primitives
+    ~f:(fun (name, primitive) -> Module.add_primitive ~name ~primitive);
+  Module.define @@ Module.create ~name:"Kernel" ()
