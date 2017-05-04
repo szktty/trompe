@@ -17,32 +17,48 @@ exception Unify_error of unity_exn
 exception Type_mismatch of mismatch
 exception Deref_error of Type.t * string
 
-(* for pretty printing (and type normalization) *)
-(* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
-let rec deref_type env (ty:Type.t) : Type.t =
-  let create = Located.create ty.loc in
-  match ty.desc with
-  | `App (tycon, args) ->
-    create @@ `App (tycon, List.map args ~f:(deref_type env))
-  | `Meta { contents = None } ->
-    failwith "uninstantiated"
-  | `Meta ({ contents = Some ty } as ref) ->
-    let ty' = deref_type env ty in
-    ref := Some ty';
-    ty'
-  | `Poly (metavars, ty) ->
-    create @@ `Poly (metavars, deref_type env ty)
-  | `Var _ -> ty
+let tyvar_names = [|
+  "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n";
+  "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z"
+|]
 
-and deref_tycon env = function
-      (*
-  | `Fun(t1s, t2) -> `Fun(List.map deref_typ t1s, deref_typ t2)
-  | `Tuple(ts) -> `Tuple(List.map deref_typ ts)
-  | `Array(t) -> `Array(deref_typ t)
-       *)
-  | tycon -> tycon
+(* TODO: generalize tycon *)
+let rec generalize (ty:Type.t) : Type.t =
+  let tyvars : (metavar * tyvar) list ref = ref [] in
 
-let rec deref_id_type x ty = (x, deref_type ty)
+  let new_tyvar () =
+    Array.get tyvar_names @@ List.length !tyvars
+  in
+
+  let rec walk ty =
+    let gen = match ty.desc with
+      | `App (tycon, args) ->
+        let gen_tycon = match tycon with
+          | `Tyfun (tyvars, ty) -> `Tyfun (tyvars, generalize ty)
+          | tycon -> tycon
+        in
+        `App (gen_tycon, List.map args ~f:walk)
+      | `Var tyvar -> `Var tyvar
+      | `Meta ({ contents = None } as ref) ->
+        let tyvar = match List.Assoc.find !tyvars ref with
+          | Some tyvar -> tyvar
+          | None ->
+            let tyvar = new_tyvar () in
+            tyvars := (ref, tyvar) :: !tyvars;
+            tyvar
+        in
+        `Var tyvar
+      | `Meta ({ contents = Some ty }) -> ty.desc
+      | `Poly (tyvars, ty) -> `Poly (tyvars, walk ty)
+    in
+    Located.create ty.loc gen
+  in
+
+  let gen = walk ty in
+  let tyvars = List.rev_map !tyvars ~f:(fun (_, tyvar) -> tyvar) in
+  Located.create ty.loc @@ `Poly (tyvars, gen)
+
+let rec deref_id_type x ty = (x, generalize ty)
 
 let rec deref_term env (e:Ast.t) : Ast.t =
   let map = List.map ~f:(deref_term env) in
@@ -67,7 +83,7 @@ let rec deref_term env (e:Ast.t) : Ast.t =
 
     | `Var path ->
       begin match path.np_prefix with
-        | None -> `Var { path with np_type = deref_type env path.np_type }
+        | None -> `Var { path with np_type = generalize path.np_type }
         | Some _ -> failwith "not yet supported"
       end
 
@@ -300,8 +316,8 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
   | Unify_error { uniexn_ex = ex; uniexn_ac = ac } ->
     raise @@ Type_mismatch {
       mismatch_node = deref_term (Type.Env.create ()) e;
-      mismatch_ex = deref_type (Type.Env.create ()) ex;
-      mismatch_ac = deref_type (Type.Env.create ()) ac;
+      mismatch_ex = generalize ex;
+      mismatch_ac = generalize ac;
     }
 
 let run (e:Ast.t) : Ast.t =
