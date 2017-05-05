@@ -85,6 +85,9 @@ let rec deref_term env (e:Ast.t) : Ast.t =
       `Funcall { fc_fun = deref_term env call.fc_fun;
                  fc_args = map call.fc_args }
 
+    | `Binexp (e1, op, e2) ->
+      `Binexp (deref_term env e1, op, deref_term env e2)
+
     | `List es -> `List (map es)
     | `Tuple es -> `Tuple (map es)
       (*
@@ -136,6 +139,7 @@ and occur_tycon ref = function
 
 (* 型が合うように、型変数への代入をする (caml2html: typing_unify) *)
 let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
+  Printf.printf "unify %s and %s\n" (Type.to_string ex) (Type.to_string ac);
   match ex.desc, ac.desc with
   | `App (`Unit, []), `App (`Unit, [])
   | `App (`Bool, []), `App (`Bool, [])
@@ -152,8 +156,12 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     when List.length exs = List.length acs ->
     List.iter2_exn exs acs ~f:(fun ex ac -> unify ~ex ~ac)
 
-  | `Meta ex, `Meta ac when phys_equal ex ac ->
-    ()
+  | `Meta ex, `Meta ac when phys_equal ex ac -> ()
+  | `Meta ({ contents = None } as ref), _ -> ref := Some ac
+  | _, `Meta ({ contents = None } as ref) -> ref := Some ex
+  | `Meta { contents = Some ex }, _ -> unify ~ex ~ac
+  | _, `Meta { contents = Some ac } -> unify ~ex ~ac
+
                                         (*
   | `Var({ contents = Some(t1') }), _ -> unify t1' t2
   | _, `Var({ contents = Some(t2') }) -> unify t1 t2'
@@ -246,16 +254,24 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
             | None -> failwith ("variable is not found: " ^ name)
             | Some ty -> (env, ty.desc)
         end
+
+      | `Binexp (e1, op, e2) ->
+        let ty = match op.desc with
+          | `Eq | `Ne | `Lt | `Le | `Gt | `Ge -> infer_ty env e1
+          | `And | `Or -> Type.bool
+          | `Add | `Sub | `Mul | `Div | `Pow | `Mod | `Lcomp | `Rcomp -> Type.int
+          | _ -> failwith "not yet supported"
+        in
+        unify ty (infer_ty env e1);
+        unify ty (infer_ty env e2);
+        (env, ty.desc)
+
                 (*
     | Not(e) ->
       unify `Bool (infer env e);
       `Bool
     | Neg(e) ->
       unify `Int (infer env e);
-      `Int
-    | Add(e1, e2) | Sub(e1, e2) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
-      unify `Int (infer env e1);
-      unify `Int (infer env e2);
       `Int
     | FNeg(e) ->
       unify `Float (infer env e);
@@ -321,6 +337,9 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
       mismatch_ex = generalize ex;
       mismatch_ac = generalize ac;
     }
+
+and infer_ty env e =
+  snd @@ infer env e
 
 let run (e:Ast.t) : Ast.t =
   ignore @@ infer (Type.Env.create ()) e;

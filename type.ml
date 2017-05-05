@@ -51,19 +51,6 @@ let var_names = [|
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z";
 |]
 
-let app ?(args=[]) tycon = `App (tycon, args)
-let desc_unit = app `Unit
-let desc_bool = app `Bool
-let desc_int = app `Int
-let desc_float = app `Float
-let desc_string = app `String
-let desc_range = app `Range
-let desc_list e = app ~args:[e] `List
-let desc_tuple es = app ~args:es `Tuple
-let desc_option e = app ~args:[e] `Option
-let desc_fun params ret =
-  app ~args:(List.append params [ret]) `Fun
-
 let rec to_string (ty:t) =
   match ty.desc with
   | `App (tycon, args) ->
@@ -90,6 +77,29 @@ let rec to_string (ty:t) =
   | `Var name -> "Var(" ^ name ^ ")"
   | `Poly (tyvars, ty) ->
     "Poly([" ^ (String.concat tyvars ~sep:", ") ^ "], " ^ to_string ty ^ ")"
+
+let app ?(args=[]) tycon = `App (tycon, args)
+let desc_unit = app `Unit
+let desc_bool = app `Bool
+let desc_int = app `Int
+let desc_float = app `Float
+let desc_string = app `String
+let desc_range = app `Range
+let desc_list e = app ~args:[e] `List
+let desc_tuple es = app ~args:es `Tuple
+let desc_option e = app ~args:[e] `Option
+let desc_fun params ret =
+  app ~args:(List.append params [ret]) `Fun
+
+let unit = Located.less desc_unit
+let bool = Located.less desc_bool
+let int = Located.less desc_int
+let float = Located.less desc_float
+let string = Located.less desc_string
+let range = Located.less desc_range
+let list e = Located.less @@ desc_list e
+let tuple es = Located.less @@ desc_tuple es
+let option e = Located.less @@ desc_option e
 
 module Spec = struct
 
