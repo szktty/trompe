@@ -80,8 +80,12 @@ let rec to_string (ty:t) =
       | `Option -> "Option"
       | _ -> failwith "not impl"
     in
-    "App(" ^ tycon_s ^ ")"
-  | `Meta { contents = None } -> "Meta(_)"
+    let args_s =
+      List.map args ~f:to_string
+      |> String.concat ~sep:", "
+    in
+    Printf.sprintf "App(%s, [%s])" tycon_s args_s
+  | `Meta { contents = None } -> "Meta(?)"
   | `Meta { contents = Some ty } -> "Meta(" ^ to_string ty ^ ")"
   | `Var name -> "Var(" ^ name ^ ")"
   | `Poly (tyvars, ty) ->
