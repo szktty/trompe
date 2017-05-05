@@ -22,7 +22,6 @@ let tyvar_names = [|
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z"
 |]
 
-(* TODO: generalize tycon *)
 let rec generalize (ty:Type.t) : Type.t =
   let tyvars : (metavar * tyvar) list ref = ref [] in
 
@@ -40,7 +39,7 @@ let rec generalize (ty:Type.t) : Type.t =
         `App (gen_tycon, List.map args ~f:walk)
       | `Var tyvar -> `Var tyvar
       | `Meta ({ contents = None } as ref) ->
-        let tyvar = match List.Assoc.find !tyvars ref with
+        let tyvar = match List.Assoc.find !tyvars ref ~equal:phys_equal with
           | Some tyvar -> tyvar
           | None ->
             let tyvar = new_tyvar () in
@@ -48,15 +47,19 @@ let rec generalize (ty:Type.t) : Type.t =
             tyvar
         in
         `Var tyvar
-      | `Meta ({ contents = Some ty }) -> ty.desc
+      | `Meta ({ contents = Some ty }) -> (walk ty).desc
       | `Poly (tyvars, ty) -> `Poly (tyvars, walk ty)
     in
     Located.create ty.loc gen
   in
 
   let gen = walk ty in
-  let tyvars = List.rev_map !tyvars ~f:(fun (_, tyvar) -> tyvar) in
-  Located.create ty.loc @@ `Poly (tyvars, gen)
+  if List.length !tyvars = 0 then
+    gen
+  else begin
+    let tyvars = List.rev_map !tyvars ~f:(fun (_, tyvar) -> tyvar) in
+    Located.create ty.loc @@ `Poly (tyvars, gen)
+  end
 
 let rec deref_id_type x ty = (x, generalize ty)
 
@@ -309,7 +312,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
        *)
       | _ -> Ast.print e; failwith "TODO"
     in
-    let ty = Type.create e.loc desc in
+    let ty = Type.create e.loc desc |> generalize in
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
     (env, ty)
   with
