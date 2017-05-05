@@ -72,7 +72,8 @@ let rec deref_term env (e:Ast.t) : Ast.t =
     | `String _
     | `Int _
     | `Float _
-    | `Range _ -> e.desc
+    | `Range _
+    | `Var _ -> e.desc
 
     | `Chunk es -> `Chunk (map es)
     | `Return e -> `Return (deref_term env e)
@@ -83,12 +84,6 @@ let rec deref_term env (e:Ast.t) : Ast.t =
     | `Funcall call ->
       `Funcall { fc_fun = deref_term env call.fc_fun;
                  fc_args = map call.fc_args }
-
-    | `Var path ->
-      begin match path.np_prefix with
-        | None -> `Var { path with np_type = generalize path.np_type }
-        | Some _ -> failwith "not yet supported"
-      end
 
     | `List es -> `List (map es)
     | `Tuple es -> `Tuple (map es)
@@ -224,7 +219,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
         let ty = Type.create e.loc desc in
         let env = Type.Env.add env fdef.fdef_name.desc ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty -> Type.Env.add env name.desc ty)
+            ~f:(fun env name ty -> Printf.printf "fenv add %s\n" name.desc;Type.Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with
@@ -232,7 +227,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
           | `Meta ({ contents = None } as ref) -> ref := Some ret'
           | _ -> failwith "return type must be meta variable"
         end;
-        (env, desc)
+        (env, (generalize @@ Located.create ty.loc desc).desc)
 
       | `Funcall call ->
         let ex_fun = easy_infer env call.fc_fun in
@@ -245,7 +240,11 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
       | `Var path ->
         begin match Ast.(path.np_prefix) with
           | Some _ -> failwith "not yet supported"
-          | None -> (env, path.np_type.desc) (* TODO: ·¿´Ä¶­¤«¤é¸¡º÷¤¹¤ë *)
+          | None ->
+            let name = path.np_name.desc in
+            match Type.Env.find env name with
+            | None -> failwith ("variable is not found: " ^ name)
+            | Some ty -> (env, ty.desc)
         end
                 (*
     | Not(e) ->
@@ -312,7 +311,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
        *)
       | _ -> Ast.print e; failwith "TODO"
     in
-    let ty = Type.create e.loc desc |> generalize in
+    let ty = Type.create e.loc desc in
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
     (env, ty)
   with

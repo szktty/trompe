@@ -72,7 +72,6 @@ and fundef = {
 and namepath = {
   np_prefix : t option;
   np_name : text;
-  np_type : Type.t;
 }
 
 and if_ = {

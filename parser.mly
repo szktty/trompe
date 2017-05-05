@@ -310,27 +310,23 @@ var:
   {
     create $1.loc @@ `Var {
         np_prefix = None;
-        np_name = $1;
-        np_type = Type.create_metavar $1.loc }
+        np_name = $1; }
   }
   | UIDENT
   {
     create $1.loc @@ `Path {
         np_prefix = None;
-        np_name = $1;
-        np_type = Type.create_metavar $1.loc }
+        np_name = $1; }
   }
   | prefix_exp DOT LIDENT
   { less @@ `Var {
         np_prefix = Some $1;
-        np_name = $3;
-        np_type = Type.create_metavar $3.loc }
+        np_name = $3; }
   }
   | prefix_exp DOT UIDENT
   { less @@ `Path {
         np_prefix = Some $1;
-        np_name = $3;
-        np_type = Type.create_metavar $3.loc }
+        np_name = $3; }
   }
   | prefix_exp LBRACK exp RBRACK
   { less @@ `Index { idx_prefix = $1; idx_index = $3 } }
