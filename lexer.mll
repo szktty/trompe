@@ -77,9 +77,13 @@ rule read =
   | "<-"        { LARROW }
   | "->"        { RARROW }
   | '+'         { PLUS (to_loc lexbuf) }
+  | "+."        { FPLUS (to_loc lexbuf) }
   | '-'         { MINUS (to_loc lexbuf) }
+  | "-."        { FMINUS (to_loc lexbuf) }
   | '*'         { AST (to_loc lexbuf) }
+  | "*."        { FAST (to_loc lexbuf) }
   | '/'         { SLASH (to_loc lexbuf) }
+  | "/."        { FSLASH (to_loc lexbuf) }
   | '%'         { PCT (to_loc lexbuf) }
   | "**"        { AST2 (to_loc lexbuf) }
   | '@'         { AT (to_loc lexbuf) }
