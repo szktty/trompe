@@ -61,65 +61,6 @@ let rec generalize (ty:Type.t) : Type.t =
     Located.create ty.loc @@ `Poly (tyvars, gen)
   end
 
-let rec deref_id_type x ty = (x, generalize ty)
-
-let rec deref_term env (e:Ast.t) : Ast.t =
-  let map = List.map ~f:(deref_term env) in
-  let desc = match e.desc with
-    | `Nop
-    | `Unit
-    | `Bool _
-    | `String _
-    | `Int _
-    | `Float _
-    | `Range _
-    | `Var _ -> e.desc
-
-    | `Chunk es -> `Chunk (map es)
-    | `Return e -> `Return (deref_term env e)
-
-    | `Fundef fdef ->
-      `Fundef { fdef with fdef_block = map fdef.fdef_block }
-
-    | `Funcall call ->
-      `Funcall { fc_fun = deref_term env call.fc_fun;
-                 fc_args = map call.fc_args }
-
-    | `Binexp (e1, op, e2) ->
-      `Binexp (deref_term env e1, op, deref_term env e2)
-
-    | `List es -> `List (map es)
-    | `Tuple es -> `Tuple (map es)
-      (*
-  | Not(e) -> Not(deref_term e)
-  | Neg(e) -> Neg(deref_term e)
-  | Add(e1, e2) -> Add(deref_term e1, deref_term e2)
-  | Sub(e1, e2) -> Sub(deref_term e1, deref_term e2)
-  | Eq(e1, e2) -> Eq(deref_term e1, deref_term e2)
-  | LE(e1, e2) -> LE(deref_term e1, deref_term e2)
-  | FNeg(e) -> FNeg(deref_term e)
-  | FAdd(e1, e2) -> FAdd(deref_term e1, deref_term e2)
-  | FSub(e1, e2) -> FSub(deref_term e1, deref_term e2)
-  | FMul(e1, e2) -> FMul(deref_term e1, deref_term e2)
-  | FDiv(e1, e2) -> FDiv(deref_term e1, deref_term e2)
-  | If(e1, e2, e3) -> If(deref_term e1, deref_term e2, deref_term e3)
-  | Let(xt, e1, e2) -> Let(deref_id_typ xt, deref_term e1, deref_term e2)
-  | LetRec({ name = xt; args = yts; body = e1 }, e2) ->
-    LetRec({ name = deref_id_typ xt;
-             args = List.map deref_id_typ yts;
-             body = deref_term e1 },
-           deref_term e2)
-  | App(e, es) -> App(deref_term e, List.map deref_term es)
-  | Tuple(es) -> Tuple(List.map deref_term es)
-  | LetTuple(xts, e1, e2) -> LetTuple(List.map deref_id_typ xts, deref_term e1, deref_term e2)
-  | Array(e1, e2) -> Array(deref_term e1, deref_term e2)
-  | Get(e1, e2) -> Get(deref_term e1, deref_term e2)
-  | Put(e1, e2, e3) -> Put(deref_term e1, deref_term e2, deref_term e3)
-       *)
-    | _ -> failwith "TODO: impl"
-  in
-  create e.loc desc
-
 let rec occur (ref:t option ref) (ty:Type.t) : bool =
   match ty.desc with
   | `App (tycon, args) ->
@@ -333,7 +274,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
   with
   | Unify_error { uniexn_ex = ex; uniexn_ac = ac } ->
     raise @@ Type_mismatch {
-      mismatch_node = deref_term (Type.Env.create ()) e;
+      mismatch_node = e;
       mismatch_ex = generalize ex;
       mismatch_ac = generalize ac;
     }
@@ -343,4 +284,4 @@ and infer_ty env e =
 
 let run (e:Ast.t) : Ast.t =
   ignore @@ infer (Type.Env.create ()) e;
-  deref_term (Type.Env.create ()) e
+  e
