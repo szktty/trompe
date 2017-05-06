@@ -1,8 +1,11 @@
 type op = op_desc Located.t
 
 and op_desc = [
-  | `Pos              (* "+" *)
-  | `Neg              (* "-" *)
+  | `Pos              (* "+" + integer *)
+  | `Fpos             (* "+." + float *)
+  | `Neg              (* "-" + integer *)
+  | `Fneg             (* "-." + float *)
+  | `Deref            (* "*" + expression *)
   | `Eq               (* "==" *)
   | `Ne               (* "!=" *)
   | `Lt               (* "<" *)

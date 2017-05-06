@@ -5,8 +5,11 @@ include Ast_intf
 
 let op_to_string op =
   match Located.(op.desc) with
-  | `Pos -> "+"
-  | `Neg -> "-"
+  | `Pos -> "|+|"
+  | `Fpos -> "|+.|"
+  | `Neg -> "|-|"
+  | `Fneg -> "|-.|"
+  | `Deref -> "|*|"
   | `Eq -> "=="
   | `Ne -> "=="
   | `Lt -> "<"

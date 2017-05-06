@@ -61,6 +61,11 @@ let create_unexp op_loc op exp =
 %token <Location.t> SLASH           (* "/" *)
 %token <Location.t> FSLASH          (* "/." *)
 %token <Location.t> PCT             (* "%" *)
+%token <Location.t> POS             (* for positive integer *)
+%token <Location.t> FPOS            (* for positive float *)
+%token <Location.t> NEG             (* for negative integer *)
+%token <Location.t> FNEG            (* for negative float *)
+%token <Location.t> DEREF           (* dereference *)
 %token <Location.t> AND             (* "and" *)
 %token <Location.t> OR              (* "or" *)
 %token DO                           (* "do" *)
@@ -91,10 +96,10 @@ let create_unexp op_loc op exp =
 %left LT GT LE GE
 %left LCOMP RCOMP
 %left RPIPE LPIPE
+%nonassoc prefix
 %left PLUS FPLUS MINUS FMINUS
 %left AST FAST SLASH FSLASH PCT
 %right AST2
-%nonassoc prefix
 
 %nonassoc app
 %nonassoc LPAREN LBRACK
@@ -290,9 +295,13 @@ bin_exp:
 
 unary_exp:
   | PLUS simple_exp { create_unexp $1 `Pos $2 }
+  | POS simple_exp { create_unexp $1 `Pos $2 }
+  | FPOS simple_exp { create_unexp $1 `Fpos $2 }
   | MINUS simple_exp { create_unexp $1 `Neg $2 }
+  | NEG simple_exp { create_unexp $1 `Neg $2 }
+  | FNEG simple_exp { create_unexp $1 `Fneg $2 }
   | AST simple_exp { less @@ `Deref $2 }
-  | DEREF_LIDENT { less @@ `Deref_var $1 } (* TODO: needed? *)
+  | DEREF LIDENT { less @@ `Deref_var $2 } (* TODO: needed? *)
 
 simple_exp:
   | prefix_exp %prec app { $1 }

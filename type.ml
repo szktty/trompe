@@ -78,6 +78,13 @@ let rec to_string (ty:t) =
   | `Poly (tyvars, ty) ->
     "Poly([" ^ (String.concat tyvars ~sep:", ") ^ "], " ^ to_string ty ^ ")"
 
+let rec fun_return (ty:t) =
+  match ty.desc with
+  | `Meta { contents = Some ty }
+  | `Poly (_, ty) -> fun_return ty
+  | `App (`Fun, args) -> List.last_exn args
+  | _ -> failwith "not function"
+
 let app ?(args=[]) tycon = `App (tycon, args)
 let desc_unit = app `Unit
 let desc_bool = app `Bool
@@ -100,6 +107,7 @@ let range = Located.less desc_range
 let list e = Located.less @@ desc_list e
 let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
+let fun_ loc params ret = Located.create loc @@ desc_fun params ret
 
 module Spec = struct
 

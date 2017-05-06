@@ -40,6 +40,12 @@ let strlit lexbuf read =
   let loc = Location.create sp (end_pos lexbuf) in
   Located.locate loc contents
 
+let to_prefix_loc lexbuf len =
+  let end_ = end_pos lexbuf in
+  let start = { end_ with col = end_.col - len;
+                          offset = end_.offset - len } in
+  Location.create start end_
+
 }
 
 let int = ['0'-'9'] ['0'-'9']*
@@ -53,6 +59,7 @@ let lident = ['a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!' '?']?
 let uident = ['A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 let comment = '#'
 let blank = [' ' '\t']*
+let prefix = newline+ blank
 
 rule read =
   parse
@@ -120,9 +127,12 @@ rule read =
   | "when"      { WHEN }
   | "false"     { FALSE (to_loc lexbuf) }
   | "true"      { TRUE (to_loc lexbuf) }
+  | prefix '+'  { POS (to_prefix_loc lexbuf 1) }
+  | prefix "+." { FPOS (to_prefix_loc lexbuf 2) }
+  | prefix '-'  { NEG (to_prefix_loc lexbuf 1) }
+  | prefix "-." { FNEG (to_prefix_loc lexbuf 2) }
+  | prefix '*'  { DEREF (to_prefix_loc lexbuf 1) }
   | lident      { LIDENT (to_word lexbuf) }
-  | '*' lident  { DEREF_LIDENT (to_word_map lexbuf
-                     ~f:(fun s -> String.chop_prefix_exn s ~prefix:"*")) }
   | uident
   {
     let ident = lexeme lexbuf in

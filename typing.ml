@@ -121,7 +121,6 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
   let unit = Type.(create e.loc desc_unit) in
-  let easy_infer env e = snd @@ infer env e in
   let infer_block env es =
     List.fold_left es ~init:(env, unit)
       ~f:(fun (env, _) e -> infer env e)
@@ -147,12 +146,12 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
               let ex =
                 if i < List.length block - 1 then Type.unit else value
               in
-              unify ~ex ~ac:(infer_ty env exp))
+              unify ~ex ~ac:(easy_infer env exp))
         in
 
         List.iter if_.if_actions
           ~f:(fun (cond, block) ->
-              unify ~ex:Type.bool ~ac:(infer_ty env cond);
+              unify ~ex:Type.bool ~ac:(easy_infer env cond);
               unify_block block);
         unify_block if_.if_else;
         (env, value.desc)
@@ -182,27 +181,27 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
             ~f:(fun param -> Type.create_metavar param.loc)
         in
         let ret = Type.create_metavar e.loc in
-        let desc = desc_fun params ret in
-        let ty = Type.create e.loc desc in
-        let env = Type.Env.add env fdef.fdef_name.desc ty in
+        let fun_ty = Type.fun_ e.loc params ret in
+        (* for recursive call *)
+        let env = Type.Env.add env fdef.fdef_name.desc fun_ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
             ~f:(fun env name ty -> Type.Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
-        begin match ret.desc with
-          | `Meta { contents = Some ret } -> unify ~ex:ret ~ac:ret'
-          | `Meta ({ contents = None } as ref) -> ref := Some ret'
-          | _ -> failwith "return type must be meta variable"
-        end;
-        (env, (generalize @@ Located.create ty.loc desc).desc)
+        unify ~ex:ret ~ac:ret';
+        (env, (generalize fun_ty).desc)
 
       | `Funcall call ->
+        Printf.printf "# funcall ";
+        Ast.print e;
         let ex_fun = easy_infer env call.fc_fun in
         let args = List.map call.fc_args ~f:(easy_infer env) in
         let ret = Type.create_metavar e.loc in
         let ac_fun = Type.create e.loc (desc_fun args ret) in
+        Printf.printf "# funcall infer ex: %s\n" (Type.to_string ex_fun);
         unify ~ex:ex_fun ~ac:ac_fun;
-        (env, ex_fun.desc)
+        Printf.printf "# end funcall infer\n";
+        (env, (Type.fun_return ex_fun).desc)
 
       | `Var path ->
         begin match Ast.(path.np_prefix) with
@@ -214,10 +213,19 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
             | Some ty -> (env, ty.desc)
         end
 
+      | `Unexp (op, e) ->
+        let op_ty, val_ty = match op.desc with
+          | `Pos | `Neg -> (Type.int, Type.int)
+          | `Fpos | `Fneg -> (Type.float, Type.float)
+          | _ -> failwith "not yet supported"
+        in
+        unify op_ty (easy_infer env e);
+        (env, val_ty.desc)
+
       | `Binexp (e1, op, e2) ->
         let op_ty, val_ty = match op.desc with
           | `Eq | `Ne ->
-            (infer_ty env e1, Type.bool)
+            (easy_infer env e1, Type.bool)
           | `And | `Or ->
             (Type.bool, Type.bool)
           | `Lt | `Le | `Gt | `Ge ->
@@ -229,8 +237,8 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
             (Type.float, Type.float)
           | _ -> failwith "not yet supported"
         in
-        unify op_ty (infer_ty env e1);
-        unify op_ty (infer_ty env e2);
+        unify op_ty (easy_infer env e1);
+        unify op_ty (easy_infer env e2);
         (env, val_ty.desc)
 
                 (*
@@ -307,8 +315,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
       mismatch_ac = generalize ac;
     }
 
-and infer_ty env e =
-  snd @@ infer env e
+and easy_infer env e = snd @@ infer env e
 
 let run (e:Ast.t) : Ast.t =
   ignore @@ infer (Type.Env.create ()) e;
