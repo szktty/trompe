@@ -5,6 +5,8 @@ include Ast_intf
 
 let op_to_string op =
   match Located.(op.desc) with
+  | `Pos -> "+"
+  | `Neg -> "-"
   | `Eq -> "=="
   | `Ne -> "=="
   | `Lt -> "<"
@@ -112,6 +114,12 @@ let rec write chan node =
     output_space ();
     write_nodes fc.fc_args;
     output_string ")"
+  | `Unexp (op, exp) ->
+    output_string "(";
+    write_op op;
+    output_space ();
+    write exp;
+    output_string ")"
   | `Binexp (left, op, right) ->
     output_string "(";
     write_op op;
@@ -119,13 +127,13 @@ let rec write chan node =
     write left;
     output_space ();
     write right;
-    output_rp()
+    output_rp ()
   | `Directive (name, args) ->
     output_string "(directive ";
     output_string name.desc;
     output_space ();
     write_nodes args;
-    output_rp()
+    output_rp ()
   | `Var np ->
     output_string "(var ";
     output_namepath np;

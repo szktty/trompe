@@ -60,9 +60,7 @@ rule read =
   | newline     { next_line lexbuf; read lexbuf }
   | comment     { skip_comment lexbuf; read lexbuf }
   | int         { INT (to_word_map lexbuf ~f:int_of_string) }
-  | '-' int     { NEG_INT (to_word_map lexbuf ~f:int_of_string) } (* TODO: neg *)
   | float       { FLOAT (to_word_map lexbuf ~f:float_of_string) }
-  | '-' float       { FLOAT (to_word_map lexbuf ~f:float_of_string) } (* TODO: neg *)
   | '"'         { STRING (strlit lexbuf read_string) } 
   | '('         { LPAREN (to_loc lexbuf) }
   | ')'         { RPAREN }

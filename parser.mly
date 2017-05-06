@@ -19,9 +19,7 @@ let create_unexp op_loc op exp =
 %token <Ast.text> CHAR
 %token <Ast.text> STRING
 %token <int Located.t> INT
-%token <int Located.t> NEG_INT
 %token <float Located.t> FLOAT
-%token <float Located.t> NEG_FLOAT
 %token <Location.t> TRUE
 %token <Location.t> FALSE
 %token <Location.t> LPAREN
@@ -92,6 +90,7 @@ let create_unexp op_loc op exp =
 %left PLUS MINUS
 %left AST SLASH PCT
 %right AST2
+%nonassoc prefix
 
 %nonassoc app
 %nonassoc LPAREN LBRACK
@@ -111,9 +110,9 @@ exp_list:
   | rev_exp_list { Core.Std.List.rev $1 }
 
 rev_exp_list:
-  | exp { [$1] }
-  | rev_exp_list exp { $2 :: $1 }
-  | rev_exp_list SEMI exp { $3 :: $1 }
+  | exp %prec prefix { [$1] }
+  | rev_exp_list exp %prec prefix { $2 :: $1 }
+  | rev_exp_list SEMI exp %prec prefix { $3 :: $1 }
 
 exp:
   | module_def { $1 }
@@ -282,15 +281,10 @@ bin_exp:
   | exp RCOMP exp { create_binexp $1 $2 `Rcomp $3 }
 
 unary_exp:
-  | LPAREN unary_exp_body RPAREN { $2 }
-  | NEG_INT { create $1.loc @@ `Int $1.desc }
-  | NEG_FLOAT { create $1.loc @@ `Float $1.desc }
-  | DEREF_LIDENT { less @@ `Deref_var $1 }
-
-unary_exp_body:
-  | PLUS exp { create_unexp $1 `Pos $2 }
-  | MINUS exp { create_unexp $1 `Neg $2 }
-  | AST exp { less @@ `Deref $2 }
+  | PLUS simple_exp { create_unexp $1 `Pos $2 }
+  | MINUS simple_exp { create_unexp $1 `Neg $2 }
+  | AST simple_exp { less @@ `Deref $2 }
+  | DEREF_LIDENT { less @@ `Deref_var $1 } (* TODO: needed? *)
 
 simple_exp:
   | prefix_exp %prec app { $1 }
