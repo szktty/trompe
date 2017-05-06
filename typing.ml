@@ -139,6 +139,24 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
 
       | `Return e -> (env, (easy_infer env e).desc)
 
+      | `If if_ -> 
+        let value = Type.create_metavar e.loc in
+
+        let unify_block block =
+          List.iteri block ~f:(fun i exp ->
+              let ex =
+                if i < List.length block - 1 then Type.unit else value
+              in
+              unify ~ex ~ac:(infer_ty env exp))
+        in
+
+        List.iter if_.if_actions
+          ~f:(fun (cond, block) ->
+              unify ~ex:Type.bool ~ac:(infer_ty env cond);
+              unify_block block);
+        unify_block if_.if_else;
+        (env, value.desc)
+
       | `Unit -> (env, desc_unit)
       | `Bool _ -> (env, desc_bool)
       | `Int _ -> (env, desc_int)
@@ -168,7 +186,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
         let ty = Type.create e.loc desc in
         let env = Type.Env.add env fdef.fdef_name.desc ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty -> Printf.printf "fenv add %s\n" name.desc;Type.Env.add env name.desc ty)
+            ~f:(fun env name ty -> Type.Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         begin match ret.desc with
@@ -197,15 +215,23 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
         end
 
       | `Binexp (e1, op, e2) ->
-        let ty = match op.desc with
-          | `Eq | `Ne | `Lt | `Le | `Gt | `Ge -> infer_ty env e1
-          | `And | `Or -> Type.bool
-          | `Add | `Sub | `Mul | `Div | `Pow | `Mod | `Lcomp | `Rcomp -> Type.int
+        let op_ty, val_ty = match op.desc with
+          | `Eq | `Ne ->
+            (infer_ty env e1, Type.bool)
+          | `And | `Or ->
+            (Type.bool, Type.bool)
+          | `Lt | `Le | `Gt | `Ge ->
+            (Type.int, Type.bool)
+          | `Add | `Sub | `Mul | `Div
+          | `Pow | `Mod | `Lcomp | `Rcomp ->
+            (Type.int, Type.int)
+          | `Fadd | `Fsub | `Fmul | `Fdiv ->
+            (Type.float, Type.float)
           | _ -> failwith "not yet supported"
         in
-        unify ty (infer_ty env e1);
-        unify ty (infer_ty env e2);
-        (env, ty.desc)
+        unify op_ty (infer_ty env e1);
+        unify op_ty (infer_ty env e2);
+        (env, val_ty.desc)
 
                 (*
     | Not(e) ->
@@ -269,6 +295,8 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
       | _ -> Ast.print e; failwith "TODO"
     in
     let ty = Type.create e.loc desc in
+    Printf.printf "inferred node: ";
+    Ast.print e;
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
     (env, ty)
   with
