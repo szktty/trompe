@@ -117,7 +117,7 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
 
 (* 型推論ルーチン (caml2html: typing_g) *)
-let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
+let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
   let unit = Type.(create e.loc desc_unit) in
@@ -183,9 +183,9 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
         let ret = Type.create_metavar e.loc in
         let fun_ty = Type.fun_ e.loc params ret in
         (* for recursive call *)
-        let env = Type.Env.add env fdef.fdef_name.desc fun_ty in
+        let env = Env.add env fdef.fdef_name.desc fun_ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
-            ~f:(fun env name ty -> Type.Env.add env name.desc ty)
+            ~f:(fun env name ty -> Env.add env name.desc ty)
         in
         let _, ret' = infer_block fenv fdef.fdef_block in
         unify ~ex:ret ~ac:ret';
@@ -208,7 +208,7 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
           | Some _ -> failwith "not yet supported"
           | None ->
             let name = path.np_name.desc in
-            match Type.Env.find env name with
+            match Env.find env name with
             | None -> failwith ("variable is not found: " ^ name)
             | Some ty -> (env, ty.desc)
         end
@@ -318,5 +318,5 @@ let rec infer env (e:Ast.t) : (Type.Env.t * Type.t) =
 and easy_infer env e = snd @@ infer env e
 
 let run (e:Ast.t) : Ast.t =
-  ignore @@ infer (Type.Env.create ()) e;
+  ignore @@ infer (Env.create ()) e;
   e

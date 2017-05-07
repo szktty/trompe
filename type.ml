@@ -30,16 +30,6 @@ and tyvar = string
 
 and metavar = t option ref
 
-module Env = Env.Make(struct
-    type data = t
-  end)
-
-module Module = Module.Make(struct
-    type primitive = t
-    module Env = Env
-  end)
-
-
 let create loc desc =
   Located.create loc desc
 
@@ -141,7 +131,7 @@ module Spec = struct
   let d = `Tyvar "d"
   let e = `Tyvar "e"
 
-  let (+>) x y =
+  let (@->) x y =
     match x with
     | `Fun args -> `Fun (List.append args [y])
     | _ -> `Fun [x; y]

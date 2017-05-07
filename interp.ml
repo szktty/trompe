@@ -1,8 +1,6 @@
 open Core.Std
 
 module Context = Value.Context
-module Env = Value.Env
-module Module = Value.Module
 module Exn = Value.Exn
 module Op = Value.Op
 
@@ -160,7 +158,7 @@ let rec eval ctx env node =
     (* TODO: create new context *)
     begin match f with
       | `Prim name ->
-        begin match Module.find_primitive name with
+        begin match Runtime.find_primitive name with
           | None -> failwith ("unknown primitive: " ^ name)
           | Some f -> (env, f args)
         end
@@ -198,7 +196,7 @@ let rec eval ctx env node =
           | `String s -> s
           | v -> failwith ("primitive name must be string: " ^ (Value.to_string v))
         in
-        let f = match Module.find_primitive prim with
+        let f = match Runtime.find_primitive prim with
           | None -> failwith ("unknown primitive: " ^ prim)
           | Some f -> f
         in
@@ -299,7 +297,7 @@ and eval_ptn ctx env value ptn =
   | _ -> failwith "eval pattern not impl"
 
 let run node =
-  let m = Module.create ~name:"_" () in
+  let m = Module.create "__Main" in
   let ctx = Context.create ~belong:(Some m) () in
   let env = Env.create () in
   ignore @@ eval ctx env node

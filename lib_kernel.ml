@@ -8,7 +8,8 @@ let prim_show args =
     Printf.printf "%s\n" (Value.to_string arg);
     `Unit
 
-let install () =
+let install () = ()
+  (*
   let primitives = [
     ("show", prim_show);
   ]
@@ -16,3 +17,4 @@ let install () =
   List.iter primitives
     ~f:(fun (name, primitive) -> Module.add_primitive ~name ~primitive);
   Module.define @@ Module.create ~name:"Kernel" ()
+   *)

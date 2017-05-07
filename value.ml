@@ -27,16 +27,7 @@ and user_error = {
   user_error_reason : string option;
 }
 
-module Env = Env.Make(struct
-
-    type data = t
-
-  end)
-
-module Module = Module.Make(struct
-    module Env = Env
-    type primitive = t list -> t
-  end)
+and primitive = t list -> t
 
 let rec to_string value =
   let open Printf in
@@ -67,7 +58,7 @@ let rec to_string value =
 module Context = struct
 
   type t = {
-    belong : Module.t option;
+    belong : t Module.t option;
     parent : t option;
     callee : Ast.t option;
   }
