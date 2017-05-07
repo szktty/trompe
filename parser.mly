@@ -96,7 +96,6 @@ let create_unexp op_loc op exp =
 %left LT GT LE GE
 %left LCOMP RCOMP
 %left RPIPE LPIPE
-%nonassoc prefix
 %left PLUS FPLUS MINUS FMINUS
 %left AST FAST SLASH FSLASH PCT
 %right AST2
@@ -119,9 +118,9 @@ exp_list:
   | rev_exp_list { Core.Std.List.rev $1 }
 
 rev_exp_list:
-  | exp %prec prefix { [$1] }
-  | rev_exp_list exp %prec prefix { $2 :: $1 }
-  | rev_exp_list SEMI exp %prec prefix { $3 :: $1 }
+  | exp { [$1] }
+  | rev_exp_list exp { $2 :: $1 }
+  | rev_exp_list SEMI exp { $3 :: $1 }
 
 exp:
   | module_def { $1 }
@@ -294,6 +293,9 @@ bin_exp:
   | exp RCOMP exp { create_binexp $1 $2 `Rcomp $3 }
 
 unary_exp:
+  | LPAREN unary_body RPAREN { $2 }
+
+unary_body:
   | PLUS simple_exp { create_unexp $1 `Pos $2 }
   | POS simple_exp { create_unexp $1 `Pos $2 }
   | FPOS simple_exp { create_unexp $1 `Fpos $2 }

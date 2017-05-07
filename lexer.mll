@@ -40,12 +40,6 @@ let strlit lexbuf read =
   let loc = Location.create sp (end_pos lexbuf) in
   Located.locate loc contents
 
-let to_prefix_loc lexbuf len =
-  let end_ = end_pos lexbuf in
-  let start = { end_ with col = end_.col - len;
-                          offset = end_.offset - len } in
-  Location.create start end_
-
 }
 
 let int = ['0'-'9'] ['0'-'9']*
@@ -127,11 +121,6 @@ rule read =
   | "when"      { WHEN }
   | "false"     { FALSE (to_loc lexbuf) }
   | "true"      { TRUE (to_loc lexbuf) }
-  | prefix '+'  { POS (to_prefix_loc lexbuf 1) }
-  | prefix "+." { FPOS (to_prefix_loc lexbuf 2) }
-  | prefix '-'  { NEG (to_prefix_loc lexbuf 1) }
-  | prefix "-." { FNEG (to_prefix_loc lexbuf 2) }
-  | prefix '*'  { DEREF (to_prefix_loc lexbuf 1) }
   | lident      { LIDENT (to_word lexbuf) }
   | uident
   {
