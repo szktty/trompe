@@ -18,13 +18,17 @@ let find_type_module path =
 let find_value_module path =
   find_module !value_modules path
 
-let primitives : Value.primitive String.Map.t ref = ref String.Map.empty
+module Primitive = struct
 
-let add_primitive name f =
-  primitives := String.Map.add !primitives ~key:name ~data:f
+  let primitives : Value.primitive String.Map.t ref = ref String.Map.empty
 
-let find_primitive name =
-  String.Map.find !primitives name
+  let add name f =
+    primitives := String.Map.add !primitives ~key:name ~data:f
+
+  let find name =
+    String.Map.find !primitives name
+
+end
 
 module Spec = struct
 
@@ -58,7 +62,7 @@ module Spec = struct
   let fun_ name (spec:Type.Spec.t) pname =
     attr name (Type.Spec.to_type spec) (`Prim pname)
 
-  let install spec =
+  let end_ spec =
     (* TODO: parent *)
     let tenv, venv = List.fold_left spec.attrs
         ~init:(Env.create (), Env.create ())

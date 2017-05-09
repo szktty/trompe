@@ -8,13 +8,9 @@ let prim_show args =
     Printf.printf "%s\n" (Value.to_string arg);
     `Unit
 
-let install () = ()
-  (*
-  let primitives = [
-    ("show", prim_show);
-  ]
-  in
-  List.iter primitives
-    ~f:(fun (name, primitive) -> Module.add_primitive ~name ~primitive);
-  Module.define @@ Module.create ~name:"Kernel" ()
-   *)
+let init () =
+  Runtime.Spec.(define "Kernel"
+                +> fun_ "show" Type.Spec.(a @-> unit) "show"
+                +> string "version" "0.0.1"
+                |> end_);
+  Runtime.Primitive.add "show" prim_show

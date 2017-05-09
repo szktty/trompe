@@ -27,8 +27,8 @@ let parse_file file =
           exit (-1)
         | e -> raise e)
 
-let initialize () =
-  Lib.install ()
+let init () =
+  Lib.init ()
 
 let command =
   Command.basic
@@ -53,11 +53,11 @@ let command =
              (* TODO: printing node *)
              let node = parse_file file in
              Ast.write Out_channel.stdout node
-           else
+           else begin
              let node = parse_file file in
              if not dynamic then
                ignore @@ Typing.run node;
-             initialize ();
+             init ();
              begin try Interp.run node with
                (* TODO: ファイル名はどこから取得？コンテキストか？ *)
                | Interp.Error.E e ->
@@ -69,6 +69,7 @@ let command =
                  Printf.printf "\n"
                | _ as e -> raise e
              end
+           end
          | None ->
            Printf.printf "Error: No input files\n";
            exit 1

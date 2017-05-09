@@ -158,7 +158,7 @@ let rec eval ctx env node =
     (* TODO: create new context *)
     begin match f with
       | `Prim name ->
-        begin match Runtime.find_primitive name with
+        begin match Runtime.Primitive.find name with
           | None -> failwith ("unknown primitive: " ^ name)
           | Some f -> (env, f args)
         end
@@ -196,7 +196,7 @@ let rec eval ctx env node =
           | `String s -> s
           | v -> failwith ("primitive name must be string: " ^ (Value.to_string v))
         in
-        let f = match Runtime.find_primitive prim with
+        let f = match Runtime.Primitive.find prim with
           | None -> failwith ("unknown primitive: " ^ prim)
           | Some f -> f
         in
