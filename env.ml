@@ -2,21 +2,26 @@ open Core.Std
 
 type 'a t = {
   parent : 'a t option;
+  imports : 'a Module.t list;
   attrs : 'a String.Map.t;
 }
 
-let create ?(parent=None) ?(attrs=[]) () =
-  { parent = parent;
-    attrs = String.Map.of_alist_reduce attrs ~f:(fun _ b -> b);
+let create ?(parent=None) ?(imports=[]) ?attrs () =
+  { parent; imports;
+    attrs = Option.value attrs ~default:(String.Map.empty);
   }
 
 let rec find env key =
   match String.Map.find env.attrs key with
   | Some _ as res -> res
   | None ->
-    match env.parent with
-    | None -> None
-    | Some env -> find env key
+    match List.find_mapi env.imports
+            ~f:(fun _ m -> Module.find_attr m key) with
+    | Some _ as res -> res
+    | None ->
+      match env.parent with
+      | Some env -> find env key
+      | None -> None
 
 let add env ~key ~data =
   { env with attrs = String.Map.add env.attrs ~key ~data }

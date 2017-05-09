@@ -4,7 +4,8 @@ type 'a t
 
 val create :
   ?parent:'a t option
-  -> ?attrs:(string * 'a) list
+  -> ?imports:'a Module.t list
+  -> ?attrs:'a String.Map.t
   -> unit
   ->'a t
 

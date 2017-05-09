@@ -3,14 +3,14 @@ open Core.Std
 type 'a t = {
   parent : 'a t option;
   name : string;
-  mutable env : 'a Env.t;
   mutable submodules : 'a t list;
   mutable imports : 'a t list;
+  mutable attrs : 'a String.Map.t;
 }
 
-let create ?parent ?(submodules=[]) ?(imports=[]) ?env name =
-  let env = Option.value env ~default:(Env.create ()) in
-  { parent; name; env; submodules; imports }
+let create ?parent ?(submodules=[]) ?(imports=[]) ?attrs name =
+  { parent; name; submodules; imports;
+    attrs = Option.value attrs ~default:String.Map.empty }
 
 let name m = m.name
 
@@ -42,13 +42,12 @@ let add_module m x =
   m.submodules <- x :: m.submodules
 
 let rec find_attr m key =
-  match Env.find m.env key with
+  match String.Map.find m.attrs key with
   | Some _ as res -> res
   | None ->
-    match List.find_mapi m.imports
-            ~f:(fun _ m -> find_attr m key) with
+    match List.find_mapi m.imports ~f:(fun _ m -> find_attr m key) with
     | Some _ as v -> v
     | None -> None
 
 let add_attr m ~key ~data =
-  m.env <- Env.add m.env ~key ~data
+  m.attrs <- String.Map.add m.attrs ~key ~data

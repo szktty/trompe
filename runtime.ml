@@ -64,14 +64,14 @@ module Spec = struct
 
   let end_ spec =
     (* TODO: parent *)
-    let tenv, venv = List.fold_left spec.attrs
-        ~init:(Env.create (), Env.create ())
-        ~f:(fun (tenv, venv) attr ->
-            (Env.add tenv ~key:attr.attr_name ~data:attr.ty,
-             Env.add venv ~key:attr.attr_name ~data:attr.value))
+    let tattrs, vattrs = List.fold_left spec.attrs
+        ~init:(String.Map.empty, String.Map.empty)
+        ~f:(fun (tattrs, vattrs) attr ->
+            (String.Map.add tattrs ~key:attr.attr_name ~data:attr.ty,
+             String.Map.add vattrs ~key:attr.attr_name ~data:attr.value))
     in
-    type_modules := Module.create spec.mod_name ~env:tenv :: !type_modules;
-    value_modules := Module.create spec.mod_name ~env:venv :: !value_modules;
+    type_modules := Module.create spec.mod_name ~attrs:tattrs :: !type_modules;
+    value_modules := Module.create spec.mod_name ~attrs:vattrs :: !value_modules;
     ()
 
 end

@@ -47,6 +47,7 @@ let command =
          Printexc.record_backtrace true;
          match file_opt with
          | Some file ->
+           init ();
            if syntax then
              ignore @@ parse_file file
            else if debug_ast then
@@ -57,7 +58,6 @@ let command =
              let node = parse_file file in
              if not dynamic then
                ignore @@ Typing.run node;
-             init ();
              begin try Interp.run node with
                (* TODO: ファイル名はどこから取得？コンテキストか？ *)
                | Interp.Error.E e ->

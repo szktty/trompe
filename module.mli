@@ -6,7 +6,7 @@ val create :
   ?parent:'a t
   -> ?submodules:'a t list
   -> ?imports:'a t list
-  -> ?env:'a Env.t
+  -> ?attrs:'a String.Map.t
   -> string
   ->'a t
 
