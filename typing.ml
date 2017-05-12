@@ -61,6 +61,42 @@ let rec generalize (ty:Type.t) : Type.t =
     Located.create ty.loc @@ `Poly (tyvars, gen)
   end
 
+let rec subst (ty:Type.t) (env:(tyvar * t) list) =
+  match ty.desc with
+  | `Var tyvar ->
+    Option.value (List.Assoc.find env tyvar) ~default:ty
+  | `App (`Tyfun (tyvars, ty'), args) ->
+    let env' = List.map2_exn tyvars args
+        ~f:(fun tyvar ty -> (tyvar, ty)) in
+    subst (subst ty' env') env
+  | `App (tycon, args) ->
+    let args' = List.map args
+        ~f:(fun ty' -> subst ty' env) in
+    Located.create ty.loc @@ `App (tycon, args')
+  | `Poly (tyvars, ty') ->
+    let tyvars' = List.mapi tyvars
+        ~f:(fun i tyvar ->
+            Array.get Type.var_names (i + List.length env))
+    in
+    let ty'' = subst ty' @@ List.map2_exn tyvars tyvars'
+        ~f:(fun tyvar tyvar' ->
+            (tyvar, Located.create ty.loc @@ `Var tyvar'))
+    in
+    Located.create ty.loc @@ `Poly (tyvars', subst ty'' env)
+  | `Meta { contents = Some ty' } ->
+    Option.value_map (List.find env ~f:(fun (_, ty) -> ty = ty'))
+      ~f:(fun (_, ty') -> subst ty' env)
+      ~default:ty
+  | `Meta { contents = None } -> ty
+
+let instantiate (ty:Type.t) =
+  match ty.desc with
+  | `Poly (tyvars, ty') ->
+    let env = List.map tyvars
+        ~f:(fun tyvar -> (tyvar, create_metavar ty.loc)) in
+    subst ty' env
+  | _ -> ty
+
 let rec occur (ref:t option ref) (ty:Type.t) : bool =
   match ty.desc with
   | `App (tycon, args) ->
@@ -97,6 +133,9 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     when List.length exs = List.length acs ->
     List.iter2_exn exs acs ~f:(fun ex ac -> unify ~ex ~ac)
 
+  | `Poly _, _ -> unify ~ex:(instantiate ex) ~ac
+  | _, `Poly _ -> unify ~ex ~ac:(instantiate ac)
+
   | `Meta ex, `Meta ac when phys_equal ex ac -> ()
   | `Meta ({ contents = None } as ref), _ -> ref := Some ac
   | _, `Meta ({ contents = None } as ref) -> ref := Some ex
@@ -130,11 +169,11 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
       | `Nop -> (env, desc_unit)
 
       | `Chunk es -> 
-        let env, ty = List.fold_left es
-            ~init:(env, unit)
-            ~f:(fun (env, ty) e -> infer env e)
+        let env = List.fold_left es
+            ~init:env
+            ~f:(fun env e -> fst @@ infer env e)
         in
-        (env, ty.desc)
+        (env, unit.desc)
 
       | `Return e -> (env, (easy_infer env e).desc)
 
