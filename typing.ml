@@ -1,6 +1,7 @@
 open Core.Std
 open Located
 open Type
+open Logging
 
 type unity_exn = {
   uniexn_ex : Type.t;
@@ -357,6 +358,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 and easy_infer env e = snd @@ infer env e
 
 let run (e:Ast.t) : Ast.t =
+  verbosef "begin typing";
   ignore @@ infer (Runtime.type_env ()) e;
-  Printf.printf "# end typing\n";
+  verbosef "end typing";
   e

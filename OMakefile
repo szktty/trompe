@@ -164,6 +164,7 @@ FILES[] =
 	lexer
 	located
 	location
+	logging
 	main
 	module
 	namepath

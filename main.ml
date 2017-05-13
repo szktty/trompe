@@ -43,6 +43,9 @@ let command =
       +> anon (maybe ("filename" %: string))
     )
     (fun debug verbose syntax debug_ast dynamic file_opt () ->
+       Config.debug_mode := debug;
+       Config.verbose_mode := verbose;
+
        try
          Printexc.record_backtrace true;
          match file_opt with
