@@ -357,5 +357,6 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 and easy_infer env e = snd @@ infer env e
 
 let run (e:Ast.t) : Ast.t =
-  ignore @@ infer (Env.create ~imports:!Runtime.type_modules ()) e;
+  ignore @@ infer (Runtime.type_env ()) e;
+  Printf.printf "# end typing\n";
   e

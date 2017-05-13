@@ -18,6 +18,12 @@ let find_type_module path =
 let find_value_module path =
   find_module !value_modules path
 
+let type_env () =
+  Env.create ~imports:!type_modules ()
+
+let value_env () =
+  Env.create ~imports:!value_modules ()
+
 module Primitive = struct
 
   let primitives : Value.primitive String.Map.t ref = ref String.Map.empty

@@ -299,7 +299,7 @@ and eval_ptn ctx env value ptn =
 let run node =
   let m = Module.create "__Main" in
   let ctx = Context.create ~belong:(Some m) () in
-  let env = Env.create () in
+  let env = Runtime.value_env () in
   ignore @@ eval ctx env node
 
 module Primitive = struct

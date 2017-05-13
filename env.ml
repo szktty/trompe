@@ -11,6 +11,9 @@ let create ?(parent=None) ?(imports=[]) ?attrs () =
     attrs = Option.value attrs ~default:(String.Map.empty);
   }
 
+let import env m =
+  { env with imports = m :: env.imports }
+
 let rec find env key =
   match String.Map.find env.attrs key with
   | Some _ as res -> res
