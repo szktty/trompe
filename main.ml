@@ -40,9 +40,10 @@ let command =
       +> flag "-syntax" no_arg ~doc:" check syntax only"
       +> flag "-debug-ast" no_arg ~doc:" print parse tree"
       +> flag "-dynamic" no_arg ~doc:" dynamic typing mode"
+      +> flag "-compile" no_arg ~doc:" compile to Go (experimental)"
       +> anon (maybe ("filename" %: string))
     )
-    (fun debug verbose syntax debug_ast dynamic file_opt () ->
+    (fun debug verbose syntax debug_ast dynamic compile file_opt () ->
        Config.debug_mode := debug;
        Config.verbose_mode := verbose;
 
@@ -59,8 +60,12 @@ let command =
              Ast.write Out_channel.stdout node
            else begin
              let node = parse_file file in
-             if not dynamic then
+             if not dynamic || compile then begin
                ignore @@ Typing.run node;
+               if compile then begin
+                 Compiler.compile node ~file
+               end
+             end;
              begin try Interp.run node with
                (* TODO: ファイル名はどこから取得？コンテキストか？ *)
                | Interp.Error.E e ->
