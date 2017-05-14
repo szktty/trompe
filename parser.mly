@@ -5,11 +5,24 @@ open Located
 
 let create_binexp left op_loc op right =
   let op = create (Some op_loc) op in
-  less @@ `Binexp (left, op, right)
+  less @@ `Binexp {
+        binexp_left = left;
+        binexp_op = op;
+        binexp_right = right;
+        binexp_type = None }
 
 let create_unexp op_loc op exp =
   let op = create (Some op_loc) op in
-  less @@ `Unexp (op, exp)
+  less @@ `Unexp {
+        unexp_op = op;
+        unexp_exp = exp;
+        unexp_type = None }
+
+let create_exp exp =
+  { exp = exp; exp_type = None }
+
+let create_exp_list exps =
+  { exp_list = exps; exp_list_type = None }
 
 %}
 
@@ -126,10 +139,11 @@ exp:
   | module_def { $1 }
   | LET pattern EQ exp { Ast.nop }
   | LET LIDENT LARROW exp { less @@ `Refdef ($2, $4) }
-  | var LARROW exp { less @@ `Assign ($1, $3) }
-  | DO block END { less @@ `Block $2 }
-  | RETURN exp { less @@ `Return $2 }
-  | RAISE exp { less @@ `Raise $2 }
+  | var LARROW exp
+  { less @@ `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }
+  | DO block END { less @@ `Block (create_exp_list $2) }
+  | RETURN exp { less @@ `Return (create_exp $2) }
+  | RAISE exp { less @@ `Raise (create_exp $2) }
   | FOR LIDENT IN exp DO exp_list END
   { less @@ `For { for_var = $2; for_range = $4; for_block = $6 } }
   | fundef_exp { $1 }
@@ -152,6 +166,8 @@ fundef_exp:
         fdef_name = $2;
         fdef_params = $3;
         fdef_block = [$5];
+        fdef_param_types = None;
+        fdef_type = None;
     }
   }
   | DEF LIDENT param_list block END
@@ -160,6 +176,8 @@ fundef_exp:
         fdef_name = $2;
         fdef_params = $3;
         fdef_block = $4;
+        fdef_param_types = None;
+        fdef_type = None;
     }
   }
 
@@ -183,25 +201,29 @@ if_exp:
   {
       less @@ `If {
           if_actions = [($2, $4)];
-          if_else = [] }
+          if_else = [];
+          if_type = None }
   }
   | IF exp THEN block elseif_block END
   {
       less @@ `If {
           if_actions = ($2, $4) :: $5;
-          if_else = [] }
+          if_else = [];
+          if_type = None }
   }
   | IF exp THEN block ELSE block END
   {
       less @@ `If {
           if_actions = [($2, $4)];
-          if_else = $6 }
+          if_else = $6;
+          if_type = None }
   }
   | IF exp THEN block elseif_block ELSE block END
   {
       less @@ `If {
           if_actions = ($2, $4) :: $5;
-          if_else = $7 }
+          if_else = $7;
+          if_type = None }
   }
 
 elseif_block:
@@ -216,9 +238,18 @@ elseif_exp:
 
 case_exp:
   | CASE exp DO case_clause_list END
-  { less @@ `Case { case_val = $2; case_cls = $4 } }
+  { less @@ `Case {
+        case_val = $2;
+        case_cls = $4;
+        case_val_type = None;
+        case_cls_type = None; }
+  }
   | CASE exp DO BAR case_clause_list END
-  { less @@ `Case { case_val = $2; case_cls = $5 } }
+  { less @@ `Case { case_val = $2;
+        case_cls = $5;
+        case_val_type = None;
+        case_cls_type = None; }
+  }
 
 case_clause_list:
   | rev_case_clause_list { Core.Std.List.rev $1 }
@@ -232,12 +263,14 @@ case_clause:
   { { Ast.case_cls_var = None;
       case_cls_ptn = fst $1;
       case_cls_guard = snd $1;
-      case_cls_action = $3 } }
+      case_cls_action = $3;
+      case_cls_act_type = None } }
   | LIDENT EQ case_pattern RARROW block
   { { Ast.case_cls_var = Some $1;
       case_cls_ptn = fst $3;
       case_cls_guard = snd $3;
-      case_cls_action = $5 } }
+      case_cls_action = $5;
+      case_cls_act_type = None } }
 
 case_pattern:
   | pattern { ($1, None) }
@@ -246,7 +279,8 @@ case_pattern:
 funcall_exp:
   | prefix_exp paren_arg_list
   {
-    less @@ `Funcall { fc_fun = $1; fc_args = $2 }
+    less @@ `Funcall {
+        fc_fun = $1; fc_args = $2; fc_fun_type = None; fc_arg_types = None }
   }
 
 paren_arg_list:
@@ -302,7 +336,7 @@ unary_body:
   | MINUS simple_exp { create_unexp $1 `Neg $2 }
   | NEG simple_exp { create_unexp $1 `Neg $2 }
   | FNEG simple_exp { create_unexp $1 `Fneg $2 }
-  | AST simple_exp { less @@ `Deref $2 }
+  | AST simple_exp { less @@ `Deref (create_exp $2) }
   | DEREF LIDENT { less @@ `Deref_var $2 } (* TODO: needed? *)
 
 simple_exp:
@@ -323,26 +357,30 @@ var:
   {
     create $1.loc @@ `Var {
         np_prefix = None;
-        np_name = $1; }
+        np_name = $1;
+        np_type = None }
   }
   | UIDENT
   {
     create $1.loc @@ `Path {
         np_prefix = None;
-        np_name = $1; }
+        np_name = $1;
+        np_type = None }
   }
   | prefix_exp DOT LIDENT
   { less @@ `Var {
         np_prefix = Some $1;
-        np_name = $3; }
+        np_name = $3;
+        np_type = None }
   }
   | prefix_exp DOT UIDENT
   { less @@ `Path {
         np_prefix = Some $1;
-        np_name = $3; }
+        np_name = $3;
+        np_type = None }
   }
   | prefix_exp LBRACK exp RBRACK
-  { less @@ `Index { idx_prefix = $1; idx_index = $3 } }
+  { less @@ `Index { idx_prefix = $1; idx_index = $3; idx_type = None } }
 
 literal:
   | LPAREN RPAREN { locate $1 `Unit }
@@ -351,8 +389,8 @@ literal:
   | FLOAT { create $1.loc @@ `Float $1.desc }
   | TRUE { locate $1 @@ `Bool true }
   | FALSE { locate $1 @@ `Bool false }
-  | list_ { less @@ `List $1 }
-  | tuple { less @@ `Tuple $1 }
+  | list_ { less @@ `List (create_exp_list $1) }
+  | tuple { less @@ `Tuple (create_exp_list $1) }
   | INT DOT2 INT { less @@ `Range ($1, $3) }
 
 list_:
@@ -371,6 +409,9 @@ tuple:
 
 pattern:
   | LPAREN pattern RPAREN { $2 }
+  | pattern_clause { { ptn_cls = $1; ptn_type = None } }
+
+pattern_clause:
   | LPAREN RPAREN { locate $1 @@ `Unit }
   | STRING { create $1.loc @@ `String $1.desc }
   | INT { create $1.loc @@ `Int $1.desc }

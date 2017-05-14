@@ -42,17 +42,17 @@ and desc = [
   | `Nop (* internal use *)
   | `Chunk of t list
   | `Refdef of text * t
-  | `Assign of t * t
+  | `Assign of assign
   | `Fundef of fundef
-  | `Return of t
-  | `Raise of t
+  | `Return of exp
+  | `Raise of exp
   | `If of if_
   | `For of for_
   | `Case of case
-  | `Block of t list
+  | `Block of exp_list
   | `Funcall of funcall
-  | `Binexp of (t * op * t)
-  | `Unexp of (op * t)
+  | `Binexp of binexp
+  | `Unexp of unexp
   | `Directive of (text * t list)
   | `Var of namepath
   | `Path of namepath
@@ -62,28 +62,48 @@ and desc = [
   | `String of string
   | `Int of int
   | `Float of float
-  | `List of t list
-  | `Tuple of t list
+  | `List of exp_list
+  | `Tuple of exp_list
   | `Range of (int Located.t * int Located.t)
   | `Enum of (text, t) enum
-  | `Deref of t
+  | `Deref of exp
   | `Deref_var of text
 ]
+
+and exp = {
+  exp : t;
+  mutable exp_type : Type.t option;
+}
+
+and exp_list = {
+  exp_list : t list;
+  mutable exp_list_type : Type.t option;
+}
+
+and assign = {
+  asg_var : t;
+  asg_exp : t;
+  mutable asg_type : Type.t option;
+}
 
 and fundef = {
   fdef_name : text;
   fdef_params : text list;
   fdef_block : t list;
+  mutable fdef_param_types : Type.t list option;
+  mutable fdef_type : Type.t option;
 }
 
 and namepath = {
   np_prefix : t option;
   np_name : text;
+  mutable np_type : Type.t option;
 }
 
 and if_ = {
   if_actions : (t * t list) list;
   if_else : t list;
+  mutable if_type : Type.t option;
 }
 
 and for_ = {
@@ -95,6 +115,8 @@ and for_ = {
 and case = {
   case_val : t;
   case_cls : case_cls list;
+  mutable case_val_type : Type.t option;
+  mutable case_cls_type : Type.t option;
 }
 
 and case_cls = {
@@ -102,28 +124,49 @@ and case_cls = {
   case_cls_ptn : pattern;
   case_cls_guard : t option;
   case_cls_action : t list;
+  mutable case_cls_act_type : Type.t option;
 }
 
 and funcall = {
   fc_fun : t;
   fc_args : t list;
+  mutable fc_fun_type : Type.t option;
+  mutable fc_arg_types : Type.t list option;
 }
 
 and index = {
   idx_prefix : t;
   idx_index : t;
+  mutable idx_type : Type.t option;
 }
 
 and ('name, 'value) enum = {
   enum_name : 'name;
   enum_params : ('name option * 'value);
+  mutable enum_type : Type.t option;
+}
+
+and binexp = {
+  binexp_left : t;
+  binexp_op : op;
+  binexp_right : t;
+  mutable binexp_type : Type.t option;
+}
+
+and unexp = {
+  unexp_op : op;
+  unexp_exp : t;
+  mutable unexp_type : Type.t option;
 }
 
 and text = string Located.t
 
-and pattern = ptn_desc Located.t
+and pattern = {
+  ptn_cls : ptn_cls Located.t;
+  mutable ptn_type : Type.t option;
+}
 
-and ptn_desc = [
+and ptn_cls = [
   | `Nop (* internal use *)
   | `Unit
   | `Bool of bool
@@ -141,4 +184,5 @@ and ptn_desc = [
 
 let nop : t = Located.less `Nop
 
-let ptn_nop : pattern = Located.less `Nop
+let ptn_nop : pattern =
+  { ptn_cls = Located.less `Nop; ptn_type = None }

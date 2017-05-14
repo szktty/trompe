@@ -176,7 +176,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         in
         (env, unit.desc)
 
-      | `Return e -> (env, (easy_infer env e).desc)
+      | `Return e -> (env, (easy_infer env e.exp).desc)
 
       | `If if_ -> 
         let value = Type.create_metavar e.loc in
@@ -204,7 +204,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
       | `Range _ -> (env, desc_range)
 
       | `List es ->
-        begin match es with
+        begin match es.exp_list with
           | [] -> (env, desc_list @@ create_metavar e.loc)
           | e :: es ->
             let base_ty = easy_infer env e in
@@ -214,7 +214,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         end
 
       | `Tuple es ->
-        (env, desc_tuple (List.map es ~f:(easy_infer env)))
+        (env, desc_tuple (List.map es.exp_list ~f:(fun e -> easy_infer env e)))
 
       | `Fundef fdef ->
         let params = List.map fdef.fdef_params
@@ -235,7 +235,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         Printf.printf "# funcall ";
         Ast.print e;
         let ex_fun = easy_infer env call.fc_fun in
-        let args = List.map call.fc_args ~f:(easy_infer env) in
+        let args = List.map call.fc_args ~f:(fun e -> easy_infer env e) in
         let ret = Type.create_metavar e.loc in
         let ac_fun = Type.create e.loc (desc_fun args ret) in
         Printf.printf "# funcall infer ex: %s\n" (Type.to_string ex_fun);
@@ -253,8 +253,8 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
             | Some ty -> (env, ty.desc)
         end
 
-      | `Unexp (op, e) ->
-        let op_ty, val_ty = match op.desc with
+      | `Unexp exp ->
+        let op_ty, val_ty = match exp.unexp_op.desc with
           | `Pos | `Neg -> (Type.int, Type.int)
           | `Fpos | `Fneg -> (Type.float, Type.float)
           | _ -> failwith "not yet supported"
@@ -262,7 +262,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         unify op_ty (easy_infer env e);
         (env, val_ty.desc)
 
-      | `Binexp (e1, op, e2) ->
+      | `Binexp { binexp_left = e1; binexp_op = op; binexp_right = e2 } ->
         let op_ty, val_ty = match op.desc with
           | `Eq | `Ne ->
             (easy_infer env e1, Type.bool)
@@ -355,10 +355,9 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
       mismatch_ac = generalize ac;
     }
 
-and easy_infer env e = snd @@ infer env e
+and easy_infer env (e:Ast.t) : Type.t = snd @@ infer env e
 
-let run (e:Ast.t) : Ast.t =
+let run (e:Ast.t) =
   verbosef "begin typing";
   ignore @@ infer (Runtime.type_env ()) e;
-  verbosef "end typing";
-  e
+  verbosef "end typing"

@@ -93,7 +93,7 @@ let rec write chan node =
     output_rp ()
   | `Return exp ->
     output_string "(return ";
-    write exp;
+    write exp.exp;
     output_rp ()
   | `If if_ ->
     output_string "(if [";
@@ -121,19 +121,19 @@ let rec write chan node =
     output_space ();
     write_nodes fc.fc_args;
     output_string ")"
-  | `Unexp (op, exp) ->
+  | `Unexp exp ->
     output_string "(";
-    write_op op;
+    write_op exp.unexp_op;
     output_space ();
-    write exp;
+    write exp.unexp_exp;
     output_string ")"
-  | `Binexp (left, op, right) ->
+  | `Binexp exp ->
     output_string "(";
-    write_op op;
+    write_op exp.binexp_op;
     output_space ();
-    write left;
+    write exp.binexp_left;
     output_space ();
-    write right;
+    write exp.binexp_right;
     output_rp ()
   | `Directive (name, args) ->
     output_string "(directive ";
@@ -159,11 +159,11 @@ let rec write chan node =
   | `String s -> output_string @@ sprintf "\"%s\"" s
   | `List exps ->
     output_string "(list ";
-    write_nodes exps;
+    write_nodes exps.exp_list;
     output_rp ()
   | `Tuple exps ->
     output_string "(tuple ";
-    write_nodes exps;
+    write_nodes exps.exp_list;
     output_rp ()
   | `Range (start, end_) ->
     output_string @@ sprintf "(range %d %d)" start.desc end_.desc
@@ -180,7 +180,7 @@ and write_ptn chan ptn =
   let write = write_ptn chan in
   let write_ptns es = write_list chan es ~f:write in
   let write_texts es = write_list chan es ~f:(fun e -> output_string e.desc) in
-  match ptn.desc with
+  match ptn.ptn_cls.desc with
   | `Unit -> output_string "()"
   | `Bool true -> output_string "true"
   | `Bool false -> output_string "false"

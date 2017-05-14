@@ -64,15 +64,15 @@ let rec eval ctx env node =
   | `Range (start, end_) -> (env, `Range (start.desc, end_.desc))
 
   | `List exps ->
-    let (_, exps) = eval_exps ctx env exps in
+    let (_, exps) = eval_exps ctx env exps.exp_list in
     (env, `List exps)
 
   | `Tuple exps ->
-    let (_, exps) = eval_exps ctx env exps in
+    let (_, exps) = eval_exps ctx env exps.exp_list in
     (env, `Tuple exps)
 
   | `Raise exp ->
-    begin match eval ctx env exp with
+    begin match eval ctx env exp.exp with
       | (_, `Exn e) -> Error.raise ctx (Exn.of_user_error e)
       | _ -> Error.raise ctx (Exn.of_reason Value_error "not exception")
     end
@@ -172,9 +172,10 @@ let rec eval ctx env node =
       | _ -> failwith (sprintf "%s is not function" (Value.to_string f))
     end
 
-  | `Binexp (left, op, right) ->
-    let (_, left') = eval ctx env left in
-    let (_, right') = eval ctx env right in
+  | `Binexp exp ->
+    let (_, left') = eval ctx env exp.binexp_left in
+    let (_, right') = eval ctx env exp.binexp_right in
+    let op = exp.binexp_op in
     let res = match op.desc with
       | `Le -> Op.le left' right'
       | `Add -> Op.add left' right'
@@ -223,17 +224,17 @@ let rec eval ctx env node =
     let env = Env.add env name.desc refval in
     (env, refval)
 
-  | `Assign (var_, exp) ->
-    begin match eval ctx env var_ with
+  | `Assign asg ->
+    begin match eval ctx env asg.asg_var with
       | (_, `Ref ref_) ->
-        let (_, newval) = eval ctx env exp in
+        let (_, newval) = eval ctx env asg.asg_exp in
         ref_ := newval;
         (env, newval)
       | _ -> failwith "assign: not reference"
     end
 
   | `Deref exp ->
-    begin match eval ctx env exp with
+    begin match eval ctx env exp.exp with
       | (_, `Ref ref_) -> (env, !ref_)
       | _ -> failwith "deref: not reference"
     end
@@ -254,7 +255,7 @@ let rec eval ctx env node =
 
 and eval_ptn ctx env value ptn =
   let test op env x y = if op x y then Some env else None in
-  match (ptn.desc, value) with
+  match (ptn.ptn_cls.desc, value) with
   | (`Unit, `Unit) -> Some env
   | (`Unit, _) -> None
   | (`Bool true, `Bool true) -> Some env
