@@ -3,8 +3,7 @@ open Core.Std
 type 'a t
 
 val create :
-  ?parent:'a t option
-  -> ?imports:'a Module.t list
+  ?imports:'a Module.t list
   -> ?attrs:'a String.Map.t
   -> unit
   ->'a t

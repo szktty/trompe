@@ -44,7 +44,6 @@ let rec eval ctx env node =
   in
 
   let eval_fundef ctx env value def_node def args =
-    let env = Env.create ~parent:(Some env) () in
     let env = Env.add env def.fdef_name.desc value in
     let env = List.fold2_exn def.fdef_params args ~init:env
         ~f:(fun env param arg -> Env.add env param.desc arg) in

@@ -1,13 +1,12 @@
 open Core.Std
 
 type 'a t = {
-  parent : 'a t option;
   imports : 'a Module.t list;
   attrs : 'a String.Map.t;
 }
 
-let create ?(parent=None) ?(imports=[]) ?attrs () =
-  { parent; imports;
+let create ?(imports=[]) ?attrs () =
+  { imports;
     attrs = Option.value attrs ~default:(String.Map.empty);
   }
 
@@ -17,14 +16,8 @@ let import env m =
 let rec find env key =
   match String.Map.find env.attrs key with
   | Some _ as res -> res
-  | None ->
-    match List.find_mapi env.imports
-            ~f:(fun _ m -> Module.find_attr m key) with
-    | Some _ as res -> res
-    | None ->
-      match env.parent with
-      | Some env -> find env key
-      | None -> None
+  | None -> List.find_mapi env.imports
+              ~f:(fun _ m -> Module.find_attr m key)
 
 let add env ~key ~data =
   { env with attrs = String.Map.add env.attrs ~key ~data }
@@ -45,21 +38,8 @@ let merge env src =
   }
 
 let debug env ~f =
-  let print env indent =
-    let open Printf in
-    let indent_s = String.make (indent * 2) ' ' in
-    printf "%s{\n" indent_s;
-    String.Map.iteri env.attrs ~f:(fun ~key ~data ->
-        printf "%s  %s = %s\n" indent_s key (f data));
-    printf "%s}\n" indent_s
-  in
-  let rec f env indent =
-    let indent = match env.parent with
-      | None -> indent
-      | Some parent ->
-        f env indent;
-        indent + 1
-    in
-    print env indent
-  in
-  f env 0
+  let open Printf in
+  printf "{\n";
+  String.Map.iteri env.attrs ~f:(fun ~key ~data ->
+      printf "  %s = %s\n" key (f data));
+  printf "}\n"
