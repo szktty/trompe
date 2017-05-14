@@ -158,6 +158,7 @@ FILES[] =
 	position
 	ast
 	ast_intf
+	compiler
 	config
 	env
 	interp
