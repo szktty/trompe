@@ -34,10 +34,8 @@ let rec to_string value =
   let values_to_string values open_tag close_tag sep =
     let buf = Buffer.create 16 in
     Buffer.add_string buf open_tag;
-    List.iter values ~f:(fun v ->
-        Buffer.add_string buf (to_string v);
-        Buffer.add_string buf sep;
-        Buffer.add_string buf " ");
+    String.concat (List.map values ~f:to_string) ~sep:", "
+    |> Buffer.add_string buf;
     Buffer.add_string buf close_tag;
     Buffer.contents buf
 
@@ -49,7 +47,7 @@ let rec to_string value =
   | `String v -> sprintf "\"%s\"" v
   | `Int v -> Int.to_string v
   | `Float v -> Float.to_string v
-  | `List vs -> values_to_string vs "[" "]" ";"
+  | `List vs -> values_to_string vs "[" "]" ","
   | `Tuple vs -> values_to_string vs "(" ")" ","
   | `Fun (fdef, _) -> sprintf "fun/%d" (List.length Ast.(fdef.fdef_params))
   | `Prim name -> sprintf "#primitive(\"%s\")" name
