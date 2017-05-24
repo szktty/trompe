@@ -137,7 +137,7 @@ rev_exp_list:
 
 exp:
   | module_def { $1 }
-  | LET pattern EQ exp { Ast.nop }
+  | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
   | LET LIDENT LARROW exp { less @@ `Refdef ($2, $4) }
   | var LARROW exp
   { less @@ `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }

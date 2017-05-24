@@ -24,8 +24,6 @@ let rec eval ctx env node =
   let open Located in
   let open Printf in
 
-  let eval_ptn ctx env value cls = eval_ptn ctx env value cls in
-
   (* TODO: 環境を継続する exp_list とそうでない exp_list (リストリテラルなど) を別の関数にする *)
   let eval_exps ctx env exps =
     let (env, values) = List.fold_left exps ~init:(env, [])
@@ -74,6 +72,14 @@ let rec eval ctx env node =
     begin match eval ctx env exp.exp with
       | (_, `Exn e) -> Error.raise ctx (Exn.of_user_error e)
       | _ -> Error.raise ctx (Exn.of_reason Value_error "not exception")
+    end
+
+  | `Vardef (ptn, exp) ->
+    let env, value = eval ctx env exp in
+    begin match eval_ptn ctx env value ptn with
+      | Result.Error () ->
+        Error.raise ctx (Exn.of_reason Runtime_error "match failed")
+      | Result.Ok env -> (env, value)
     end
 
   | `Fundef def ->
@@ -128,8 +134,8 @@ let rec eval ctx env node =
               | Some var_ -> Env.add env var_.desc value
             in
             match eval_ptn ctx env value cls.case_cls_ptn with
-            | None -> None
-            | Some env ->
+            | Result.Error () -> None
+            | Result.Ok env ->
               let guard = match cls.case_cls_guard with
                 | None -> true
                 | Some guard ->
@@ -252,26 +258,27 @@ let rec eval ctx env node =
     Printf.printf "\n";
     failwith "not supported node"
 
-and eval_ptn ctx env value ptn =
-  let test op env x y = if op x y then Some env else None in
+and eval_ptn ctx env value ptn : (Value.t Env.t, unit) Result.t =
+  let open Result in
+  let test op env x y = if op x y then Ok env else Error () in
   match (ptn.ptn_cls.desc, value) with
-  | (`Unit, `Unit) -> Some env
-  | (`Unit, _) -> None
-  | (`Bool true, `Bool true) -> Some env
-  | (`Bool false, `Bool false) -> Some env
-  | (`Bool _, _) -> None
+  | (`Unit, `Unit) -> Ok env
+  | (`Unit, _) -> Error ()
+  | (`Bool true, `Bool true) -> Ok env
+  | (`Bool false, `Bool false) -> Ok env
+  | (`Bool _, _) -> Error ()
   | (`String x, `String y) -> test String.equal env x y
-  | (`String _, _) -> None
+  | (`String _, _) -> Error ()
   | (`Int x, `Int y) -> test (=) env x y
-  | (`Int _, _) -> None
+  | (`Int _, _) -> Error ()
   | (`Float x, `Float y) -> test (=.) env x y
-  | (`Float _, _) -> None
+  | (`Float _, _) -> Error ()
 
   | (`Var name, _) ->
     if name.desc = "_" then
-      Some env
+      Ok env
     else
-      Some (Env.add env name.desc value)
+      Ok (Env.add env ~key:name.desc ~data:value)
 
   | (`Pin name, _) ->
     begin match Env.find env name.desc with
@@ -280,20 +287,24 @@ and eval_ptn ctx env value ptn =
     end
 
   | (`List xs, `List ys) when List.length xs = List.length ys ->
-    List.fold2_exn xs ys ~init:(Some env)
+    List.fold2_exn xs ys
+      ~init:(Ok env)
       ~f:(fun env x y ->
           match env with
-          | None -> None
-          | Some env -> eval_ptn ctx env y x)
-  | (`List _, _) -> None
+          | Error () -> Error ()
+          | Ok env -> eval_ptn ctx env y x)
+
+  | (`List _, _) -> Error ()
 
   | (`Tuple xs, `Tuple ys) when List.length xs = List.length ys ->
-    List.fold2_exn xs ys ~init:(Some env)
+    List.fold2_exn xs ys ~init:(Ok env)
       ~f:(fun env x y ->
           match env with
-          | None -> None
-          | Some env -> eval_ptn ctx env y x)
-  | (`Tuple _, _) -> None
+          | Error () -> Error ()
+          | Ok env -> eval_ptn ctx env y x)
+
+  | (`Tuple _, _) -> Error ()
+
   | _ -> failwith "eval pattern not impl"
 
 let run node =

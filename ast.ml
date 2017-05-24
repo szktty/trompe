@@ -40,7 +40,7 @@ let write_list chan es ~f =
     ~init:((List.length es) - 1);
   output_string chan "]"
 
-let rec write chan node =
+let rec write chan (node:Ast_intf.t) =
   let open Located in
   let open Out_channel in
   let open Printf in
@@ -64,6 +64,12 @@ let rec write chan node =
   | `Chunk exps ->
     output_string "(chunk ";
     write_nodes exps;
+    output_string ")"
+  | `Vardef (ptn, exp) ->
+    output_string "(vardef ";
+    write_ptn chan ptn;
+    output_space ();
+    write exp;
     output_string ")"
   | `Fundef fdef ->
     output_string "(fundef ";

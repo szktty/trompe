@@ -216,6 +216,12 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
       | `Tuple es ->
         (env, desc_tuple (List.map es.exp_list ~f:(fun e -> easy_infer env e)))
 
+      | `Vardef (ptn, exp) ->
+        let exp_ty = easy_infer env exp in
+        let env, ptn_ty = infer_ptn env ptn in
+        unify ~ex:ptn_ty ~ac:exp_ty;
+        (env, ptn_ty.desc)
+
       | `Fundef fdef ->
         let params = List.map fdef.fdef_params
             ~f:(fun param -> Type.create_metavar param.loc)
@@ -356,6 +362,20 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
     }
 
 and easy_infer env (e:Ast.t) : Type.t = snd @@ infer env e
+
+and infer_ptn env (ptn:Ast.pattern) =
+  match ptn.ptn_cls.desc with
+  | `Nop | `Unit -> (env, Type.unit)
+  | `Bool _ -> (env, Type.bool)
+  | `Int _ -> (env, Type.int)
+  | `Float _ -> (env, Type.float)
+  | `String _ -> (env, Type.string)
+
+  | `Var name ->
+    let ty = Type.create_metavar name.loc in
+    (Env.add env ~key:name.desc ~data:ty, ty)
+
+  | _ -> failwith "notimpl"
 
 let run (e:Ast.t) =
   verbosef "begin typing";

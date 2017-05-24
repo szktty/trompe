@@ -41,6 +41,7 @@ type t = desc Located.t
 and desc = [
   | `Nop (* internal use *)
   | `Chunk of t list
+  | `Vardef of pattern * t
   | `Refdef of text * t
   | `Assign of assign
   | `Fundef of fundef
