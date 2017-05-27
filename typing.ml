@@ -191,6 +191,14 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         unify_block if_.if_else;
         (env, value.desc)
 
+      | `For for_ ->
+        let range_ty = easy_infer env for_.for_range in
+        unify ~ex:Type.range ~ac:(easy_infer env for_.for_range);
+        let env = Env.add env ~key:for_.for_var.desc ~data:Type.int in
+        let _, block_ty = infer_block env for_.for_block in
+        unify ~ex:Type.unit ~ac:block_ty;
+        (env, Type.unit.desc)
+
       | `Unit -> (env, desc_unit)
       | `Bool _ -> (env, desc_bool)
       | `Int _ -> (env, desc_int)
