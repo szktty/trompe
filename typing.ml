@@ -382,6 +382,26 @@ and infer_ptn env (ptn:Ast.pattern) =
     let ty = Type.create_metavar name.loc in
     (Env.add env ~key:name.desc ~data:ty, ty)
 
+  | `List elts ->
+    let ty = Type.create_metavar ptn.ptn_cls.loc in
+    let env = List.fold_left elts
+        ~init:env
+        ~f:(fun env elt ->
+            let env, elt_ty = infer_ptn env elt in
+            unify ~ex:ty ~ac:elt_ty;
+            env)
+    in
+    (env, Type.list ty)
+
+  | `Tuple elts ->
+    let env, rev_tys = List.fold_left elts
+        ~init:(env, [])
+        ~f:(fun (env, accu) elt ->
+            let env, elt_ty = infer_ptn env elt in
+            (env, elt_ty :: accu))
+    in
+    (env, Type.tuple (List.rev rev_tys))
+
   | _ -> failwith "notimpl"
 
 let run (e:Ast.t) =
