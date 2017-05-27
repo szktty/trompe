@@ -252,6 +252,13 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         Printf.printf "# end funcall infer\n";
         (env, (Type.fun_return ex_fun).desc)
 
+      | `Case case ->
+        let match_ty = easy_infer env case.case_val in
+        let val_ty = Type.create_metavar e.loc in
+        List.iter case.case_cls ~f:(fun cls ->
+            infer_case_cls env match_ty val_ty cls);
+        (env, val_ty.desc)
+
       | `Var path ->
         begin match Ast.(path.np_prefix) with
           | Some _ -> failwith "not yet supported"
@@ -369,6 +376,25 @@ and easy_infer env (e:Ast.t) : Type.t = snd @@ infer env e
 and infer_block env es =
   List.fold_left es ~init:(env, Type.unit)
     ~f:(fun (env, _) e -> infer env e)
+
+and infer_case_cls env match_ty val_ty (cls:Ast.case_cls) =
+  (* pattern *)
+  let env, ptn_ty = infer_ptn env cls.case_cls_ptn in
+  unify ~ex:match_ty ~ac:ptn_ty;
+
+  (* guard *)
+  Option.iter cls.case_cls_guard ~f:(fun guard ->
+      unify ~ex:Type.bool ~ac:(easy_infer env guard));
+
+  (* var *)
+  let env = Option.value_map cls.case_cls_var
+      ~default:env
+      ~f:(fun name -> Env.add env ~key:name.desc ~data:match_ty)
+  in
+
+  (* action *)
+  let _, action_ty = infer_block env cls.case_cls_action in
+  unify ~ex:val_ty ~ac:action_ty
 
 and infer_ptn env (ptn:Ast.pattern) =
   match ptn.ptn_cls.desc with
