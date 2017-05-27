@@ -160,11 +160,6 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
 let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
-  let unit = Type.(create e.loc desc_unit) in
-  let infer_block env es =
-    List.fold_left es ~init:(env, unit)
-      ~f:(fun (env, _) e -> infer env e)
-  in
   try
     let env, desc = match e.desc with
       | `Nop -> (env, desc_unit)
@@ -174,7 +169,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
             ~init:env
             ~f:(fun env e -> fst @@ infer env e)
         in
-        (env, unit.desc)
+        (env, desc_unit)
 
       | `Return e -> (env, (easy_infer env e.exp).desc)
 
@@ -362,6 +357,10 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
     }
 
 and easy_infer env (e:Ast.t) : Type.t = snd @@ infer env e
+
+and infer_block env es =
+  List.fold_left es ~init:(env, Type.unit)
+    ~f:(fun (env, _) e -> infer env e)
 
 and infer_ptn env (ptn:Ast.pattern) =
   match ptn.ptn_cls.desc with
