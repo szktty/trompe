@@ -182,6 +182,8 @@ let rec eval ctx env node =
     let (_, right') = eval ctx env exp.binexp_right in
     let op = exp.binexp_op in
     let res = match op.desc with
+      | `Eq -> Op.eq left' right'
+      | `Ne -> Op.ne left' right'
       | `Le -> Op.le left' right'
       | `Add -> Op.add left' right'
       | `Sub -> Op.sub left' right'

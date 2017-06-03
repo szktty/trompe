@@ -123,6 +123,14 @@ module Op = struct
         Desc
     | _ -> failwith "not supported value types"
 
+  let to_bool_value value = `Bool value
+
+  let eq x y =
+    to_bool_value (x = y)
+
+  let ne x y =
+    to_bool_value (x <> y)
+
   let le x y =
     match compare x y with
     | Equal | Asc -> `Bool true
