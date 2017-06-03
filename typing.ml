@@ -18,6 +18,9 @@ exception Unify_error of unity_exn
 exception Type_mismatch of mismatch
 exception Deref_error of Type.t * string
 
+let fail_unify ex ac = 
+  raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
+
 let tyvar_names = [|
   "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n";
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z"
@@ -101,18 +104,26 @@ let instantiate (ty:Type.t) =
 let rec occur (ref:t option ref) (ty:Type.t) : bool =
   match ty.desc with
   | `App (tycon, args) ->
-    begin match occur_tycon ref tycon with
-      | false -> false
-      | true -> List.exists args ~f:(occur ref)
+    begin match tycon with
+      | `Unit
+      | `Bool
+      | `Int
+      | `Float
+      | `String
+      | `Range ->
+        false
+      | `List
+      | `Tuple
+      | `Option
+      | `Fun ->
+        List.exists args ~f:(occur ref)
+      | `Tyfun (_, ty2) ->
+        occur ref ty2
+      | _ -> failwith "not impl"
     end
   | `Meta ref2 when phys_equal ref ref2 -> true
   | `Meta { contents = None } -> false
   | `Meta { contents = Some t2 } -> occur ref t2
-  | _ -> failwith "not impl"
-
-and occur_tycon ref = function
-  | `List | `Fun -> true
-  | `Tyfun (_, ty) -> occur ref ty
   | _ -> failwith "not impl"
 
 (* 型が合うように、型変数への代入をする (caml2html: typing_unify) *)
@@ -138,11 +149,20 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
   | _, `Poly _ -> unify ~ex ~ac:(instantiate ac)
 
   | `Meta ex, `Meta ac when phys_equal ex ac -> ()
-  | `Meta ({ contents = None } as ref), _ -> ref := Some ac
-  | _, `Meta ({ contents = None } as ref) -> ref := Some ex
   | `Meta { contents = Some ex }, _ -> unify ~ex ~ac
   | _, `Meta { contents = Some ac } -> unify ~ex ~ac
 
+  | `Meta ({ contents = None } as ref), _ ->
+    if occur ref ac then
+      fail_unify ex ac
+    else
+      ref := Some ac
+
+  | _, `Meta ({ contents = None } as ref) ->
+    if occur ref ex then
+      fail_unify ex ac
+    else
+      ref := Some ex
                                         (*
   | `Var({ contents = Some(t1') }), _ -> unify t1' t2
   | _, `Var({ contents = Some(t2') }) -> unify t1 t2'
