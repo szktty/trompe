@@ -22,6 +22,7 @@ and tycon = [
   | `Struct of string list
   | `Enum of string list
   | `Fun
+  | `Fun_printf
   | `Tyfun of tyvar list * t
   | `Unique of tycon * int
 ]
@@ -87,6 +88,7 @@ let desc_tuple es = app ~args:es `Tuple
 let desc_option e = app ~args:[e] `Option
 let desc_fun params ret =
   app ~args:(List.append params [ret]) `Fun
+let desc_fun_printf = app `Fun_printf
 
 let unit = Located.less desc_unit
 let bool = Located.less desc_bool
@@ -98,6 +100,7 @@ let list e = Located.less @@ desc_list e
 let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
 let fun_ loc params ret = Located.create loc @@ desc_fun params ret
+let fun_printf = Located.less @@ desc_fun_printf
 
 module Spec = struct
 
@@ -113,6 +116,7 @@ module Spec = struct
     | `Range
     | `Option of t
     | `Fun of t list
+    | `Fun_printf
   ]
 
   let unit = `Unit
@@ -124,6 +128,7 @@ module Spec = struct
   let tuple es = `Tuple es
   let range = `Range
   let option e = `Option e
+  let fun_printf = `Fun_printf
 
   let a = `Tyvar "a"
   let b = `Tyvar "b"
@@ -156,6 +161,7 @@ module Spec = struct
       | `Int -> tyvars, desc_int
       | `Float -> tyvars, desc_float
       | `String -> tyvars, desc_string
+      | `Fun_printf -> tyvars, desc_fun_printf
       | `Tyvar name -> (name :: tyvars), `Var name
       | `List e ->
         let tyvars', ty = f tyvars e in
