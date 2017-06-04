@@ -9,7 +9,33 @@ let prim_show args =
     `Unit
 
 let prim_printf args =
-  Printf.printf "(not impl)\n";
+  let buf = Buffer.create 16 in
+  begin match args with
+    | [] -> ()
+    | `String fmt_s :: args ->
+      let fmt = Utils.Format.parse fmt_s in
+      let params = Utils.Format.params fmt in
+      if List.length params <> List.length args then begin
+        failwith "error"
+      end;
+      ignore @@ List.fold_left fmt
+        ~init:args
+        ~f:(fun args fmt ->
+            match fmt with
+            | Text c ->
+              Buffer.add_char buf c;
+              args
+            | Int ->
+              begin match args with
+                | `Int v :: args ->
+                  Buffer.add_string buf (Int.to_string v);
+                  args
+                | _ -> failwith "error"
+              end
+            | _ -> failwith "not impl")
+    | _ -> ()
+  end;
+  Printf.printf "%s" (Buffer.contents buf);
   `Unit
 
 let init () =
