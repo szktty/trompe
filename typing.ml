@@ -145,6 +145,9 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     when List.length exs = List.length acs ->
     List.iter2_exn exs acs ~f:(fun ex ac -> unify ~ex ~ac)
 
+  | `App (`Fun_printf, []), `App (`Fun_printf, [])
+  | `App (`Fun_printf, []), `App (`Fun, _) -> ()
+
   | `Poly _, _ -> unify ~ex:(instantiate ex) ~ac
   | _, `Poly _ -> unify ~ex ~ac:(instantiate ac)
 
@@ -173,6 +176,7 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
     if occur r2 t1 then raise (Unify_error(t1, t2));
     r2 := Some(t1)
                                          *)
+  | _, _ when ex = ac -> ()
   | _, _ ->
     raise (Unify_error { uniexn_ex = ex; uniexn_ac = ac })
 
@@ -264,13 +268,35 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         Printf.printf "# funcall ";
         Ast.print e;
         let ex_fun = easy_infer env call.fc_fun in
-        let args = List.map call.fc_args ~f:(fun e -> easy_infer env e) in
-        let ret = Type.create_metavar e.loc in
-        let ac_fun = Type.create e.loc (desc_fun args ret) in
         Printf.printf "# funcall infer ex: %s\n" (Type.to_string ex_fun);
-        unify ~ex:ex_fun ~ac:ac_fun;
-        Printf.printf "# end funcall infer\n";
-        (env, (Type.fun_return ex_fun).desc)
+
+        if Type.equal ex_fun Type.fun_printf then begin
+          Printf.printf "# typing printf\n";
+          match call.fc_args with
+          | [] -> failwith "no format string"
+          | fmt_s :: args ->
+            match fmt_s.desc with
+            | `String fmt_s ->
+              let args = List.map args ~f:(fun e -> easy_infer env e) in
+              let params = Type.parse_format fmt_s in
+              if List.length args <> List.length params then
+                failwith "numbers of printf arguments are not matched"
+              else begin
+                List.iter2_exn params args
+                  ~f:(fun param arg -> unify ~ex:param ~ac:arg);
+                Printf.printf "# printf ok\n";
+                (env, Type.desc_unit)
+              end
+            | _ -> (env, Type.desc_unit)
+
+        end else begin
+          let args = List.map call.fc_args ~f:(fun e -> easy_infer env e) in
+          let ret = Type.create_metavar e.loc in
+          let ac_fun = Type.create e.loc (desc_fun args ret) in
+          unify ~ex:ex_fun ~ac:ac_fun;
+          Printf.printf "# end funcall infer\n";
+          (env, (Type.fun_return ex_fun).desc)
+        end
 
       | `Case case ->
         let match_ty = easy_infer env case.case_val in

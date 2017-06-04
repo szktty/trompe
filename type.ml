@@ -42,6 +42,9 @@ let var_names = [|
   "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z";
 |]
 
+let equal (ty1:t) (ty2:t) =
+  ty1.desc = ty2.desc
+
 let rec to_string (ty:t) =
   match ty.desc with
   | `App (tycon, args) ->
@@ -55,6 +58,7 @@ let rec to_string (ty:t) =
       | `Tuple -> "Tuple"
       | `Range -> "Range"
       | `Fun -> "Fun"
+      | `Fun_printf -> "Fun_printf"
       | `Option -> "Option"
       | _ -> failwith "not impl"
     in
@@ -101,6 +105,15 @@ let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
 let fun_ loc params ret = Located.create loc @@ desc_fun params ret
 let fun_printf = Located.less @@ desc_fun_printf
+
+let parse_format s =
+  let module F = Utils.Format in
+  let fmt = Utils.Format.parse s in
+  List.map (F.params fmt)
+    ~f:(function
+        | F.Int -> int
+        | F.String -> string
+        | _ -> failwith "parse_format")
 
 module Spec = struct
 
