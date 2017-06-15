@@ -8,7 +8,7 @@ let prim_to_string args : Value.t =
     | _ -> failwith "error")
 
 let init () =
-  Runtime.Spec.(define "Int"
+  Runtime.Spec.(define "int"
                 +> fun_ "to_string" Type.Spec.(int @-> string) "to_string"
                 |> end_);
   Runtime.Primitive.add "to_string" prim_to_string
