@@ -26,8 +26,7 @@ let create_exp_list exps =
 
 %}
 
-%token <Ast.text> UIDENT
-%token <Ast.text> LIDENT
+%token <Ast.text> IDENT
 %token <Ast.text> DEREF_LIDENT
 %token <Ast.text> CHAR
 %token <Ast.text> STRING
@@ -138,13 +137,13 @@ rev_exp_list:
 exp:
   | module_def { $1 }
   | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
-  | LET LIDENT LARROW exp { less @@ `Refdef ($2, $4) }
+  | LET IDENT LARROW exp { less @@ `Refdef ($2, $4) }
   | var LARROW exp
   { less @@ `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }
   | DO block END { less @@ `Block (create_exp_list $2) }
   | RETURN exp { less @@ `Return (create_exp $2) }
   | RAISE exp { less @@ `Raise (create_exp $2) }
-  | FOR LIDENT IN exp DO exp_list END
+  | FOR IDENT IN exp DO exp_list END
   { less @@ `For { for_var = $2; for_range = $4; for_block = $6 } }
   | fundef_exp { $1 }
   | if_exp { $1 }
@@ -160,7 +159,7 @@ module_def:
   | MODULE exp_list END { Ast.nop }
 
 fundef_exp:
-  | DEF LIDENT param_list EQ exp
+  | DEF IDENT param_list EQ exp
   {
     less @@ `Fundef {
         fdef_name = $2;
@@ -170,7 +169,7 @@ fundef_exp:
         fdef_type = None;
     }
   }
-  | DEF LIDENT param_list block END
+  | DEF IDENT param_list block END
   {
     less @@ `Fundef {
         fdef_name = $2;
@@ -193,8 +192,8 @@ rev_param_list:
   | rev_param_list COMMA param { $3 :: $1 }
 
 param:
-  | LIDENT { $1 }
-  | LIDENT COLON type_exp { $1 } (* TODO *)
+  | IDENT { $1 }
+  | IDENT COLON type_exp { $1 } (* TODO *)
 
 if_exp:
   | IF exp THEN block END
@@ -265,7 +264,7 @@ case_clause:
       case_cls_guard = snd $1;
       case_cls_action = $3;
       case_cls_act_type = None } }
-  | LIDENT EQ case_pattern RARROW block
+  | IDENT EQ case_pattern RARROW block
   { { Ast.case_cls_var = Some $1;
       case_cls_ptn = fst $3;
       case_cls_guard = snd $3;
@@ -337,7 +336,7 @@ unary_body:
   | NEG simple_exp { create_unexp $1 `Neg $2 }
   | FNEG simple_exp { create_unexp $1 `Fneg $2 }
   | AST simple_exp { less @@ `Deref (create_exp $2) }
-  | DEREF LIDENT { less @@ `Deref_var $2 } (* TODO: needed? *)
+  | DEREF IDENT { less @@ `Deref_var $2 } (* TODO: needed? *)
 
 simple_exp:
   | prefix_exp %prec app { $1 }
@@ -350,31 +349,18 @@ prefix_exp:
   | LPAREN exp COLON type_exp RPAREN { $2 } (* TODO *)
 
 directive:
-  | AT LIDENT paren_arg_list { less @@ `Directive ($2, $3) }
+  | AT IDENT paren_arg_list { less @@ `Directive ($2, $3) }
 
 var:
-  | LIDENT
+  | IDENT
   {
     create $1.loc @@ `Var {
         np_prefix = None;
         np_name = $1;
         np_type = None }
   }
-  | UIDENT
-  {
-    create $1.loc @@ `Path {
-        np_prefix = None;
-        np_name = $1;
-        np_type = None }
-  }
-  | prefix_exp DOT LIDENT
+  | prefix_exp DOT IDENT
   { less @@ `Var {
-        np_prefix = Some $1;
-        np_name = $3;
-        np_type = None }
-  }
-  | prefix_exp DOT UIDENT
-  { less @@ `Path {
         np_prefix = Some $1;
         np_name = $3;
         np_type = None }
@@ -418,11 +404,11 @@ pattern_clause:
   | FLOAT { create $1.loc @@ `Float $1.desc }
   | TRUE { locate $1 @@ `Bool true }
   | FALSE { locate $1 @@ `Bool false }
-  | LIDENT { create $1.loc @@ `Var $1 }
-  | UIDENT { less @@ `Variant ($1, [])  }
-  | UIDENT LPAREN elts_ptn RPAREN { less @@ `Variant ($1, $3)  }
-  | CARET LIDENT { less @@ `Pin $2 }
-  | pattern COLON2 LIDENT { less @@ `Cons ($1, $3) }
+  | IDENT { create $1.loc @@ `Var $1 }
+  | DOT IDENT { less @@ `Variant ($2, [])  }
+  | DOT IDENT LPAREN elts_ptn RPAREN { less @@ `Variant ($2, $4)  }
+  | CARET IDENT { less @@ `Pin $2 }
+  | pattern COLON2 IDENT { less @@ `Cons ($1, $3) }
   | list_ptn { less @@ `List $1 }
   | tuple_ptn { less @@ `Tuple $1 }
 
@@ -454,7 +440,6 @@ rev_type_exp_list:
 
 simple_type_exp:
   | LPAREN type_exp RPAREN { Ast.nop }
-  | LIDENT { Ast.nop }
   | type_path { Ast.nop }
   | LBRACK type_exp RBRACK { Ast.nop }
   | LPAREN type_exp COMMA type_exp_list RPAREN { Ast.nop }
@@ -463,5 +448,5 @@ type_path:
   | rev_type_path { Core.Std.List.rev $1 }
 
 rev_type_path:
-  | UIDENT { [Ast.nop] } 
-  | rev_type_path DOT UIDENT { Ast.nop :: $1 }
+  | IDENT { [Ast.nop] } 
+  | rev_type_path DOT IDENT { Ast.nop :: $1 }

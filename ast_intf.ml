@@ -56,7 +56,6 @@ and desc = [
   | `Unexp of unexp
   | `Directive of (text * t list)
   | `Var of namepath
-  | `Path of namepath
   | `Index of index
   | `Unit
   | `Bool of bool

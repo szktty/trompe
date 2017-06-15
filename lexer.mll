@@ -28,11 +28,11 @@ let to_loc lexbuf =
   Location.create (start_pos lexbuf) (end_pos lexbuf)
 
 let to_word lexbuf =
-  Located.locate (to_loc lexbuf) (lexeme lexbuf)
+  Located.locate (to_loc lexbuf) (String.lowercase @@ lexeme lexbuf)
 
 let to_word_map lexbuf ~f =
   let value = f @@ lexeme lexbuf in
-  Located.locate (to_loc lexbuf) (f @@ lexeme lexbuf)
+  Located.locate (to_loc lexbuf) (f @@ String.lowercase @@ lexeme lexbuf)
 
 let strlit lexbuf read =
   let sp = start_pos lexbuf in
@@ -49,8 +49,7 @@ let exp = ['e' 'E'] ['-' '+']? digit+
 let float = digit+ frac? exp?
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let lident = ['a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!' '?']?
-let uident = ['A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+let ident = ['A'-'Z' 'a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!' '?']?
 let comment = '#'
 let blank = [' ' '\t']*
 let prefix = newline+ blank
@@ -121,18 +120,7 @@ rule read =
   | "when"      { WHEN }
   | "false"     { FALSE (to_loc lexbuf) }
   | "true"      { TRUE (to_loc lexbuf) }
-  | lident      { LIDENT (to_word lexbuf) }
-  | uident
-  {
-    let ident = lexeme lexbuf in
-    let expected = Utils.sentencecase ident in
-    if expected <> ident then begin
-      raise (Syntax_error (start_pos lexbuf,
-         Printf.sprintf "Identifier '%s' must be sentence case with underscore (example: '%s')"
-            ident expected))
-    end;
-    UIDENT (to_word lexbuf)
-  }
+  | ident       { IDENT (to_word lexbuf) }
   | _           { raise (Syntax_error (start_pos lexbuf, "Unexpected char: " ^ Lexing.lexeme lexbuf)) }
   | eof         { EOF }
 
