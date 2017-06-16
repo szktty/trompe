@@ -172,3 +172,40 @@ let rec equal x y =
   | L_prim of (string * primitive)
                                     *)
   | _ -> failwith "Value.equal not support"
+
+let check_arity name arity args =
+  let count = List.length args in
+  if count <> arity then
+    failwith (sprintf "%s() takes %d arguments (%d given)" name arity count)
+
+let unit_arg i = function
+  | `Unit -> ()
+  | _ -> failwith (sprintf "argument %d must be unit" i)
+
+let bool_arg i = function
+  | `Bool v -> v
+  | _ -> failwith (sprintf "argument %d must be bool" i)
+
+let int_arg i = function
+  | `Int v -> v
+  | _ -> failwith (sprintf "argument %d must be int" i)
+
+let float_arg i = function
+  | `Float v -> v
+  | _ -> failwith (sprintf "argument %d must be float" i)
+
+let string_arg i = function
+  | `String s -> s
+  | _ -> failwith (sprintf "argument %d must be string" i)
+
+let range_arg i = function
+  | `Range v -> v
+  | _ -> failwith (sprintf "argument %d must be range" i)
+
+let list_arg i = function
+  | `List v -> v
+  | _ -> failwith (sprintf "argument %d must be list" i)
+
+let tuple_arg i = function
+  | `Tuple v -> v
+  | _ -> failwith (sprintf "argument %d must be tuple" i)
