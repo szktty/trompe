@@ -2,16 +2,14 @@ open Core.Std
 open Value
 
 let prim_id args =
-  match List.hd args with
-  | None -> failwith "must be an argument"
-  | Some arg -> arg
+  check_arity "id" 1 args;
+  List.hd_exn args
 
 let prim_show args =
-  match List.hd args with
-  | None -> failwith "must be an argument"
-  | Some arg ->
-    Printf.printf "%s\n" (Value.to_string arg);
-    `Unit
+  check_arity "show" 1 args;
+  let arg = List.hd_exn args in
+  Printf.printf "%s\n" (Value.to_string arg);
+  `Unit
 
 let prim_printf args =
   let buf = Buffer.create 16 in
