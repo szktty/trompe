@@ -1,6 +1,10 @@
 open Core.Std
 
 let init () =
-  Lib_kernel.init ();
+  Lib_filename.init ();
   Lib_int.init ();
+  Lib_kernel.init ();
+  Lib_list.init ();
+  Lib_os.init ();
+  Lib_string.init ();
   ()

@@ -176,8 +176,12 @@ FILES[] =
 	utils
 	value
 	lib
-	lib_kernel
+	lib_filename
 	lib_int
+	lib_kernel
+	lib_list
+	lib_os
+	lib_string
 
 PROGRAM = trompe
 # OCAML_LIBS +=
