@@ -50,6 +50,7 @@ let create_exp_list exps =
 %token RARROW                       (* "->" *)
 %token BAR                          (* "|" *)
 %token CARET                        (* "^" *)
+%token SQUOTE                       (* "'" *)
 %token <Location.t> AT              (* "@" *)
 %token <Location.t> AMP             (* "&" *)
 %token <Location.t> LPIPE           (* "<|" *)
@@ -440,6 +441,7 @@ rev_type_exp_list:
 
 simple_type_exp:
   | LPAREN type_exp RPAREN { Ast.nop }
+  | SQUOTE IDENT { Ast.nop }
   | type_path { Ast.nop }
   | LBRACK type_exp RBRACK { Ast.nop }
   | LPAREN type_exp COMMA type_exp_list RPAREN { Ast.nop }

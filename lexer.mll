@@ -49,6 +49,7 @@ let exp = ['e' 'E'] ['-' '+']? digit+
 let float = digit+ frac? exp?
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
+let char = '\'' [^'\''] '\''
 let ident = ['A'-'Z' 'a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!' '?']?
 let comment = '#'
 let blank = [' ' '\t']*
@@ -61,6 +62,8 @@ rule read =
   | comment     { skip_comment lexbuf; read lexbuf }
   | int         { INT (to_word_map lexbuf ~f:int_of_string) }
   | float       { FLOAT (to_word_map lexbuf ~f:float_of_string) }
+  | char        { CHAR (to_word lexbuf) } 
+  | '\''        { SQUOTE } 
   | '"'         { STRING (strlit lexbuf read_string) } 
   | '('         { LPAREN (to_loc lexbuf) }
   | ')'         { RPAREN }
