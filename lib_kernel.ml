@@ -1,6 +1,11 @@
 open Core.Std
 open Value
 
+let prim_id args =
+  match List.hd args with
+  | None -> failwith "must be an argument"
+  | Some arg -> arg
+
 let prim_show args =
   match List.hd args with
   | None -> failwith "must be an argument"
@@ -40,10 +45,12 @@ let prim_printf args =
 
 let init () =
   Runtime.Spec.(define "kernel"
+                +> fun_ "id" Type.Spec.(a @-> a) "id"
                 +> fun_ "show" Type.Spec.(a @-> unit) "show"
                 +> fun_ "printf" Type.Spec.fun_printf "printf"
                 +> string "version" "0.0.1"
                 |> end_);
+  Runtime.Primitive.add "id" prim_id;
   Runtime.Primitive.add "show" prim_show;
   Runtime.Primitive.add "printf" prim_printf;
   ()
