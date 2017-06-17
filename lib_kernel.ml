@@ -1,5 +1,6 @@
 open Core.Std
 open Value
+open Interp.Primitive
 
 let prim_id args =
   check_arity "id" 1 args;
