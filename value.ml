@@ -11,6 +11,7 @@ type t = [
   | `List of t list
   | `Tuple of t list
   | `Fun of (Ast.fundef * capture)
+  | `Stream of (In_channel.t option * Out_channel.t option)
   | `Prim of string
   | `Ref of t ref
   | `Enum of (string, t) Ast.enum

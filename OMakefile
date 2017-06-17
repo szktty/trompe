@@ -178,6 +178,7 @@ FILES[] =
 	lib
 	lib_filename
 	lib_int
+	lib_io
 	lib_kernel
 	lib_list
 	lib_os

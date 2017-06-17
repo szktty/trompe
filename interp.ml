@@ -389,4 +389,9 @@ module Primitive = struct
     | `Tuple v -> v
     | _ -> failwith (sprintf "argument %d must be tuple" i)
 
+  let get_stream args i =
+    match List.nth_exn args i with
+    | `Stream v -> v
+    | _ -> failwith (sprintf "argument %d must be stream" i)
+
 end

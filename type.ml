@@ -23,6 +23,7 @@ and tycon = [
   | `Enum of string list
   | `Fun
   | `Fun_printf
+  | `Stream
   | `Tyfun of tyvar list * t
   | `Unique of tycon * int
 ]
@@ -59,6 +60,7 @@ let rec to_string (ty:t) =
       | `Range -> "Range"
       | `Fun -> "Fun"
       | `Fun_printf -> "Fun_printf"
+      | `Stream -> "Stream"
       | `Option -> "Option"
       | _ -> failwith "not impl"
     in
@@ -93,6 +95,7 @@ let desc_option e = app ~args:[e] `Option
 let desc_fun params ret =
   app ~args:(List.append params [ret]) `Fun
 let desc_fun_printf = app `Fun_printf
+let desc_stream = app `Stream
 
 let unit = Located.less desc_unit
 let bool = Located.less desc_bool
@@ -105,6 +108,7 @@ let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
 let fun_ loc params ret = Located.create loc @@ desc_fun params ret
 let fun_printf = Located.less @@ desc_fun_printf
+let stream = Located.less @@ desc_stream 
 
 let parse_format s =
   let module F = Utils.Format in
@@ -130,6 +134,7 @@ module Spec = struct
     | `Option of t
     | `Fun of t list
     | `Fun_printf
+    | `Stream
   ]
 
   let unit = `Unit
@@ -142,6 +147,7 @@ module Spec = struct
   let range = `Range
   let option e = `Option e
   let fun_printf = `Fun_printf
+  let stream = `Stream
 
   let a = `Tyvar "a"
   let b = `Tyvar "b"
@@ -174,6 +180,7 @@ module Spec = struct
       | `Int -> tyvars, desc_int
       | `Float -> tyvars, desc_float
       | `String -> tyvars, desc_string
+      | `Stream -> tyvars, desc_stream
       | `Fun_printf -> tyvars, desc_fun_printf
       | `Tyvar name -> (name :: tyvars), `Var name
       | `List e ->
