@@ -344,4 +344,49 @@ module Primitive = struct
     end else
       failwith "arity error"
 
+  let check_arity name arity args =
+    let count = List.length args in
+    if count <> arity then
+      failwith (sprintf "%s() takes %d arguments (%d given)" name arity count)
+
+  let unit args i =
+    match List.nth_exn args i with
+    | `Unit -> ()
+    | _ -> failwith (sprintf "argument %d must be unit" i)
+
+  let get_bool args i =
+    match List.nth_exn args i with
+    | `Bool v -> v
+    | _ -> failwith (sprintf "argument %d must be bool" i)
+
+  let get_int args i =
+    match List.nth_exn args i with
+    | `Int v -> v
+    | _ -> failwith (sprintf "argument %d must be int" i)
+
+  let get_float args i =
+    match List.nth_exn args i with
+    | `Float v -> v
+    | _ -> failwith (sprintf "argument %d must be float" i)
+
+  let get_string args i =
+    match List.nth_exn args i with
+    | `String s -> s
+    | _ -> failwith (sprintf "argument %d must be string" i)
+
+  let get_range args i =
+    match List.nth_exn args i with
+    | `Range v -> v
+    | _ -> failwith (sprintf "argument %d must be range" i)
+
+  let get_list args i =
+    match List.nth_exn args i with
+    | `List v -> v
+    | _ -> failwith (sprintf "argument %d must be list" i)
+
+  let get_tuple args i =
+    match List.nth_exn args i with
+    | `Tuple v -> v
+    | _ -> failwith (sprintf "argument %d must be tuple" i)
+
 end
