@@ -331,11 +331,13 @@ module Primitive = struct
     | `Exn
   ]
 
+  (* TODO: deprecated *)
   let check_arg arg ty =
     match arg, ty with
     | `Int value, `Int -> arg
     | _ -> failwith "type error"
 
+  (* TODO: deprecated *)
   let parse args types =
     if List.length args <> List.length types then begin
       List.map2_exn args types ~f:check_arg
