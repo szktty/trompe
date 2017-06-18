@@ -21,6 +21,8 @@ let rec root m =
 
 let is_root m = Option.is_none m.parent
 
+let parent m = m.parent
+
 let import m x =
   m.imports <- x :: m.imports
 

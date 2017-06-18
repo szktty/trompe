@@ -16,6 +16,8 @@ val root :'a t ->'a t option
 
 val is_root :'a t -> bool
 
+val parent : 'a t -> 'a t option
+
 val import :'a t ->'a t -> unit
 
 val namepath :'a t -> Namepath.t
