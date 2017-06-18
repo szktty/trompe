@@ -23,6 +23,7 @@ and tycon = [
   | `Enum of string list
   | `Fun
   | `Fun_printf
+  | `Module of string
   | `Stream
   | `Tyfun of tyvar list * t
   | `Unique of tycon * int
@@ -62,6 +63,7 @@ let rec to_string (ty:t) =
       | `Fun_printf -> "Fun_printf"
       | `Stream -> "Stream"
       | `Option -> "Option"
+      | `Module name -> Printf.sprintf "Module(%s)" name
       | _ -> failwith "not impl"
     in
     let args_s =
@@ -75,12 +77,23 @@ let rec to_string (ty:t) =
   | `Poly (tyvars, ty) ->
     "Poly([" ^ (String.concat tyvars ~sep:", ") ^ "], " ^ to_string ty ^ ")"
 
+let rec unwrap (ty:t) =
+  match ty.desc with
+  | `Meta { contents = Some ty }
+  | `Poly (_, ty) -> unwrap ty
+  | _ -> ty
+
 let rec fun_return (ty:t) =
   match ty.desc with
   | `Meta { contents = Some ty }
   | `Poly (_, ty) -> fun_return ty
   | `App (`Fun, args) -> List.last_exn args
   | _ -> failwith "not function"
+
+let module_name (ty:t) =
+  match (unwrap ty).desc with
+  | `App (`Module name, _) -> Some name
+  | _ -> None
 
 let app ?(args=[]) tycon = `App (tycon, args)
 let desc_unit = app `Unit
@@ -108,6 +121,7 @@ let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
 let fun_ loc params ret = Located.create loc @@ desc_fun params ret
 let fun_printf = Located.less @@ desc_fun_printf
+let module_ name = Located.less @@ app (`Module name)
 let stream = Located.less @@ desc_stream 
 
 let parse_format s =

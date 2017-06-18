@@ -18,11 +18,26 @@ let find_type_module path =
 let find_value_module path =
   find_module !value_modules path
 
+let top_module_names mods =
+  List.fold_left mods
+    ~init:[]
+    ~f:(fun accu m ->
+        match Module.parent m with
+        | Some _ -> accu
+        | None -> Module.name m :: accu)
+
+let top_module_attrs mods ~f =
+  List.map (top_module_names mods) ~f:(fun name -> (name, f name))
+  |> String.Map.of_alist_exn
+
 let type_env () =
-  Env.create ~imports:!type_modules ()
+  let attrs = top_module_attrs !type_modules
+      ~f:(fun name -> Type.module_ name) in
+  Env.create ~imports:!type_modules ~attrs ()
 
 let value_env () =
-  Env.create ~imports:!value_modules ()
+  let attrs = top_module_attrs !value_modules ~f:(fun name -> `Module name) in
+  Env.create ~imports:!value_modules ~attrs ()
 
 module Primitive = struct
 
@@ -70,6 +85,7 @@ module Spec = struct
 
   let end_ spec =
     (* TODO: parent *)
+    Printf.printf "# add module %s\n" spec.mod_name;
     let tattrs, vattrs = List.fold_left spec.attrs
         ~init:(String.Map.empty, String.Map.empty)
         ~f:(fun (tattrs, vattrs) attr ->

@@ -308,7 +308,19 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 
       | `Var path ->
         begin match Ast.(path.np_prefix) with
-          | Some _ -> failwith "not yet supported"
+          | Some prefix ->
+            begin match (Type.unwrap (easy_infer env prefix)).desc with
+              | `App (`Module mname, _) ->
+                begin match Runtime.find_type_module mname with
+                  | None -> failwith (sprintf "unknown module %s" mname)
+                  | Some m ->
+                    let aname = path.np_name.desc in
+                    match Module.find_attr m aname with
+                    | None -> failwith ("module attribute is not found: " ^ aname)
+                    | Some ty -> (env, ty.desc)
+                end
+              | _ -> failwith "not module"
+            end
           | None ->
             let name = path.np_name.desc in
             match Env.find env name with
