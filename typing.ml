@@ -110,7 +110,8 @@ let rec occur (ref:t option ref) (ty:Type.t) : bool =
       | `Int
       | `Float
       | `String
-      | `Range ->
+      | `Range
+      | `Stream ->
         false
       | `List
       | `Tuple
