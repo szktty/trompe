@@ -54,7 +54,9 @@ let rec write chan (node:Ast_intf.t) =
   let write_texts es = write_list chan es ~f:(fun e -> output_string e.desc) in
   (* TODO: location *)
   let output_namepath np =
-    (* TODO: path *)
+    Option.iter np.np_prefix ~f:(fun node ->
+        write node;
+        output_string " ");
     output_string "\"";
     output_string np.np_name.desc;
     output_string "\""
