@@ -352,46 +352,46 @@ module Primitive = struct
   let unit args i =
     match List.nth_exn args i with
     | `Unit -> ()
-    | _ -> failwith (sprintf "argument %d must be unit" i)
+    | _ -> failwith (sprintf "argument %d must be unit" (i + 1))
 
   let get_bool args i =
     match List.nth_exn args i with
     | `Bool v -> v
-    | _ -> failwith (sprintf "argument %d must be bool" i)
+    | _ -> failwith (sprintf "argument %d must be bool" (i + 1))
 
   let get_int args i =
     match List.nth_exn args i with
     | `Int v -> v
-    | _ -> failwith (sprintf "argument %d must be int" i)
+    | _ -> failwith (sprintf "argument %d must be int" (i + 1))
 
   let get_float args i =
     match List.nth_exn args i with
     | `Float v -> v
-    | _ -> failwith (sprintf "argument %d must be float" i)
+    | _ -> failwith (sprintf "argument %d must be float" (i + 1))
 
   let get_string args i =
     match List.nth_exn args i with
     | `String s -> s
-    | _ -> failwith (sprintf "argument %d must be string" i)
+    | _ -> failwith (sprintf "argument %d must be string" (i + 1))
 
   let get_range args i =
     match List.nth_exn args i with
     | `Range v -> v
-    | _ -> failwith (sprintf "argument %d must be range" i)
+    | _ -> failwith (sprintf "argument %d must be range" (i + 1))
 
   let get_list args i =
     match List.nth_exn args i with
     | `List v -> v
-    | _ -> failwith (sprintf "argument %d must be list" i)
+    | _ -> failwith (sprintf "argument %d must be list" (i + 1))
 
   let get_tuple args i =
     match List.nth_exn args i with
     | `Tuple v -> v
-    | _ -> failwith (sprintf "argument %d must be tuple" i)
+    | _ -> failwith (sprintf "argument %d must be tuple" (i + 1))
 
   let get_stream args i =
     match List.nth_exn args i with
     | `Stream v -> v
-    | _ -> failwith (sprintf "argument %d must be stream" i)
+    | _ -> failwith (sprintf "argument %d must be stream" (i + 1))
 
 end
