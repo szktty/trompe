@@ -43,7 +43,7 @@ let prim_printf args =
   `Unit
 
 let init () =
-  Runtime.Spec.(define "kernel"
+  Runtime.Spec.(define "kernel" ~init:true
                 +> fun_ "id" Type.Spec.(a @-> a) "id"
                 +> fun_ "show" Type.Spec.(a @-> unit) "show"
                 +> fun_ "printf" Type.Spec.fun_printf "printf"

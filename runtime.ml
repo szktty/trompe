@@ -2,7 +2,11 @@ open Core.Std
 
 let type_modules : Type.t Module.t list ref = ref []
 
+let type_imports : Type.t Module.t list ref = ref []
+
 let value_modules : Value.t Module.t list ref = ref []
+
+let value_imports : Value.t Module.t list ref = ref []
 
 let find_module ?(path=[]) tops ~name =
   match path with
@@ -37,7 +41,7 @@ let type_env () =
 
 let value_env () =
   let attrs = top_module_attrs !value_modules ~f:(fun name -> `Module name) in
-  Env.create ~imports:!value_modules ~attrs ()
+  Env.create ~imports:!value_imports ~attrs ()
 
 module Primitive = struct
 
@@ -61,12 +65,13 @@ module Spec = struct
 
   type t = {
     mod_name : string;
+    init : bool;
     parent : string option;
     attrs : attr list;
   }
 
-  let define ?parent name =
-    { mod_name = name; parent; attrs = [] }
+  let define ?parent ?(init=false) name =
+    { mod_name = name; init; parent; attrs = [] }
 
   let (+>) def attr =
     { def with attrs = attr :: def.attrs }
@@ -92,8 +97,14 @@ module Spec = struct
             (String.Map.add tattrs ~key:attr.attr_name ~data:attr.ty,
              String.Map.add vattrs ~key:attr.attr_name ~data:attr.value))
     in
-    type_modules := Module.create spec.mod_name ~attrs:tattrs :: !type_modules;
-    value_modules := Module.create spec.mod_name ~attrs:vattrs :: !value_modules;
+    let tmod = Module.create spec.mod_name ~attrs:tattrs in
+    let vmod = Module.create spec.mod_name ~attrs:vattrs in
+    type_modules := tmod :: !type_modules;
+    value_modules := vmod :: !value_modules;
+    if spec.init then begin
+      type_imports := tmod :: !type_imports;
+      value_imports := vmod :: !value_imports;
+    end;
     ()
 
 end
