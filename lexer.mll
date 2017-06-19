@@ -118,6 +118,7 @@ rule read =
   | "module"    { MODULE }
   | "raise"     { RAISE }
   | "return"    { RETURN }
+  | "struct"    { STRUCT }
   | "then"      { THEN }
   | "try"       { TRY }
   | "when"      { WHEN }

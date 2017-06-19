@@ -97,6 +97,7 @@ let create_exp_list exps =
 %token RAISE                        (* "raise" *)
 %token RETURN                       (* "return" *)
 %token PARTIAL                      (* "partial" *)
+%token STRUCT                       (* "struct" *)
 %token THEN                         (* "then" *)
 %token TRY                          (* "try" *)
 %token WHEN                         (* "when" *)
@@ -137,6 +138,7 @@ rev_exp_list:
 
 exp:
   | module_def { $1 }
+  | struct_def { $1 }
   | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
   | LET IDENT LARROW exp { less @@ `Refdef ($2, $4) }
   | var LARROW exp
@@ -158,6 +160,30 @@ exp:
 module_def:
   | MODULE END { Ast.nop }
   | MODULE exp_list END { Ast.nop }
+
+struct_def:
+  | STRUCT IDENT field_def_list item_def_list END { Ast.nop }
+
+field_def_list:
+  | rev_field_def_list { Core.Std.List.rev $1 }
+
+rev_field_def_list:
+  | field_def { [$1] }
+  | rev_field_def_list field_def { $2 :: $1 }
+
+field_def:
+  | IDENT COLON type_exp { Ast.nop }
+
+item_def_list:
+  | rev_item_def_list { Core.Std.List.rev $1 }
+
+rev_item_def_list:
+  | item_def { [$1] }
+  | rev_item_def_list item_def { $2 :: $1 }
+
+item_def:
+  | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
+  | fundef_exp { $1 }
 
 fundef_exp:
   | DEF IDENT param_list EQ exp
@@ -429,7 +455,6 @@ tuple_ptn:
 
 type_exp:
   | simple_type_exp { $1 }
-  | simple_type_exp simple_type_exp { $1 }
   | simple_type_exp LT type_exp_list GT { $1 }
 
 type_exp_list:
