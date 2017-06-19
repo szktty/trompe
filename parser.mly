@@ -88,6 +88,7 @@ let create_exp_list exps =
 %token ELSE                         (* "else" *)
 %token ELSEIF                       (* "elseif" *)
 %token END                          (* "end" *)
+%token ENUM                         (* "enum" *)
 %token FOR                          (* "for" *)
 %token FUN                          (* "fun" *)
 %token IF                           (* "if" *)
@@ -139,6 +140,7 @@ rev_exp_list:
 exp:
   | module_def { $1 }
   | struct_def { $1 }
+  | enum_def { $1 }
   | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
   | LET IDENT LARROW exp { less @@ `Refdef ($2, $4) }
   | var LARROW exp
@@ -162,7 +164,7 @@ module_def:
   | MODULE exp_list END { Ast.nop }
 
 struct_def:
-  | STRUCT IDENT field_def_list item_def_list END { Ast.nop }
+  | STRUCT IDENT field_def_list END { Ast.nop }
 
 field_def_list:
   | rev_field_def_list { Core.Std.List.rev $1 }
@@ -170,20 +172,32 @@ field_def_list:
 rev_field_def_list:
   | field_def { [$1] }
   | rev_field_def_list field_def { $2 :: $1 }
+  | rev_field_def_list COMMA field_def { $3 :: $1 }
 
 field_def:
   | IDENT COLON type_exp { Ast.nop }
 
-item_def_list:
-  | rev_item_def_list { Core.Std.List.rev $1 }
+enum_def:
+  | ENUM IDENT variant_def_list END { Ast.nop }
 
-rev_item_def_list:
-  | item_def { [$1] }
-  | rev_item_def_list item_def { $2 :: $1 }
+variant_def_list:
+  | rev_variant_def_list { Core.Std.List.rev $1 }
 
-item_def:
-  | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
-  | fundef_exp { $1 }
+rev_variant_def_list:
+  | variant_def { [$1] }
+  | rev_variant_def_list variant_def { $2 :: $1 }
+  | rev_variant_def_list COMMA variant_def { $3 :: $1 }
+
+variant_def:
+  | IDENT { Ast.nop }
+  | IDENT LPAREN variant_param_list RPAREN { Ast.nop }
+
+variant_param_list:
+  | rev_variant_param_list { Core.Std.List.rev $1 }
+
+rev_variant_param_list:
+  | type_exp { [$1] }
+  | rev_variant_param_list COMMA type_exp { $3 :: $1 }
 
 fundef_exp:
   | DEF IDENT param_list EQ exp

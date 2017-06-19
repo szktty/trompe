@@ -110,6 +110,7 @@ rule read =
   | "do"        { DO }
   | "else"      { ELSE }
   | "end"       { END }
+  | "enum"      { ENUM }
   | "for"       { FOR }
   | "fun"       { FUN }
   | "if"        { IF }
