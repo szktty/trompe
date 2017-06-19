@@ -68,7 +68,7 @@ let rec generalize (ty:Type.t) : Type.t =
 let rec subst (ty:Type.t) (env:(tyvar * t) list) =
   match ty.desc with
   | `Var tyvar ->
-    Option.value (List.Assoc.find env tyvar) ~default:ty
+    Option.value (List.Assoc.find env ~equal:(=) tyvar) ~default:ty
   | `App (`Tyfun (tyvars, ty'), args) ->
     let env' = List.map2_exn tyvars args
         ~f:(fun tyvar ty -> (tyvar, ty)) in
