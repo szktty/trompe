@@ -116,6 +116,7 @@ let rec occur (ref:t option ref) (ty:Type.t) : bool =
       | `List
       | `Tuple
       | `Option
+      | `Box
       | `Fun ->
         List.exists args ~f:(occur ref)
       | `Tyfun (_, ty2) ->
@@ -139,7 +140,8 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
   | `App (`Range, []), `App (`Range, []) -> ()
 
   | `App (`List, [ex]), `App (`List, [ac])
-  | `App (`Option, [ex]), `App (`Option, [ac]) -> unify ~ex ~ac
+  | `App (`Option, [ex]), `App (`Option, [ac])
+  | `App (`Box, [ex]), `App (`Box, [ac]) -> unify ~ex ~ac
 
   | `App (`Tuple, exs), `App (`Tuple, acs)
   | `App (`Fun, exs), `App (`Fun, acs)

@@ -19,6 +19,7 @@ and tycon = [
   | `Tuple
   | `Range
   | `Option
+  | `Box
   | `Struct of string list
   | `Enum of string list
   | `Fun
@@ -63,6 +64,7 @@ let rec to_string (ty:t) =
       | `Fun_printf -> "Fun_printf"
       | `Stream -> "Stream"
       | `Option -> "Option"
+      | `Box -> "Box"
       | `Module name -> Printf.sprintf "Module(%s)" name
       | _ -> failwith "not impl"
     in
