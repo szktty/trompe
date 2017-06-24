@@ -22,11 +22,11 @@ if res1 == res2 then
 end
 
 let video_mode = {
-  video_mode = res1,
+  video_mode: resolution = res1,
   interlaced = false,
   frame_rate = 0.0,
-  name = ref(.none)
+  name = ref(none)
 }
 
-video_mode.name := "noninterlaced video"
-printf("video mode name: %s\n", *video_mode.name)
+video_mode.name <- "noninterlaced video"
+printf("video mode name: %s\n", (*video_mode.name))
