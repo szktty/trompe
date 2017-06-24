@@ -7,7 +7,7 @@ struct video_mode
   resolution: resolution
   interlaced: bool
   frame_rate: float
-  name: ref<option<string>>
+  name: box<option<string>>
 end
 
 def new_resolution(width, height)
@@ -25,8 +25,8 @@ let video_mode = {
   video_mode: resolution = res1,
   interlaced = false,
   frame_rate = 0.0,
-  name = ref(none)
+  name = box(none)
 }
 
 video_mode.name <- "noninterlaced video"
-printf("video mode name: %s\n", (*video_mode.name))
+printf("video mode name: %s\n", unbox(video_mode.name))
