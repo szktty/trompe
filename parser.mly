@@ -27,7 +27,6 @@ let create_exp_list exps =
 %}
 
 %token <Ast.text> IDENT
-%token <Ast.text> DEREF_LIDENT
 %token <Ast.text> CHAR
 %token <Ast.text> STRING
 %token <int Located.t> INT
@@ -76,7 +75,6 @@ let create_exp_list exps =
 %token <Location.t> FPOS            (* for positive float *)
 %token <Location.t> NEG             (* for negative integer *)
 %token <Location.t> FNEG            (* for negative float *)
-%token <Location.t> DEREF           (* dereference *)
 %token <Location.t> AND             (* "and" *)
 %token <Location.t> OR              (* "or" *)
 %token DO                           (* "do" *)
@@ -144,7 +142,6 @@ exp:
   | struct_def { $1 }
   | enum_def { $1 }
   | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
-  | LET IDENT LARROW exp { less @@ `Refdef ($2, $4) }
   | var LARROW exp
   { less @@ `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }
   | DO block END { less @@ `Block (create_exp_list $2) }
@@ -376,8 +373,6 @@ unary_body:
   | MINUS simple_exp { create_unexp $1 `Neg $2 }
   | NEG simple_exp { create_unexp $1 `Neg $2 }
   | FNEG simple_exp { create_unexp $1 `Fneg $2 }
-  | AST simple_exp { less @@ `Deref (create_exp $2) }
-  | DEREF IDENT { less @@ `Deref_var $2 } (* TODO: needed? *)
 
 simple_exp:
   | prefix_exp %prec app { $1 }

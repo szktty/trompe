@@ -225,12 +225,6 @@ let rec eval ctx env node =
       | Some v -> (env, v)
     end
 
-  | `Refdef (name, init) ->
-    let (_, value) = eval ctx env init in
-    let refval = `Ref (ref value) in
-    let env = Env.add env name.desc refval in
-    (env, refval)
-
   | `Assign asg ->
     begin match eval ctx env asg.asg_var with
       | (_, `Ref ref_) ->
@@ -238,21 +232,6 @@ let rec eval ctx env node =
         ref_ := newval;
         (env, newval)
       | _ -> failwith "assign: not reference"
-    end
-
-  | `Deref exp ->
-    begin match eval ctx env exp.exp with
-      | (_, `Ref ref_) -> (env, !ref_)
-      | _ -> failwith "deref: not reference"
-    end
-
-  | `Deref_var name ->
-    begin match Env.find env name.desc with
-      | None -> failwith ("not found var: " ^ name.desc)
-      | Some v ->
-        match v with
-        | `Ref ref_ -> (env, !ref_)
-        | _ -> failwith "deref var: not reference"
     end
 
   | _ ->

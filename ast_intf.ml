@@ -5,7 +5,6 @@ and op_desc = [
   | `Fpos             (* "+." + float *)
   | `Neg              (* "-" + integer *)
   | `Fneg             (* "-." + float *)
-  | `Deref            (* "*" + expression *)
   | `Eq               (* "==" *)
   | `Ne               (* "!=" *)
   | `Lt               (* "<" *)
@@ -42,7 +41,6 @@ and desc = [
   | `Nop (* internal use *)
   | `Chunk of t list
   | `Vardef of pattern * t
-  | `Refdef of text * t
   | `Assign of assign
   | `Fundef of fundef
   | `Return of exp
@@ -66,8 +64,6 @@ and desc = [
   | `Tuple of exp_list
   | `Range of (int Located.t * int Located.t)
   | `Enum of (text, t) enum
-  | `Deref of exp
-  | `Deref_var of text
 ]
 
 and exp = {

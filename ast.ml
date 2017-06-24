@@ -9,7 +9,6 @@ let op_to_string op =
   | `Fpos -> "|+.|"
   | `Neg -> "|-|"
   | `Fneg -> "|-.|"
-  | `Deref -> "|*|"
   | `Eq -> "=="
   | `Ne -> "!="
   | `Lt -> "<"
