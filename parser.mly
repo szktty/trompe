@@ -55,8 +55,6 @@ let create_exp_list exps =
 %token <Location.t> AMP             (* "&" *)
 %token <Location.t> LPIPE           (* "<|" *)
 %token <Location.t> RPIPE           (* "|>" *)
-%token <Location.t> LCOMP           (* "<<" *)
-%token <Location.t> RCOMP           (* ">>" *)
 %token <Location.t> EQ              (* "=" *)
 %token <Location.t> EQQ             (* "==" *)
 %token <Location.t> NE              (* "!=" *)
@@ -93,7 +91,12 @@ let create_exp_list exps =
 %token FUN                          (* "fun" *)
 %token IF                           (* "if" *)
 %token IN                           (* "in" *)
+%token LAND                         (* "land" *)
 %token LET                          (* "let" *)
+%token LOR                          (* "lor" *)
+%token LSL                          (* "lsl" *)
+%token LSR                          (* "lsr" *)
+%token LXOR                         (* "lxor" *)
 %token MODULE                       (* "module" *)
 %token RAISE                        (* "raise" *)
 %token RETURN                       (* "return" *)
@@ -109,7 +112,6 @@ let create_exp_list exps =
 %right EQ LARROW
 %nonassoc NE EQQ
 %left LT GT LE GE
-%left LCOMP RCOMP
 %left RPIPE LPIPE
 %left PLUS FPLUS MINUS FMINUS
 %left AST FAST SLASH FSLASH PCT
@@ -363,8 +365,6 @@ bin_exp:
   | exp OR exp { create_binexp $1 $2 `Or $3 }
   | exp LPIPE exp { create_binexp $1 $2 `Lpipe $3 }
   | exp RPIPE exp { create_binexp $1 $2 `Rpipe $3 }
-  | exp LCOMP exp { create_binexp $1 $2 `Lcomp $3 }
-  | exp RCOMP exp { create_binexp $1 $2 `Rcomp $3 }
 
 unary_exp:
   | LPAREN unary_body RPAREN { $2 }

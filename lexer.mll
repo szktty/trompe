@@ -98,8 +98,6 @@ rule read =
   | "<="        { LE (to_loc lexbuf) }
   | ">"         { GT (to_loc lexbuf) }
   | ">="        { GE (to_loc lexbuf) }
-  | "<<"        { LCOMP (to_loc lexbuf) }
-  | ">>"        { RCOMP (to_loc lexbuf) }
   | "<|"        { LPIPE (to_loc lexbuf) }
   | "|>"        { RPIPE (to_loc lexbuf) }
   | "and"       { AND (to_loc lexbuf) }
@@ -115,7 +113,12 @@ rule read =
   | "fun"       { FUN }
   | "if"        { IF }
   | "in"        { IN }
+  | "land"      { LAND }
   | "let"       { LET }
+  | "lor"       { LOR }
+  | "lsl"       { LSL }
+  | "lsr"       { LSR }
+  | "lxor"      { LXOR }
   | "module"    { MODULE }
   | "raise"     { RAISE }
   | "return"    { RETURN }
