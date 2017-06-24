@@ -419,6 +419,7 @@ literal:
   | list_ { less @@ `List (create_exp_list $1) }
   | tuple { less @@ `Tuple (create_exp_list $1) }
   | INT DOT2 INT { less @@ `Range ($1, $3) }
+  | struct_constr { $1 }
 
 list_:
   | LBRACK RBRACK { [] }
@@ -433,6 +434,20 @@ rev_elts:
 
 tuple:
   | LPAREN exp COMMA rev_elts RPAREN { $2 :: (Core.Std.List.rev $4) }
+
+struct_constr:
+  | LBRACE namepath COLON key_value_pairs RBRACE { Ast.nop }
+
+key_value_pairs:
+  | rev_key_value_pairs { Core.Std.List.rev $1 }
+
+rev_key_value_pairs:
+  | key_value_pair { [$1] }
+  | rev_key_value_pairs COMMA key_value_pair { $3 :: $1 }
+
+key_value_pair:
+  | IDENT { Ast.nop }
+  | IDENT EQ exp { Ast.nop }
 
 pattern:
   | LPAREN pattern RPAREN { $2 }
@@ -481,13 +496,13 @@ rev_type_exp_list:
 simple_type_exp:
   | LPAREN type_exp RPAREN { Ast.nop }
   | SQUOTE IDENT { Ast.nop }
-  | type_path { Ast.nop }
+  | namepath { Ast.nop }
   | LBRACK type_exp RBRACK { Ast.nop }
   | LPAREN type_exp COMMA type_exp_list RPAREN { Ast.nop }
 
-type_path:
-  | rev_type_path { Core.Std.List.rev $1 }
+namepath:
+  | rev_namepath { Core.Std.List.rev $1 }
 
-rev_type_path:
+rev_namepath:
   | IDENT { [Ast.nop] } 
-  | rev_type_path DOT IDENT { Ast.nop :: $1 }
+  | rev_namepath DOT IDENT { Ast.nop :: $1 }
