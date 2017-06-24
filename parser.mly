@@ -163,7 +163,12 @@ module_def:
   | MODULE exp_list END { Ast.nop }
 
 struct_def:
-  | STRUCT IDENT field_def_list END { Ast.nop }
+  | STRUCT IDENT field_def_list END
+  { less @@ `Strdef { sdef_name = $2;
+      sdef_fields = $3;
+      sdef_type = None;
+    }
+  }
 
 field_def_list:
   | rev_field_def_list { Core.Std.List.rev $1 }
@@ -174,7 +179,12 @@ rev_field_def_list:
   | rev_field_def_list COMMA field_def { $3 :: $1 }
 
 field_def:
-  | IDENT COLON type_exp { Ast.nop }
+  | IDENT COLON type_exp
+  { { sdef_field_name = $1;
+      sdef_field_tyexp = $3;
+      sdef_field_type = None;
+    }
+  }
 
 enum_def:
   | ENUM IDENT variant_def_list END { Ast.nop }
@@ -414,7 +424,7 @@ literal:
   | list_ { less @@ `List (create_exp_list $1) }
   | tuple { less @@ `Tuple (create_exp_list $1) }
   | INT DOT2 INT { less @@ `Range ($1, $3) }
-  | struct_constr { $1 }
+  | struct_ { $1 }
 
 list_:
   | LBRACK RBRACK { [] }
@@ -430,8 +440,13 @@ rev_elts:
 tuple:
   | LPAREN exp COMMA rev_elts RPAREN { $2 :: (Core.Std.List.rev $4) }
 
-struct_constr:
-  | LBRACE namepath COLON key_value_pairs RBRACE { Ast.nop }
+struct_:
+  | LBRACE namepath COLON key_value_pairs RBRACE
+  { less @@ `Struct {
+      str_namepath = $2;
+      str_fields = $4;
+      str_type = None }
+  }
 
 key_value_pairs:
   | rev_key_value_pairs { Core.Std.List.rev $1 }
@@ -441,8 +456,8 @@ rev_key_value_pairs:
   | rev_key_value_pairs COMMA key_value_pair { $3 :: $1 }
 
 key_value_pair:
-  | IDENT { Ast.nop }
-  | IDENT EQ exp { Ast.nop }
+  | IDENT { ($1, None) }
+  | IDENT EQ exp { ($1, Some $3) }
 
 pattern:
   | LPAREN pattern RPAREN { $2 }
@@ -499,5 +514,5 @@ namepath:
   | rev_namepath { Core.Std.List.rev $1 }
 
 rev_namepath:
-  | IDENT { [Ast.nop] } 
-  | rev_namepath DOT IDENT { Ast.nop :: $1 }
+  | IDENT { [$1] }
+  | rev_namepath DOT IDENT { $3 :: $1 }

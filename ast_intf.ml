@@ -43,6 +43,7 @@ and desc = [
   | `Vardef of pattern * t
   | `Assign of assign
   | `Fundef of fundef
+  | `Strdef of strdef
   | `Return of exp
   | `Raise of exp
   | `If of if_
@@ -63,6 +64,7 @@ and desc = [
   | `List of exp_list
   | `Tuple of exp_list
   | `Range of (int Located.t * int Located.t)
+  | `Struct of t struct_
   | `Enum of (text, t) enum
 ]
 
@@ -88,6 +90,18 @@ and fundef = {
   fdef_block : t list;
   mutable fdef_param_types : Type.t list option;
   mutable fdef_type : Type.t option;
+}
+
+and strdef = {
+  sdef_name : text;
+  sdef_fields : sdef_field list;
+  mutable sdef_type : Type.t option;
+}
+
+and sdef_field = {
+  sdef_field_name : text;
+  sdef_field_tyexp : t;
+  mutable sdef_field_type : Type.t option;
 }
 
 and namepath = {
@@ -134,6 +148,12 @@ and index = {
   idx_prefix : t;
   idx_index : t;
   mutable idx_type : Type.t option;
+}
+
+and 'a struct_ = {
+  str_namepath : text list;
+  str_fields : (text * 'a option) list;
+  mutable str_type : Type.t option;
 }
 
 and ('name, 'value) enum = {
