@@ -57,27 +57,38 @@ end
 
 module Spec = struct
 
-  type attr = {
-    attr_name : string;
-    ty : Type.t;
-    value : Value.t;
+  type vattr = {
+    vattr_name : string;
+    vattr_ty : Type.t;
+    vattr_value : Value.t;
+  }
+
+  type tattr = {
+    tattr_name : string;
+    tattr_ty : Type.t;
   }
 
   type t = {
     mod_name : string;
     init : bool;
     parent : string option;
-    attrs : attr list;
+    vattrs : vattr list;
+    tattrs : tattr list;
   }
 
   let define ?parent ?(init=false) name =
-    { mod_name = name; init; parent; attrs = [] }
+    { mod_name = name; init; parent; vattrs = []; tattrs = [] }
 
-  let (+>) def attr =
-    { def with attrs = attr :: def.attrs }
+  let (+>) spec attr =
+    match attr with
+    | `Type attr -> { spec with tattrs = attr :: spec.tattrs }
+    | `Value attr -> { spec with vattrs = attr :: spec.vattrs }
+
+  let typ name ty =
+    `Type { tattr_name = name; tattr_ty = ty }
 
   let attr name ty value = 
-    { attr_name = name; ty; value }
+    `Value { vattr_name = name; vattr_ty = ty; vattr_value = value }
 
   let int name value =
     attr name Type.int (`Int value)
@@ -91,11 +102,11 @@ module Spec = struct
   let end_ spec =
     (* TODO: parent *)
     Printf.printf "# add module %s\n" spec.mod_name;
-    let tattrs, vattrs = List.fold_left spec.attrs
+    let tattrs, vattrs = List.fold_left spec.vattrs
         ~init:(String.Map.empty, String.Map.empty)
         ~f:(fun (tattrs, vattrs) attr ->
-            (String.Map.add tattrs ~key:attr.attr_name ~data:attr.ty,
-             String.Map.add vattrs ~key:attr.attr_name ~data:attr.value))
+            (String.Map.add tattrs ~key:attr.vattr_name ~data:attr.vattr_ty,
+             String.Map.add vattrs ~key:attr.vattr_name ~data:attr.vattr_value))
     in
     let tmod = Module.create spec.mod_name ~attrs:tattrs in
     let vmod = Module.create spec.mod_name ~attrs:vattrs in
