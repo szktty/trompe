@@ -511,8 +511,5 @@ simple_type_exp:
   | LPAREN type_exp COMMA type_exp_list RPAREN { Ast.nop }
 
 namepath:
-  | rev_namepath { Core.Std.List.rev $1 }
-
-rev_namepath:
-  | IDENT { [$1] }
-  | rev_namepath DOT IDENT { $3 :: $1 }
+  | IDENT { Namepath.create $1 }
+  | namepath DOT IDENT { Namepath.create $3 ~prefix:(Some $1) }

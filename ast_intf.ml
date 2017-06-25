@@ -151,7 +151,7 @@ and index = {
 }
 
 and 'a struct_ = {
-  str_namepath : text list;
+  str_namepath : text Namepath.t;
   str_fields : (text * 'a option) list;
   mutable str_type : Type.t option;
 }
