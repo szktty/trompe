@@ -5,25 +5,22 @@ type 'a t = {
   name : 'a;
 }
 
-let sep = "."
-
 let create ?(prefix=None) name =
   { prefix; name }
 
-let rec rev_names path =
+let rec to_rev_list path =
   match path.prefix with
   | None -> [path.name]
-  | Some path -> path.name :: rev_names path
+  | Some prefix -> path.name :: to_rev_list prefix
 
-let names path = List.rev @@ rev_names path
+let to_list path =
+  List.rev @@ to_rev_list path
 
-let rec iter path ~f =
-  List.iter (names path) ~f
+let iter path ~f =
+  List.iter (to_list path) ~f
 
-let to_string path =
-  let rec f path =
-    match path.prefix with
-    | None -> [path.name]
-    | Some path -> path.name :: f path
-  in
-  String.concat ~sep @@ names path
+let fold path ~init ~f =
+  List.fold_right (to_rev_list path) ~init ~f
+
+let to_string ?(sep=".") path =
+  String.concat ~sep @@ to_list path
