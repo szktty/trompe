@@ -50,7 +50,8 @@ let rec write chan (node:Ast_intf.t) =
   let write = write chan in
   let write_op op = output_string @@ op_to_string op in
   let write_nodes es = write_list chan es ~f:write in
-  let write_texts es = write_list chan es ~f:(fun e -> output_string e.desc) in
+  let write_text text = output_string ("\"" ^ text.desc ^ "\"") in
+  let write_texts es = write_list chan es ~f:write_text in
   (* TODO: location *)
   match node.desc with
   | `Nop -> output_string "nop"
@@ -71,6 +72,22 @@ let rec write chan (node:Ast_intf.t) =
     write_texts fdef.fdef_params;
     output_space ();
     write_nodes fdef.fdef_block;
+    output_string ")"
+  | `Strdef sdef ->
+    output_string "(strdef ";
+    write_text sdef.sdef_name;
+    output_string " {";
+    List.iter sdef.sdef_fields ~f:(fun fld ->
+        write_text fld.sdef_field_name;
+        output_string ":";
+        write_tyexp chan fld.sdef_field_tyexp;
+        output_string ", ");
+    output_string "})"
+  | `Assign assign ->
+    output_string "(assign ";
+    write assign.asg_var;
+    output_space ();
+    write assign.asg_exp;
     output_string ")"
   | `Case case ->
     output_string "(case ";
@@ -171,6 +188,19 @@ let rec write chan (node:Ast_intf.t) =
     output_rp ()
   | `Range (start, end_) ->
     output_string @@ sprintf "(range %d %d)" start.desc end_.desc
+  | `Struct str ->
+    output_string "{";
+    Namepath.iter str.str_namepath ~f:(fun name ->
+        write_text name;
+        output_string ".");
+    output_string ": ";
+    List.iter str.str_fields ~f:(fun (name, v_opt) ->
+        write_text name;
+        Option.iter v_opt ~f:(fun v ->
+            output_string "=";
+            write v);
+        output_string ", ");
+    output_string "}"
   | _ -> failwith "not supported"
 
 and write_ptn chan ptn =
@@ -202,6 +232,38 @@ and write_ptn chan ptn =
   | `Var name ->
     output_string @@ "(var " ^ name.desc ^ ")"
   | _ -> failwith "not supported pattern"
+
+and write_tyexp chan tyexp =
+  let open Located in
+  let open Type in
+
+  let write_list es =
+    List.iter es ~f:(fun arg ->
+        write_tyexp chan arg;
+        output_string chan ", ")
+  in
+
+  match tyexp.desc with
+  | Ty_var name ->
+    output_string chan ("'" ^ name.desc)
+  | Ty_namepath path ->
+    Namepath.iter path ~f:(fun name -> output_string chan name.desc)
+  | Ty_app (tycon, args) ->
+    write_tyexp chan tycon;
+    output_string chan "<";
+    write_list args;
+    output_string chan ">"
+  | Ty_list e ->
+    output_string chan "[";
+    write_tyexp chan e;
+    output_string chan "]"
+  | Ty_tuple es ->
+    output_string chan "(";
+    write_list es;
+    output_string chan ")"
+  | Ty_option e ->
+    write_tyexp chan e;
+    output_string chan "?"
 
 let print node =
   write Out_channel.stdout node;
