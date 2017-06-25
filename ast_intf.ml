@@ -54,7 +54,7 @@ and desc = [
   | `Binexp of binexp
   | `Unexp of unexp
   | `Directive of (text * t list)
-  | `Var of namepath
+  | `Var of var
   | `Index of index
   | `Unit
   | `Bool of bool
@@ -104,10 +104,10 @@ and sdef_field = {
   mutable sdef_field_type : Type.t option;
 }
 
-and namepath = {
-  np_prefix : t option;
-  np_name : text;
-  mutable np_type : Type.t option;
+and var = {
+  var_prefix : t option;
+  var_name : text;
+  mutable var_type : Type.t option;
 }
 
 and if_ = {

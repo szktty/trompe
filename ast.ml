@@ -52,14 +52,6 @@ let rec write chan (node:Ast_intf.t) =
   let write_nodes es = write_list chan es ~f:write in
   let write_texts es = write_list chan es ~f:(fun e -> output_string e.desc) in
   (* TODO: location *)
-  let output_namepath np =
-    Option.iter np.np_prefix ~f:(fun node ->
-        write node;
-        output_string " ");
-    output_string "\"";
-    output_string np.np_name.desc;
-    output_string "\""
-  in
   match node.desc with
   | `Nop -> output_string "nop"
   | `Chunk exps ->
@@ -148,9 +140,14 @@ let rec write chan (node:Ast_intf.t) =
     output_space ();
     write_nodes args;
     output_rp ()
-  | `Var np ->
+  | `Var var ->
     output_string "(var ";
-    output_namepath np;
+    Option.iter var.var_prefix ~f:(fun node ->
+        write node;
+        output_string " ");
+    output_string "\"";
+    output_string var.var_name.desc;
+    output_string "\"";
     output_rp ()
   | `Index idx ->
     output_string "(index ";

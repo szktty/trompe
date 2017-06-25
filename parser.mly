@@ -401,15 +401,15 @@ var:
   | IDENT
   {
     create $1.loc @@ `Var {
-        np_prefix = None;
-        np_name = $1;
-        np_type = None }
+        var_prefix = None;
+        var_name = $1;
+        var_type = None }
   }
   | prefix_exp DOT IDENT
   { less @@ `Var {
-        np_prefix = Some $1;
-        np_name = $3;
-        np_type = None }
+        var_prefix = Some $1;
+        var_name = $3;
+        var_type = None }
   }
   | prefix_exp LBRACK exp RBRACK
   { less @@ `Index { idx_prefix = $1; idx_index = $3; idx_type = None } }
