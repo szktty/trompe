@@ -508,7 +508,7 @@ type_exp_list:
   | rev_type_exp_list { Core.Std.List.rev $1 }
 
 rev_type_exp_list:
-  | type_exp { [] }
+  | type_exp { [$1] }
   | rev_type_exp_list COMMA type_exp { $3 :: $1 }
 
 simple_type_exp:
