@@ -49,6 +49,7 @@ let create_exp_list exps =
 %token RARROW                       (* "->" *)
 %token BAR                          (* "|" *)
 %token CARET                        (* "^" *)
+%token Q                            (* "?" *)
 %token SQUOTE                       (* "'" *)
 %token <Location.t> AT              (* "@" *)
 %token <Location.t> AMP             (* "&" *)
@@ -209,7 +210,7 @@ rev_variant_param_list:
   | rev_variant_param_list COMMA type_exp { $3 :: $1 }
 
 fundef_exp:
-  | DEF IDENT param_list EQ exp
+  | DEF var_name param_list EQ exp
   {
     less @@ `Fundef {
         fdef_name = $2;
@@ -219,7 +220,7 @@ fundef_exp:
         fdef_type = None;
     }
   }
-  | DEF IDENT param_list block END
+  | DEF var_name param_list block END
   {
     less @@ `Fundef {
         fdef_name = $2;
@@ -398,14 +399,13 @@ directive:
   | AT IDENT paren_arg_list { less @@ `Directive ($2, $3) }
 
 var:
-  | IDENT
-  {
-    create $1.loc @@ `Var {
+  | var_name
+  { create $1.loc @@ `Var {
         var_prefix = None;
         var_name = $1;
         var_type = None }
   }
-  | prefix_exp DOT IDENT
+  | prefix_exp DOT var_name
   { less @@ `Var {
         var_prefix = Some $1;
         var_name = $3;
@@ -413,6 +413,10 @@ var:
   }
   | prefix_exp LBRACK exp RBRACK
   { less @@ `Index { idx_prefix = $1; idx_index = $3; idx_type = None } }
+
+var_name:
+  | IDENT { $1 }
+  | IDENT Q { create $1.loc ($1.desc ^ "?") }
 
 literal:
   | LPAREN RPAREN { locate $1 `Unit }
@@ -494,8 +498,11 @@ tuple_ptn:
 
 type_exp:
   | simple_type_exp { $1 }
+  | simple_type_exp Q { less @@ Ty_option $1 }
   | simple_type_exp LT type_exp_list GT
   { less @@ Ty_app ($1, $3) }
+  | simple_type_exp LT type_exp_list GT Q
+  { less @@ Ty_option (less @@ Ty_app ($1, $3)) }
 
 type_exp_list:
   | rev_type_exp_list { Core.Std.List.rev $1 }

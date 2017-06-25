@@ -50,7 +50,7 @@ let float = digit+ frac? exp?
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
 let char = '\'' [^'\''] '\''
-let ident = ['A'-'Z' 'a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!' '?']?
+let ident = ['A'-'Z' 'a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* ['!']?
 let comment = '#'
 let blank = [' ' '\t']*
 let prefix = newline+ blank
@@ -77,6 +77,7 @@ rule read =
   | ".."        { DOT2 }
   | '|'         { BAR }
   | '^'         { CARET }
+  | '?'         { Q }
   | "<-"        { LARROW }
   | "->"        { RARROW }
   | '+'         { PLUS (to_loc lexbuf) }
