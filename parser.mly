@@ -494,21 +494,23 @@ tuple_ptn:
 
 type_exp:
   | simple_type_exp { $1 }
-  | simple_type_exp LT type_exp_list GT { $1 }
+  | simple_type_exp LT type_exp_list GT
+  { less @@ Ty_app ($1, $3) }
 
 type_exp_list:
   | rev_type_exp_list { Core.Std.List.rev $1 }
 
 rev_type_exp_list:
   | type_exp { [] }
-  | rev_type_exp_list COMMA type_exp { [] }
+  | rev_type_exp_list COMMA type_exp { $3 :: $1 }
 
 simple_type_exp:
-  | LPAREN type_exp RPAREN { Ast.nop }
-  | SQUOTE IDENT { Ast.nop }
-  | namepath { Ast.nop }
-  | LBRACK type_exp RBRACK { Ast.nop }
-  | LPAREN type_exp COMMA type_exp_list RPAREN { Ast.nop }
+  | LPAREN type_exp RPAREN { $2 }
+  | SQUOTE IDENT { less @@ Ty_var $2 }
+  | namepath { less @@ Ty_namepath $1  }
+  | LBRACK type_exp RBRACK { less @@ Ty_list $2 }
+  | LPAREN type_exp COMMA type_exp_list RPAREN
+  { less @@ Ty_tuple ($2 :: $4) }
 
 namepath:
   | IDENT { Namepath.create $1 }

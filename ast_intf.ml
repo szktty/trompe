@@ -1,3 +1,5 @@
+type text = string Located.t
+
 type op = op_desc Located.t
 
 and op_desc = [
@@ -34,6 +36,16 @@ and op_desc = [
   | `Lpipe            (* "<|" *)
   | `Rpipe            (* "|>" *)
 ]
+
+type tyexp = tyexp_desc Located.t
+
+and tyexp_desc =
+  | Ty_var of text
+  | Ty_namepath of text Namepath.t
+  | Ty_app of tyexp * tyexp list
+  | Ty_list of tyexp
+  | Ty_tuple of tyexp list
+  | Ty_option of tyexp
 
 type t = desc Located.t
 
@@ -100,7 +112,7 @@ and strdef = {
 
 and sdef_field = {
   sdef_field_name : text;
-  sdef_field_tyexp : t;
+  sdef_field_tyexp : tyexp;
   mutable sdef_field_type : Type.t option;
 }
 
@@ -174,8 +186,6 @@ and unexp = {
   unexp_exp : t;
   mutable unexp_type : Type.t option;
 }
-
-and text = string Located.t
 
 and pattern = {
   ptn_cls : ptn_cls Located.t;
