@@ -44,6 +44,16 @@ let prim_printf args =
 
 let init () =
   Runtime.Spec.(define "kernel" ~init:true
+                +> typ "unit" Type.unit
+                +> typ "bool" Type.bool
+                +> typ "int" Type.int
+                +> typ "float" Type.float
+                +> typ "string" Type.string
+                +> typ "range" Type.range
+                +> typ "list" Type.list_gen
+                +> typ "option" Type.option_gen
+                +> typ "box" Type.box_gen
+                +> typ "stream" Type.stream
                 +> fun_ "id" Type.Spec.(a @-> a) "id"
                 +> fun_ "show" Type.Spec.(a @-> unit) "show"
                 +> fun_ "printf" Type.Spec.fun_printf "printf"
