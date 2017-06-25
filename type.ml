@@ -128,6 +128,16 @@ let fun_printf = Located.less @@ desc_fun_printf
 let module_ name = Located.less @@ app (`Module name)
 let stream = Located.less @@ desc_stream 
 
+let unique tycon =
+  Located.less @@ `Unique (tycon,  Random.int 10000)
+
+let struct_ fields =
+  let names, tys = List.fold_left fields ~init:([], [])
+      ~f:(fun (names, tys) (name, ty) ->
+          name :: names, ty :: tys)
+  in
+  unique @@ `App (`Struct (List.rev names), List.rev tys)
+
 let parse_format s =
   let module F = Utils.Format in
   let fmt = Utils.Format.parse s in
