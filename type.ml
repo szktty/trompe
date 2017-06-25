@@ -97,6 +97,14 @@ let module_name (ty:t) =
   | `App (`Module name, _) -> Some name
   | _ -> None
 
+let tyvar name = Located.less @@ `Var name
+let tyvar_a = tyvar "a"
+let tyvar_b = tyvar "b"
+let tyvar_c = tyvar "c"
+let tyvar_d = tyvar "d"
+
+let poly tyvars ty = `Poly (tyvars, ty)
+
 let app ?(args=[]) tycon = `App (tycon, args)
 let desc_unit = app `Unit
 let desc_bool = app `Bool
@@ -120,9 +128,12 @@ let float = Located.less desc_float
 let string = Located.less desc_string
 let range = Located.less desc_range
 let list e = Located.less @@ desc_list e
+let list_gen = Located.less @@ poly ["a"] (list tyvar_a)
 let tuple es = Located.less @@ desc_tuple es
 let option e = Located.less @@ desc_option e
+let option_gen = Located.less @@ poly ["a"] (option tyvar_a)
 let box e = Located.less @@ desc_box e
+let box_gen = Located.less @@ poly ["a"] (box tyvar_a)
 let fun_ loc params ret = Located.create loc @@ desc_fun params ret
 let fun_printf = Located.less @@ desc_fun_printf
 let module_ name = Located.less @@ app (`Module name)
