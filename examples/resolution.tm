@@ -7,7 +7,7 @@ struct video_mode
   resolution: resolution
   interlaced: bool
   frame_rate: float
-  name: box<option<string>>
+  name: box<string?>
 end
 
 def new_resolution(width, height)
