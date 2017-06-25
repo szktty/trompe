@@ -138,11 +138,11 @@ let rec compile' bld (env:string String.Map.t) node =
         ~f:(fun arg -> easy_compile bld env arg) in
     (env, Call (f, args))
 
-  | `Var path ->
-    let r1 = match String.Map.find env path.np_name.desc with
+  | `Var var ->
+    let r1 = match String.Map.find env var.var_name.desc with
       | Some reg -> reg
       | None ->
-        match String.Map.find bld.ext path.np_name.desc with
+        match String.Map.find bld.ext var.var_name.desc with
         | Some reg -> reg
         | None -> assign bld
     in

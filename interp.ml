@@ -216,12 +216,12 @@ let rec eval ctx env node =
       | _ -> failwith ("unknown directive: " ^ name.desc)
     end;
 
-  | `Var np ->
+  | `Var var ->
     (* TODO: get module from path *)
-    begin match Env.find env np.np_name.desc with
+    begin match Env.find env var.var_name.desc with
       | None -> Error.raise ctx
-                  (Exn.of_reason Name_error ("not found var: " ^ np.np_name.desc))
-      (*failwith ("not found var: " ^ np.np_name.desc)*)
+                  (Exn.of_reason Name_error ("not found var: " ^ var.var_name.desc))
+      (*failwith ("not found var: " ^ var.var_name.desc)*)
       | Some v -> (env, v)
     end
 
