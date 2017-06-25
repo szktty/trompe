@@ -20,7 +20,7 @@ val parent : 'a t -> 'a t option
 
 val import : 'a t -> 'a t -> unit
 
-val namepath : 'a t -> Namepath.t
+val namepath : 'a t -> string Namepath.t
 
 val find_module : ?prefix:string list -> 'a t -> name:string -> 'a t option
 

@@ -1,8 +1,8 @@
 open Core.Std
 
-type t = {
-  prefix : t option;
-  name : string;
+type 'a t = {
+  prefix : 'a t option;
+  name : 'a;
 }
 
 let sep = "."
