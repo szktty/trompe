@@ -50,14 +50,14 @@ let rec eval ctx env node =
     values
   in
 
-  match node.desc with
-  | `Nop -> (env, `Unit)
+  match node with
+  | `Nop _ -> (env, `Unit)
   | `Chunk exps -> eval_block ctx env exps
-  | `Unit -> (env, `Unit)
-  | `Bool v -> (env, `Bool v)
-  | `String s -> (env, `String s)
-  | `Int v -> (env, `Int v)
-  | `Float v -> (env, `Float v)
+  | `Unit _ -> (env, `Unit)
+  | `Bool v -> (env, `Bool v.desc)
+  | `String s -> (env, `String s.desc)
+  | `Int v -> (env, `Int v.desc)
+  | `Float v -> (env, `Float v.desc)
   | `Range (start, end_) -> (env, `Range (start.desc, end_.desc))
 
   | `List exps ->
@@ -242,17 +242,17 @@ let rec eval ctx env node =
 and eval_ptn ctx env value ptn : (Value.t Env.t, unit) Result.t =
   let open Result in
   let test op env x y = if op x y then Ok env else Error () in
-  match (ptn.ptn_cls.desc, value) with
-  | (`Unit, `Unit) -> Ok env
-  | (`Unit, _) -> Error ()
-  | (`Bool true, `Bool true) -> Ok env
-  | (`Bool false, `Bool false) -> Ok env
+  match (ptn.ptn_cls, value) with
+  | (`Unit _, `Unit) -> Ok env
+  | (`Unit _, _) -> Error ()
+  | (`Bool { desc = true }, `Bool true) -> Ok env
+  | (`Bool { desc = false }, `Bool false) -> Ok env
   | (`Bool _, _) -> Error ()
-  | (`String x, `String y) -> test String.equal env x y
+  | (`String x, `String y) -> test String.equal env x.desc y
   | (`String _, _) -> Error ()
-  | (`Int x, `Int y) -> test (=) env x y
+  | (`Int x, `Int y) -> test (=) env x.desc y
   | (`Int _, _) -> Error ()
-  | (`Float x, `Float y) -> test (=.) env x y
+  | (`Float x, `Float y) -> test (=.) env x.desc y
   | (`Float _, _) -> Error ()
 
   | (`Var name, _) ->

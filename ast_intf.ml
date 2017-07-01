@@ -47,10 +47,8 @@ and tyexp_desc =
   | Ty_tuple of tyexp list
   | Ty_option of tyexp
 
-type t = desc Located.t
-
-and desc = [
-  | `Nop (* internal use *)
+type t = [
+  | `Nop of Location.t (* internal use *)
   | `Chunk of t list
   | `Vardef of pattern * t
   | `Assign of assign
@@ -68,11 +66,11 @@ and desc = [
   | `Directive of (text * t list)
   | `Var of var
   | `Index of index
-  | `Unit
-  | `Bool of bool
-  | `String of string
-  | `Int of int
-  | `Float of float
+  | `Unit of Location.t
+  | `Bool of bool Located.t
+  | `String of string Located.t
+  | `Int of int Located.t
+  | `Float of float Located.t
   | `List of exp_list
   | `Tuple of exp_list
   | `Range of (int Located.t * int Located.t)
@@ -188,17 +186,17 @@ and unexp = {
 }
 
 and pattern = {
-  ptn_cls : ptn_cls Located.t;
+  ptn_cls : ptn_cls;
   mutable ptn_type : Type.t option;
 }
 
 and ptn_cls = [
-  | `Nop (* internal use *)
-  | `Unit
-  | `Bool of bool
-  | `String of string
-  | `Int of int
-  | `Float of float
+  | `Nop of Location.t (* internal use *)
+  | `Unit of Location.t
+  | `Bool of bool Located.t
+  | `String of string Located.t
+  | `Int of int Located.t
+  | `Float of float Located.t
   | `Variant of (text * pattern list)
   | `Cons of (pattern * text)
   | `List of pattern list
@@ -208,7 +206,7 @@ and ptn_cls = [
   | `Pin of text
 ]
 
-let nop : t = Located.less `Nop
+let nop : t = `Nop Location.zero
 
 let ptn_nop : pattern =
-  { ptn_cls = Located.less `Nop; ptn_type = None }
+  { ptn_cls = `Nop Location.zero; ptn_type = None }

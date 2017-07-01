@@ -97,7 +97,8 @@ let instantiate (ty:Type.t) =
   match ty.desc with
   | `Poly (tyvars, ty') ->
     let env = List.map tyvars
-        ~f:(fun tyvar -> (tyvar, create_metavar ty.loc)) in
+        ~f:(fun tyvar ->
+            (tyvar, create_metavar_opt ty.loc)) in
     subst ty' env
   | _ -> ty
 
@@ -187,9 +188,10 @@ let rec unify ~(ex:Type.t) ~(ac:Type.t) : unit =
 let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
   Printf.printf "infer e: ";
   Ast.print e;
+  let loc = Ast.location e in
   try
-    let env, desc = match e.desc with
-      | `Nop -> (env, desc_unit)
+    let env, desc = match e with
+      | `Nop _ -> (env, desc_unit)
 
       | `Chunk es -> 
         let env = List.fold_left es
@@ -201,7 +203,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
       | `Return e -> (env, (easy_infer env e.exp).desc)
 
       | `If if_ -> 
-        let value = Type.create_metavar e.loc in
+        let value = Type.create_metavar loc in
 
         let unify_block block =
           List.iteri block ~f:(fun i exp ->
@@ -226,7 +228,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
         unify ~ex:Type.unit ~ac:block_ty;
         (env, Type.unit.desc)
 
-      | `Unit -> (env, desc_unit)
+      | `Unit _ -> (env, desc_unit)
       | `Bool _ -> (env, desc_bool)
       | `Int _ -> (env, desc_int)
       | `Float _ -> (env, desc_float)
@@ -235,7 +237,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 
       | `List es ->
         begin match es.exp_list with
-          | [] -> (env, desc_list @@ create_metavar e.loc)
+          | [] -> (env, desc_list @@ create_metavar loc)
           | e :: es ->
             let base_ty = easy_infer env e in
             List.iter es ~f:(fun e ->
@@ -254,10 +256,10 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 
       | `Fundef fdef ->
         let params = List.map fdef.fdef_params
-            ~f:(fun param -> Type.create_metavar param.loc)
+            ~f:(fun param -> Type.create_metavar_opt param.loc)
         in
-        let ret = Type.create_metavar e.loc in
-        let fun_ty = Type.fun_ e.loc params ret in
+        let ret = Type.create_metavar loc in
+        let fun_ty = Type.fun_ (Some loc) params ret in
         (* for recursive call *)
         let env = Env.add env fdef.fdef_name.desc fun_ty in
         let fenv = List.fold2_exn fdef.fdef_params params ~init:env
@@ -278,10 +280,10 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
           match call.fc_args with
           | [] -> failwith "no format string"
           | fmt_s :: args ->
-            match fmt_s.desc with
+            match fmt_s with
             | `String fmt_s ->
               let args = List.map args ~f:(fun e -> easy_infer env e) in
-              let params = Type.parse_format fmt_s in
+              let params = Type.parse_format fmt_s.desc in
               if List.length args <> List.length params then
                 failwith "numbers of printf arguments are not matched"
               else begin
@@ -294,8 +296,8 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 
         end else begin
           let args = List.map call.fc_args ~f:(fun e -> easy_infer env e) in
-          let ret = Type.create_metavar e.loc in
-          let ac_fun = Type.create e.loc (desc_fun args ret) in
+          let ret = Type.create_metavar loc in
+          let ac_fun = Type.create (Some loc) (desc_fun args ret) in
           unify ~ex:ex_fun ~ac:ac_fun;
           Printf.printf "# end funcall infer\n";
           (env, (Type.fun_return ex_fun).desc)
@@ -303,7 +305,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
 
       | `Case case ->
         let match_ty = easy_infer env case.case_val in
-        let val_ty = Type.create_metavar e.loc in
+        let val_ty = Type.create_metavar loc in
         List.iter case.case_cls ~f:(fun cls ->
             infer_case_cls env match_ty val_ty cls);
         (env, val_ty.desc)
@@ -419,7 +421,7 @@ let rec infer env (e:Ast.t) : (Type.t Env.t * Type.t) =
        *)
       | _ -> Ast.print e; failwith "TODO"
     in
-    let ty = Type.create e.loc desc in
+    let ty = Type.create (Some loc) desc in
     Printf.printf "inferred node: ";
     Ast.print e;
     Printf.printf "inferred type: %s\n" (Type.to_string ty);
@@ -458,19 +460,19 @@ and infer_case_cls env match_ty val_ty (cls:Ast.case_cls) =
   unify ~ex:val_ty ~ac:action_ty
 
 and infer_ptn env (ptn:Ast.pattern) =
-  match ptn.ptn_cls.desc with
-  | `Nop | `Unit -> (env, Type.unit)
+  match ptn.ptn_cls with
+  | `Nop _ | `Unit _ -> (env, Type.unit)
   | `Bool _ -> (env, Type.bool)
   | `Int _ -> (env, Type.int)
   | `Float _ -> (env, Type.float)
   | `String _ -> (env, Type.string)
 
   | `Var name ->
-    let ty = Type.create_metavar name.loc in
+    let ty = Type.create_metavar_opt name.loc in
     (Env.add env ~key:name.desc ~data:ty, ty)
 
   | `List elts ->
-    let ty = Type.create_metavar ptn.ptn_cls.loc in
+    let ty = Type.create_metavar @@ Ast.location ptn.ptn_cls in
     let env = List.fold_left elts
         ~init:env
         ~f:(fun env elt ->

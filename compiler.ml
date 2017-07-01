@@ -120,7 +120,7 @@ let rec compile' bld (env:string String.Map.t) node =
   let open Builder in
   let open Ast in
 
-  match node.desc with
+  match node with
   | `Chunk exps ->
     Printf.printf "chunk\n";
     let ops = snd @@ List.fold_left exps
@@ -148,8 +148,8 @@ let rec compile' bld (env:string String.Map.t) node =
     in
     (env, Var (r1, Ty_int)) (* TODO: type *)
 
-  | `Int value -> (env, Int value)
-  | `String value -> (env, String value)
+  | `Int value -> (env, Int value.desc)
+  | `String value -> (env, String value.desc)
   | _ -> (env, Nop)
 
 and easy_compile bld env node = snd @@ compile' bld env node

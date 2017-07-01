@@ -5,7 +5,7 @@ open Located
 
 let create_binexp left op_loc op right =
   let op = create (Some op_loc) op in
-  less @@ `Binexp {
+  `Binexp {
         binexp_left = left;
         binexp_op = op;
         binexp_right = right;
@@ -13,10 +13,7 @@ let create_binexp left op_loc op right =
 
 let create_unexp op_loc op exp =
   let op = create (Some op_loc) op in
-  less @@ `Unexp {
-        unexp_op = op;
-        unexp_exp = exp;
-        unexp_type = None }
+  `Unexp { unexp_op = op; unexp_exp = exp; unexp_type = None }
 
 let create_exp exp =
   { exp = exp; exp_type = None }
@@ -124,7 +121,7 @@ let create_exp_list exps =
 %%
 
 prog:
-  | block EOF { less @@ `Chunk $1 }
+  | block EOF { `Chunk $1 }
 
 block:
   | (* empty *) { [] }
@@ -142,14 +139,14 @@ exp:
   | module_def { $1 }
   | struct_def { $1 }
   | enum_def { $1 }
-  | LET pattern EQ exp { less @@ `Vardef ($2, $4) }
+  | LET pattern EQ exp { `Vardef ($2, $4) }
   | var LARROW exp
-  { less @@ `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }
-  | DO block END { less @@ `Block (create_exp_list $2) }
-  | RETURN exp { less @@ `Return (create_exp $2) }
-  | RAISE exp { less @@ `Raise (create_exp $2) }
+  { `Assign { asg_var = $1; asg_exp = $3; asg_type = None } }
+  | DO block END { `Block (create_exp_list $2) }
+  | RETURN exp { `Return (create_exp $2) }
+  | RAISE exp { `Raise (create_exp $2) }
   | FOR IDENT IN exp DO exp_list END
-  { less @@ `For { for_var = $2; for_range = $4; for_block = $6 } }
+  { `For { for_var = $2; for_range = $4; for_block = $6 } }
   | fundef_exp { $1 }
   | if_exp { $1 }
   | case_exp { $1 }
@@ -165,7 +162,7 @@ module_def:
 
 struct_def:
   | STRUCT IDENT field_def_list END
-  { less @@ `Strdef { sdef_name = $2;
+  { `Strdef { sdef_name = $2;
       sdef_fields = $3;
       sdef_type = None;
     }
@@ -212,7 +209,7 @@ rev_variant_param_list:
 fundef_exp:
   | DEF var_name param_list EQ exp
   {
-    less @@ `Fundef {
+    `Fundef {
         fdef_name = $2;
         fdef_params = $3;
         fdef_block = [$5];
@@ -222,7 +219,7 @@ fundef_exp:
   }
   | DEF var_name param_list block END
   {
-    less @@ `Fundef {
+    `Fundef {
         fdef_name = $2;
         fdef_params = $3;
         fdef_block = $4;
@@ -249,28 +246,28 @@ param:
 if_exp:
   | IF exp THEN block END
   {
-      less @@ `If {
+      `If {
           if_actions = [($2, $4)];
           if_else = [];
           if_type = None }
   }
   | IF exp THEN block elseif_block END
   {
-      less @@ `If {
+      `If {
           if_actions = ($2, $4) :: $5;
           if_else = [];
           if_type = None }
   }
   | IF exp THEN block ELSE block END
   {
-      less @@ `If {
+      `If {
           if_actions = [($2, $4)];
           if_else = $6;
           if_type = None }
   }
   | IF exp THEN block elseif_block ELSE block END
   {
-      less @@ `If {
+      `If {
           if_actions = ($2, $4) :: $5;
           if_else = $7;
           if_type = None }
@@ -288,14 +285,14 @@ elseif_exp:
 
 case_exp:
   | CASE exp DO case_clause_list END
-  { less @@ `Case {
+  { `Case {
         case_val = $2;
         case_cls = $4;
         case_val_type = None;
         case_cls_type = None; }
   }
   | CASE exp DO BAR case_clause_list END
-  { less @@ `Case { case_val = $2;
+  { `Case { case_val = $2;
         case_cls = $5;
         case_val_type = None;
         case_cls_type = None; }
@@ -329,7 +326,7 @@ case_pattern:
 funcall_exp:
   | prefix_exp paren_arg_list
   {
-    less @@ `Funcall {
+    `Funcall {
         fc_fun = $1; fc_args = $2; fc_fun_type = None; fc_arg_types = None }
   }
 
@@ -396,38 +393,38 @@ prefix_exp:
   | LPAREN exp COLON type_exp RPAREN { $2 } (* TODO *)
 
 directive:
-  | AT IDENT paren_arg_list { less @@ `Directive ($2, $3) }
+  | AT IDENT paren_arg_list { `Directive ($2, $3) }
 
 var:
   | var_name
-  { create $1.loc @@ `Var {
+  { `Var {
         var_prefix = None;
         var_name = $1;
         var_type = None }
   }
   | prefix_exp DOT var_name
-  { less @@ `Var {
+  { `Var {
         var_prefix = Some $1;
         var_name = $3;
         var_type = None }
   }
   | prefix_exp LBRACK exp RBRACK
-  { less @@ `Index { idx_prefix = $1; idx_index = $3; idx_type = None } }
+  { `Index { idx_prefix = $1; idx_index = $3; idx_type = None } }
 
 var_name:
   | IDENT { $1 }
   | IDENT Q { create $1.loc ($1.desc ^ "?") }
 
 literal:
-  | LPAREN RPAREN { locate $1 `Unit }
-  | STRING { create $1.loc @@ `String $1.desc }
-  | INT { create $1.loc @@ `Int $1.desc }
-  | FLOAT { create $1.loc @@ `Float $1.desc }
-  | TRUE { locate $1 @@ `Bool true }
-  | FALSE { locate $1 @@ `Bool false }
-  | list_ { less @@ `List (create_exp_list $1) }
-  | tuple { less @@ `Tuple (create_exp_list $1) }
-  | INT DOT2 INT { less @@ `Range ($1, $3) }
+  | LPAREN RPAREN { `Unit $1 }
+  | STRING { `String $1 }
+  | INT { `Int $1 }
+  | FLOAT { `Float $1 }
+  | TRUE { `Bool (locate $1 true) }
+  | FALSE { `Bool (locate $1 false) }
+  | list_ { `List (create_exp_list $1) }
+  | tuple { `Tuple (create_exp_list $1) }
+  | INT DOT2 INT { `Range ($1, $3) }
   | struct_ { $1 }
 
 list_:
@@ -446,7 +443,7 @@ tuple:
 
 struct_:
   | LBRACE namepath COLON key_value_pairs RBRACE
-  { less @@ `Struct {
+  { `Struct {
       str_namepath = $2;
       str_fields = $4;
       str_type = None }
@@ -468,19 +465,19 @@ pattern:
   | pattern_clause { { ptn_cls = $1; ptn_type = None } }
 
 pattern_clause:
-  | LPAREN RPAREN { locate $1 @@ `Unit }
-  | STRING { create $1.loc @@ `String $1.desc }
-  | INT { create $1.loc @@ `Int $1.desc }
-  | FLOAT { create $1.loc @@ `Float $1.desc }
-  | TRUE { locate $1 @@ `Bool true }
-  | FALSE { locate $1 @@ `Bool false }
-  | IDENT { create $1.loc @@ `Var $1 }
-  | DOT IDENT { less @@ `Variant ($2, [])  }
-  | DOT IDENT LPAREN elts_ptn RPAREN { less @@ `Variant ($2, $4)  }
-  | CARET IDENT { less @@ `Pin $2 }
-  | pattern COLON2 IDENT { less @@ `Cons ($1, $3) }
-  | list_ptn { less @@ `List $1 }
-  | tuple_ptn { less @@ `Tuple $1 }
+  | LPAREN RPAREN { `Unit $1 }
+  | STRING { `String $1 }
+  | INT { `Int $1 }
+  | FLOAT { `Float $1 }
+  | TRUE { `Bool (locate $1 true) }
+  | FALSE { `Bool (locate $1 false) }
+  | IDENT { `Var $1 }
+  | DOT IDENT { `Variant ($2, [])  }
+  | DOT IDENT LPAREN elts_ptn RPAREN { `Variant ($2, $4)  }
+  | CARET IDENT { `Pin $2 }
+  | pattern COLON2 IDENT { `Cons ($1, $3) }
+  | list_ptn { `List $1 }
+  | tuple_ptn { `Tuple $1 }
 
 list_ptn:
   | LBRACK RBRACK { [] }

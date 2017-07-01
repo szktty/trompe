@@ -27,6 +27,9 @@ let op_to_string op =
   | `Mod -> "%"
   | _ -> failwith "not supported operator"
 
+let location = function
+  | _ -> Location.zero (* TODO *)
+
 let write_list chan es ~f =
   let open Out_channel in
   let open Printf in
@@ -52,9 +55,8 @@ let rec write chan (node:Ast_intf.t) =
   let write_nodes es = write_list chan es ~f:write in
   let write_text text = output_string ("\"" ^ text.desc ^ "\"") in
   let write_texts es = write_list chan es ~f:write_text in
-  (* TODO: location *)
-  match node.desc with
-  | `Nop -> output_string "nop"
+  match node with
+  | `Nop _ -> output_string "nop"
   | `Chunk exps ->
     output_string "(chunk ";
     write_nodes exps;
@@ -172,12 +174,12 @@ let rec write chan (node:Ast_intf.t) =
     output_space ();
     write idx.idx_index;
     output_rp ()
-  | `Unit -> output_string "()"
-  | `Bool true -> output_string "true"
-  | `Bool false -> output_string "false"
-  | `Int v -> output_string @@ sprintf "%d" v
-  | `Float v -> output_string @@ sprintf "%f" v
-  | `String s -> output_string @@ sprintf "\"%s\"" s
+  | `Unit _ -> output_string "()"
+  | `Bool { desc = true } -> output_string "true"
+  | `Bool { desc = false } -> output_string "false"
+  | `Int v -> output_string @@ sprintf "%d" v.desc
+  | `Float v -> output_string @@ sprintf "%f" v.desc
+  | `String s -> output_string @@ sprintf "\"%s\"" s.desc
   | `List exps ->
     output_string "(list ";
     write_nodes exps.exp_list;
@@ -214,13 +216,13 @@ and write_ptn chan ptn =
   let write = write_ptn chan in
   let write_ptns es = write_list chan es ~f:write in
   let write_texts es = write_list chan es ~f:(fun e -> output_string e.desc) in
-  match ptn.ptn_cls.desc with
-  | `Unit -> output_string "()"
-  | `Bool true -> output_string "true"
-  | `Bool false -> output_string "false"
-  | `Int v -> output_string @@ sprintf "%d" v
-  | `Float v -> output_string @@ sprintf "%f" v
-  | `String s -> output_string @@ sprintf "\"%s\"" s
+  match ptn.ptn_cls with
+  | `Unit _ -> output_string "()"
+  | `Bool { desc = true } -> output_string "true"
+  | `Bool { desc = false } -> output_string "false"
+  | `Int v -> output_string @@ sprintf "%d" v.desc
+  | `Float v -> output_string @@ sprintf "%f" v.desc
+  | `String s -> output_string @@ sprintf "\"%s\"" s.desc
   | `List ptns ->
     output_string "[";
     write_ptns ptns;
@@ -268,18 +270,3 @@ and write_tyexp chan tyexp =
 let print node =
   write Out_channel.stdout node;
   Printf.printf "\n"
-
-let rec gen_loc (node:t) =
-  let node = match node.desc with
-    | `Nop
-    | `Unit
-    | `Bool _
-    | `Int _
-    | `Float _
-    | `String _
-    | `List _
-    | `Tuple _ -> node
-    | _ -> node
-  in
-  ignore @@ Option.try_with (fun () -> node.loc);
-  node
