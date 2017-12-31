@@ -1,0 +1,11 @@
+opam-version: "1.2"
+maintainer: "tetsuya.suzuki@gmail.com"
+authors: ["SUZUKI Tetsuya"]
+dev-repo: "https://github.com/szktty/trompe"
+license: "Apache 2.0"
+build:
+[[ "jbuilder" "build" "--only-packages" "%{name}%" "--root" "." "-j" jobs "@install" ]]
+depends: [
+  "jbuilder" {build}
+  "base"
+]
