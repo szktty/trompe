@@ -13,6 +13,8 @@
 *.opt
 .omakedb
 .omakedb.lock
+.merlin
+*.install
 
 # ocamlbuild working directory
 _build/
