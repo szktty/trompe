@@ -79,9 +79,10 @@ module Args = struct
     end
 
   let string_exn args index =
-    match value_exn args index with
-    | String s -> s
-    | _ -> failwith "not string"
+    Value.string_exn (value_exn args index)
+
+  let path_exn args index =
+    Value.path_exn (value_exn args index)
 
 end
 

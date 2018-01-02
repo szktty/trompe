@@ -1,6 +1,7 @@
 open Base
 
 let defaults = [
+  Lib_path.init;
   Lib_string.init;
 ]
 
