@@ -8,9 +8,9 @@ type t = {
 and module_ = {
   mod_file : string option;
   mod_name : string;
-  mod_parent : module_;
+  mod_parent : module_ option;
   mod_subs : module_ Map.M(String).t;
-  mod_ctx : context;
+  mod_ctx : context option;
   mod_env : Value.t Map.M(String).t;
 }
 
@@ -42,20 +42,38 @@ let create m = {
   rt_prims = Map.empty (module String);
 }
 
-let rec find_submod mods (path:Namepath.t) =
-  match Map.find mods path.name with
+let create_mod ?file ?parent name = 
+  { mod_file = file;
+    mod_name = name;
+    mod_parent = parent;
+    mod_subs = Map.empty (module String);
+    mod_ctx = None;
+    mod_env = Map.empty (module String);
+  }
+
+let find_mod rt path =
+  With_return.with_return (fun r ->
+      let mods =
+        List.fold_left path ~init:rt.rt_mods
+          ~f:(fun mods name ->
+              match Map.find mods name with
+              | None -> r.return None
+              | Some m -> m.mod_subs)
+      in
+      Map.find mods (List.last_exn path))
+
+let add_mod rt path ~m =
+  let rec f mods path accu =
+    match path with
+    | [] -> Some (Map.set mods ~key:m.mod_name ~data:m)
+    | name :: rest ->
+      match Map.find mods name with
+      | None -> None
+      | Some m -> f m.mod_subs rest accu
+  in
+  match f rt.rt_mods path Map.empty with
   | None -> None
-  | Some m ->
-    match path.sub with
-    | None -> Some m
-    | Some sub -> find_submod m.mod_subs sub
-
-let find_mod rt (path:Namepath.t) =
-  find_submod rt.rt_mods path
-
-    (*
-let add_mod rt (path:Namepath.t) ~m =
-     *)
+  | Some mods -> Some ({ rt with rt_mods = mods })
 
 let add_prim rt ~name ~f ~arity =
   let prim = { prim_name = name;
