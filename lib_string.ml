@@ -1,6 +1,8 @@
 let prim_length rt ctx args =
   let s = Runtime.Args.string_exn args 0 in
-  rt, Value.Int (String.length s)
+  Ok (rt, Value.Int (String.length s))
 
 let init rt =
-  rt
+  Runtime.add_prims rt [
+    ("string_length", prim_length, 1)
+  ]

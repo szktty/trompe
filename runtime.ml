@@ -26,6 +26,7 @@ and args = {
 }
 
 and prim = {
+  prim_name : string;
   prim_fun : prim_fun;
   prim_arity : int;
 }
@@ -56,8 +57,18 @@ let find_mod rt (path:Namepath.t) =
 let add_mod rt (path:Namepath.t) ~m =
      *)
 
-let add_prim rt ~name ~f =
-  { rt with rt_prims = Map.set rt.rt_prims ~key:name ~data:f }
+let add_prim rt ~name ~f ~arity =
+  let prim = { prim_name = name;
+               prim_fun = f;
+               prim_arity = arity;
+             } in
+  { rt with rt_prims = Map.set rt.rt_prims ~key:name ~data:prim }
+
+let add_prims rt (prims:(string * prim_fun * int) list) =
+  List.fold_left prims ~init:rt
+    ~f:(fun rt prim ->
+        match prim with
+        | name, f, arity -> add_prim rt ~name ~f ~arity)
 
 module Args = struct
 
