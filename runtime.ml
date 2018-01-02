@@ -11,27 +11,17 @@ and module_ = {
   mod_parent : module_;
   mod_subs : module_ Map.M(String).t;
   mod_ctx : context;
-  mod_env : env;
+  mod_env : Value.t Map.M(String).t;
 }
 
 and context = {
   ctx_file : string option;
-  ctx_env : env;
+  ctx_env : Value.t Map.M(String).t;
   ctx_import : module_ list;
 }
 
-and env = value Map.M(String).t
-
-and value =
-  | Val_void
-  | Val_int of int
-  | Val_string of string
-  | Val_prim of string
-  | Val_clos of context * value
-  | Val_fun of value
-
 and args = {
-  args_vals : value list;
+  args_vals : Value.t list;
   args_tys : [`String] list;
 }
 
@@ -40,7 +30,7 @@ and prim = {
   prim_arity : int;
 }
 
-and prim_fun = t -> context -> args -> (t * value, error) Result.t
+and prim_fun = t -> context -> args -> (t * Value.t, error) Result.t
 
 and error = 
   | Invalid_arity of int * int (* actual * expected *)
@@ -84,13 +74,13 @@ module Args = struct
       let arg = List.nth_exn args.args_vals index in
       let ty = List.nth_exn args.args_tys index in
       match arg, ty with
-      | Val_string _, `String -> arg
+      | String _, `String -> arg
       | _ -> failwith "no arg"
     end
 
   let string_exn args index =
     match value_exn args index with
-    | Val_string s -> s
+    | String s -> s
     | _ -> failwith "not string"
 
 end
