@@ -62,7 +62,7 @@ let find_mod rt path =
       in
       Map.find mods (List.last_exn path))
 
-let add_mod rt path ~m =
+let add_mod rt ?(path=[]) ~m =
   let rec f mods path accu =
     match path with
     | [] -> Some (Map.set mods ~key:m.mod_name ~data:m)
@@ -74,6 +74,9 @@ let add_mod rt path ~m =
   match f rt.rt_mods path Map.empty with
   | None -> None
   | Some mods -> Some ({ rt with rt_mods = mods })
+
+let find_prim rt name =
+  Map.find rt.rt_prims name
 
 let add_prim rt ~name ~f ~arity =
   let prim = { prim_name = name;
@@ -87,6 +90,44 @@ let add_prims rt (prims:(string * prim_fun * int) list) =
     ~f:(fun rt prim ->
         match prim with
         | name, f, arity -> add_prim rt ~name ~f ~arity)
+
+module Env = struct
+
+  type t = Value.t Map.M(String).t
+
+  let set env ~name ~value =
+    Map.set env ~key:name ~data:value
+
+end
+
+module Module = struct
+
+  type t = module_
+
+  let set_attr m ~name ~value =
+    { m with mod_env = Env.set m.mod_env ~name ~value }
+
+end
+
+let define rt ?(path=[]) ?(attrs=[]) ?(prims=[]) ~name () =
+  let rt = add_prims rt prims in
+  let m = create_mod name in
+  let env = List.fold_left attrs ~init:m.mod_env
+      ~f:(fun env attr ->
+          match attr with
+          | name, value ->
+            begin match value with
+              | Value.Prim prim ->
+                begin match find_prim rt prim with
+                  | Some _ -> ()
+                  | None ->
+                    failwith (Printf.sprintf "unknown primitive %s" prim)
+                end
+              | _ -> ()
+            end;
+            Env.set env ~name ~value) in
+  let m = { m with mod_env = env } in
+  Option.value_exn (add_mod rt ~path ~m)
 
 module Args = struct
 
