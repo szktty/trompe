@@ -151,5 +151,8 @@ module Args = struct
   let string_exn args index =
     Value.string_exn (value_exn args index)
 
+  let list_exn args index =
+    Value.list_exn (value_exn args index)
+
 end
 
