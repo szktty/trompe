@@ -1,5 +1,7 @@
 open Base
 
+exception Invalid_type of string * string (* actual * expercted *)
+
 type t =
   | Void
   | Int of int
@@ -14,11 +16,26 @@ and closure = {
   clos_env : t Map.M(String).t;
 }
 
-let string_exn = function
-  | String s -> s
-  | _ -> failwith "not string"
+let type_name = function
+  | Int _ -> "int"
+  | String _ -> "string"
+  | _ -> failwith "notimpl"
 
-let list_exn = function
+let string = function
+  | String s -> Some s
+  | _ -> None
+
+let string_exn v =
+  match v with
+  | String s -> s
+  | _ -> raise (Invalid_type (type_name v, "string"))
+
+let list = function
+  | List es -> Some es
+  | _ -> None
+
+let list_exn v =
+  match v with
   | List es -> es
-  | _ -> failwith "not list"
+  | _ -> raise (Invalid_type (type_name v, "list"))
 

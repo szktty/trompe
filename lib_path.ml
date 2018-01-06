@@ -5,19 +5,19 @@ module F = Caml.Filename
 
 let prim_dir rt ctx args =
   let path = Args.string_exn args 0 in
-  Ok (rt, Value.String (F.dirname path))
+  (rt, Value.String (F.dirname path))
 
 let prim_base rt ctx args =
   let path = Args.string_exn args 0 in
-  Ok (rt, Value.String (F.basename path))
+  (rt, Value.String (F.basename path))
 
 let prim_ext rt ctx args =
   let path = Args.string_exn args 0 in
-  Ok (rt, Value.String (F.extension path))
+  (rt, Value.String (F.extension path))
 
 let prim_root rt ctx args =
   let path = Args.string_exn args 0 in
-  Ok (rt, Value.String (F.remove_extension path))
+  (rt, Value.String (F.remove_extension path))
 
 let prim_join rt ctx args =
   let es = Args.list_exn args 0 in
@@ -26,23 +26,23 @@ let prim_join rt ctx args =
       ~f:(fun accu e -> (Value.string_exn e) :: accu)
   in
   match List.rev comps with
-  | [] -> Ok (rt, Value.String "")
+  | [] -> (rt, Value.String "")
   | comp :: comps ->
-    Ok (rt, Value.String (List.fold_left comps
-                            ~init:comp
-                            ~f:(fun path comp -> F.concat path comp)))
+    (rt, Value.String (List.fold_left comps
+                         ~init:comp
+                         ~f:(fun path comp -> F.concat path comp)))
 
 let prim_split rt ctx args =
   let path = Args.string_exn args 0 in
   let dir = F.dirname path in
   let base = F.basename path in
-  Ok (rt, Value.Tuple [Value.String dir; Value.String base])
+  (rt, Value.Tuple [Value.String dir; Value.String base])
 
 let prim_split_ext rt ctx args =
   let path = Args.string_exn args 0 in
   let root = F.remove_extension path in
   let ext = F.extension path in
-  Ok (rt, Value.Tuple [Value.String root; Value.String ext])
+  (rt, Value.Tuple [Value.String root; Value.String ext])
 
 let init rt =
   define rt

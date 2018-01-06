@@ -31,11 +31,11 @@ and prim = {
   prim_arity : int;
 }
 
-and prim_fun = t -> context -> args -> (t * Value.t, error) Result.t
+and prim_fun = t -> context -> args -> t * Value.t
 
-and error = 
-  | Invalid_arity of int * int (* actual * expected *)
-  | Invalid_type
+(* TODO: runtime 以外のモジュールに置く
+ * value.ml から参照したい *)
+exception Invalid_arity of int * int (* actual * expected *)
 
 let create m = {
   rt_mods = Map.empty (module String);
