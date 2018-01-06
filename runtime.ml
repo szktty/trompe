@@ -151,8 +151,5 @@ module Args = struct
   let string_exn args index =
     Value.string_exn (value_exn args index)
 
-  let path_exn args index =
-    Value.path_exn (value_exn args index)
-
 end
 

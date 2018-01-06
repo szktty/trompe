@@ -1,21 +1,18 @@
 open Base
 open Runtime
 
-let prim_new rt ctx args =
-  Ok (rt, Value.Path (Args.string_exn args 0))
-
-let prim_string rt ctx args =
-  Ok (rt, Value.String (Args.path_exn args 0))
+let prim_concat rt ctx args =
+  let dir = Args.string_exn args 0 in
+  let file = Args.string_exn args 1 in
+  Ok (rt, Value.String (Caml.Filename.concat dir file))
 
 let init rt =
   define rt
     ~name:"path"
     ~attrs:[
-      ("new", Value.Prim "path_new");
-      ("string", Value.Prim "path_string");
+      ("concat", Value.Prim "path_concat");
     ]
     ~prims:[
-      ("path_new", prim_new, 1);
-      ("path_string", prim_string, 1);
+      ("path_concat", prim_concat, 1);
     ]
     ()
