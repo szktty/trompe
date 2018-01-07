@@ -1,6 +1,7 @@
 open Base
 
 let defaults : (Runtime.t -> Runtime.t) list = [
+  Lib_core.init;
   Lib_path.init;
   Lib_string.init;
 ]
