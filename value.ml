@@ -15,10 +15,26 @@ and closure = {
   clos_env : t Map.M(String).t;
 }
 
-let type_name = function
-  | Int _ -> "int"
-  | String _ -> "string"
+type ty = 
+  | Ty_void
+  | Ty_bool
+  | Ty_int
+  | Ty_string
+  | Ty_list of ty
+  | Ty_tuple of ty list
+
+let value_type = function
+  | Int _ -> Ty_int
+  | String _ -> Ty_string
   | _ -> failwith "notimpl"
+
+let type_name = function
+  | Ty_int -> "int"
+  | Ty_string -> "string"
+  | _ -> "<notimpl>"
+
+let value_type_name v =
+  type_name (value_type v)
 
 let string = function
   | String s -> Some s
@@ -27,7 +43,9 @@ let string = function
 let string_exn v =
   match v with
   | String s -> s
-  | _ -> raise (Runtime_exc.invalid_type ~given:(type_name v) ~valid:"string")
+  | _ -> raise (Runtime_exc.invalid_type
+                  ~given:(value_type_name v)
+                  ~valid:"string")
 
 let list = function
   | List es -> Some es
@@ -36,7 +54,9 @@ let list = function
 let list_exn v =
   match v with
   | List es -> es
-  | _ -> raise (Runtime_exc.invalid_type ~given:(type_name v) ~valid:"list")
+  | _ -> raise (Runtime_exc.invalid_type
+                  ~given:(value_type_name v)
+                  ~valid:"list")
 
 let rec eq (x:t) (y:t) : bool =
   match x, y with
