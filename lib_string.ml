@@ -9,7 +9,7 @@ let init rt =
   define rt
     ~name:"string"
     ~attrs:[
-      ("length",Value.Prim "string_length");
+      ("length", Value.Prim "string_length");
     ]
     ~prims:[
       ("string_length", prim_length, 1)
