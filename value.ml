@@ -38,3 +38,13 @@ let list_exn v =
   | List es -> es
   | _ -> raise (Runtime_exc.invalid_type ~given:(type_name v) ~valid:"list")
 
+let rec eq (x:t) (y:t) : bool =
+  match x, y with
+  | Void, Void -> true
+  | Bool e1, Bool e2 -> Bool.equal e1 e2
+  | Int e1, Int e2 -> e1 = e2
+  | String e1, String e2 -> String.equal e1 e2
+  | List e1s, List e2s
+  | Tuple e1s, Tuple e2s when List.length e1s = List.length e2s ->
+    List.for_all2_exn e1s e2s ~f:eq
+  | _ -> x == y
