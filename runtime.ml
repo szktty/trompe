@@ -33,10 +33,6 @@ and prim = {
 
 and prim_fun = t -> context -> args -> t * Value.t
 
-(* TODO: runtime 以外のモジュールに置く
- * value.ml から参照したい *)
-exception Invalid_arity of int * int (* actual * expected *)
-
 let create m = {
   rt_mods = Map.empty (module String);
   rt_prims = Map.empty (module String);

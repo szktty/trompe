@@ -1,7 +1,5 @@
 open Base
 
-exception Invalid_type of string * string (* actual * expercted *)
-
 type t =
   | Void
   | Int of int
@@ -28,7 +26,7 @@ let string = function
 let string_exn v =
   match v with
   | String s -> s
-  | _ -> raise (Invalid_type (type_name v, "string"))
+  | _ -> raise (Runtime_exc.invalid_type ~given:(type_name v) ~valid:"string")
 
 let list = function
   | List es -> Some es
@@ -37,5 +35,5 @@ let list = function
 let list_exn v =
   match v with
   | List es -> es
-  | _ -> raise (Invalid_type (type_name v, "list"))
+  | _ -> raise (Runtime_exc.invalid_type ~given:(type_name v) ~valid:"list")
 
