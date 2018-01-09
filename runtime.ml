@@ -7,9 +7,8 @@ type t = {
 
 and module_ = {
   mod_file : string option;
+  mod_parent : string option;
   mod_name : string;
-  mod_parent : module_ option;
-  mod_subs : module_ Map.M(String).t;
   mod_ctx : context option;
   mod_env : Value.t Map.M(String).t;
 }
@@ -38,38 +37,31 @@ let create m = {
   rt_prims = Map.empty (module String);
 }
 
-let create_mod ?file ?parent name = 
+let create_mod ?file path =
   { mod_file = file;
-    mod_name = name;
-    mod_parent = parent;
-    mod_subs = Map.empty (module String);
+    mod_parent = Namepath.parent path;
+    mod_name = Namepath.base path;
     mod_ctx = None;
     mod_env = Map.empty (module String);
   }
 
 let find_mod rt path =
-  With_return.with_return (fun r ->
-      let mods =
-        List.fold_left path ~init:rt.rt_mods
-          ~f:(fun mods name ->
-              match Map.find mods name with
-              | None -> r.return None
-              | Some m -> m.mod_subs)
-      in
-      Map.find mods (List.last_exn path))
+  Map.find rt.rt_mods path
 
-let add_mod rt ?(path=[]) ~m =
-  let rec f mods path accu =
-    match path with
-    | [] -> Some (Map.set mods ~key:m.mod_name ~data:m)
-    | name :: rest ->
-      match Map.find mods name with
-      | None -> None
-      | Some m -> f m.mod_subs rest accu
-  in
-  match f rt.rt_mods path Map.empty with
-  | None -> None
-  | Some mods -> Some ({ rt with rt_mods = mods })
+let add_mod rt m =
+  match m.mod_parent with
+  | None ->
+    Some({ rt with rt_mods = Map.set rt.rt_mods
+                       ~key:m.mod_name
+                       ~data:m})
+  | Some parent ->
+    match Map.find rt.rt_mods parent with
+    | None -> None
+    | Some _ ->
+    let path = Namepath.concat parent m.mod_name in
+    Some({ rt with rt_mods = Map.set rt.rt_mods
+                       ~key:path
+                       ~data:m})
 
 let find_prim rt name =
   Map.find rt.rt_prims name
@@ -105,9 +97,9 @@ module Module = struct
 
 end
 
-let define rt ?(path=[]) ?(attrs=[]) ?(prims=[]) ~name () =
+let define rt ?(attrs=[]) ?(prims=[]) ~path () =
   let rt = add_prims rt prims in
-  let m = create_mod name in
+  let m = create_mod path in
   let env = List.fold_left attrs ~init:m.mod_env
       ~f:(fun env attr ->
           match attr with
@@ -123,7 +115,7 @@ let define rt ?(path=[]) ?(attrs=[]) ?(prims=[]) ~name () =
             end;
             Env.set env ~name ~value) in
   let m = { m with mod_env = env } in
-  Option.value_exn (add_mod rt ~path ~m)
+  Option.value_exn (add_mod rt m)
 
 module Args = struct
 
@@ -151,4 +143,3 @@ module Args = struct
     Value.list_exn (value_exn args index)
 
 end
-

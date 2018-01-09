@@ -18,7 +18,7 @@ let prim_join rt ctx args =
 
 let init rt =
   define rt
-    ~name:"string"
+    ~path:"string"
     ~attrs:[
       ("len", Value.Prim "string_len");
       ("eq", Value.Prim "string_eq");

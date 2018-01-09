@@ -10,7 +10,7 @@ let prim_eq rt ctx args =
 
 let init rt =
   define rt
-    ~name:"core"
+    ~path:"core"
     ~attrs:[
       ("=", Value.Prim "core_eq");
     ]

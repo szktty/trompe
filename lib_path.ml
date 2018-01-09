@@ -46,7 +46,7 @@ let prim_split_ext rt ctx args =
 
 let init rt =
   define rt
-    ~name:"path"
+    ~path:"path"
     ~attrs:[
       ("sep", Value.String F.dir_sep);
       ("ext_sep", Value.String ".");
