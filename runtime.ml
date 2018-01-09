@@ -79,6 +79,11 @@ let add_prims rt (prims:(string * prim_fun * int) list) =
         match prim with
         | name, f, arity -> add_prim rt ~name ~f ~arity)
 
+let create_ctx ?file () =
+  { ctx_file = file;
+    ctx_env = Map.empty (module String);
+    ctx_import = [] }
+
 module Env = struct
 
   type t = Value.t Map.M(String).t
