@@ -3,4 +3,4 @@
 (executable
  ((name trompe)
   (public_name trompe)
-  (libraries (base))))
+  (libraries (base yojson stdio))))
