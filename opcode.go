@@ -11,9 +11,9 @@ const (
 	OpLoadInt // int
 	OpLoadSome
 	OpLoadNone
-	OpLoadLiteral // index of value in literal list *)
-	OpLoadLocal   // index
-	OpStore       // index of local
+	OpLoadLit   // index of value in literal list *)
+	OpLoadLocal // index
+	OpStore     // index of local
 	OpPop
 	OpReturn
 	OpLabel // name
