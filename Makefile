@@ -1,5 +1,4 @@
 .PHONY: all
 
 all:
-	jbuilder build
-
+	go build -o trompe cmd/trompe/main.go
