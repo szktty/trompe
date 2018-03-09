@@ -12,7 +12,9 @@ const (
 	OpLoadNone
 	OpLoadLit   // index of value in literal list *)
 	OpLoadLocal // index
+	OpLoadAttr  // index of literal string
 	OpStore     // index of local
+	OpStoreAttr // index of literal string
 	OpPop
 	OpReturn
 	OpLabel       // name
@@ -20,7 +22,7 @@ const (
 	OpBranchTrue  // index
 	OpBranchFalse // index
 	OpCall        // length
-	OpPrimitive   // index of string as literal
+	OpPrimitive   // index of literal string
 	OpList        // length
 	OpTuple       // length
 )

@@ -2,12 +2,21 @@ package trompe
 
 type Context struct {
 	Parent *Context
-	Clos   *Closure
-	Return Value
+	Clos   Closure
+	Args   []Value
+	Len    int
+}
+
+func CreateContext(parent *Context, clos Closure, args []Value, len int) Context {
+	return Context{Parent: parent, Clos: clos, Args: args, Len: len}
+}
+
+func (ctx *Context) CompiledCode() *CompiledCode {
+	return ctx.Clos.(*CompiledCode)
 }
 
 func (ctx *Context) Literal(i int) Value {
-	return ctx.Clos.Lits[i]
+	return ctx.CompiledCode().Lits[i]
 }
 
 type Stack struct {
@@ -15,8 +24,18 @@ type Stack struct {
 	Index  int // -1 start
 }
 
+func CreateStack(len int) Stack {
+	return Stack{Locals: make([]Value, len), Index: -1}
+}
+
 func (s *Stack) Top() Value {
 	return s.Locals[s.Index]
+}
+
+func (s *Stack) TopPop() Value {
+	top := s.Locals[s.Index]
+	s.Pop()
+	return top
 }
 
 func (s *Stack) Get(i int) Value {
@@ -55,12 +74,12 @@ func CreateProgCounter(ctx *Context) ProgCounter {
 }
 
 func (pc *ProgCounter) HasNext() bool {
-	return pc.Count < len(pc.Ctx.Clos.Ops)
+	return pc.Count < len(pc.Ctx.CompiledCode().Ops)
 }
 
 func (pc *ProgCounter) Next() int {
 	pc.Count += 1
-	return pc.Ctx.Clos.Ops[pc.Count-1]
+	return pc.Ctx.CompiledCode().Ops[pc.Count-1]
 }
 
 func (pc *ProgCounter) AddLabel(name string) {
@@ -71,23 +90,26 @@ func (pc *ProgCounter) Jump(label string) {
 	pc.Count = pc.Labels[label]
 }
 
-func Eval(prog *Program, stack *Stack, ctx *Context) {
+func Eval(prog *Program, ctx *Context) Value {
 	var op int
 	var i int
 	var top Value
+	var retVal Value
 	pc := CreateProgCounter(ctx)
 	cont := true
+	stack := CreateStack(16)
+	args := make([]Value, 16)
 	for cont && pc.HasNext() {
 		op = pc.Next()
 		switch op {
 		case OpNop:
 			break
 		case OpLoadUnit:
-			stack.Push(SharedUnit)
+			stack.Push(SharedValUnit)
 		case OpLoadTrue:
-			stack.Push(SharedTrue)
+			stack.Push(SharedValTrue)
 		case OpLoadFalse:
-			stack.Push(SharedFalse)
+			stack.Push(SharedValFalse)
 		case OpLoadInt:
 			i = pc.Next()
 			stack.Push(&ValInt{i})
@@ -102,6 +124,8 @@ func Eval(prog *Program, stack *Stack, ctx *Context) {
 			stack.Set(i, stack.Top())
 		case OpPop:
 			stack.Pop()
+		case OpReturn:
+			return stack.Top()
 		case OpLabel:
 			i = pc.Next()
 			pc.AddLabel(ctx.Literal(i).String())
@@ -120,19 +144,26 @@ func Eval(prog *Program, stack *Stack, ctx *Context) {
 			if !top.Bool() {
 				pc.Jump(ctx.Literal(i).String())
 			}
-		case OpReturn:
-			ctx.Return = stack.Top()
-			cont = false
+		case OpCall:
+			i = pc.Next()
+			for j := 0; j < i; j++ {
+				args[j] = stack.TopPop()
+			}
+			clos := stack.TopPop().Closure()
+			newCtx := CreateContext(ctx, clos, args, i)
+			retVal = clos.Apply(prog, &newCtx)
+			stack.Push(retVal)
 		case OpList:
 			i = pc.Next()
 			list := ListNil
 			for j := 0; j < i; j++ {
-				list = list.Cons(stack.Top())
-				stack.Pop()
+				list = list.Cons(stack.TopPop())
 			}
 			stack.Push(CreateValList(list))
 		default:
 			panic("unknown opcode")
 		}
 	}
+
+	return stack.Top()
 }
