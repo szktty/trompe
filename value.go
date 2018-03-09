@@ -5,6 +5,8 @@ const (
 	ValBoolType
 	ValIntType
 	ValStrType
+	ValListType
+	ValTupleType
 	ValClosType
 	ValOptType
 )
@@ -19,6 +21,8 @@ type Value interface {
 }
 */
 type Value interface {
+	Bool() bool
+	Int() int
 	String() string
 }
 
@@ -95,4 +99,24 @@ func (val *ValStr) Int() int {
 
 func (val *ValStr) String() string {
 	return val.Value
+}
+
+type ValList struct {
+	Value *List
+}
+
+func (val *ValList) Bool() bool {
+	panic("list")
+}
+
+func (val *ValList) Int() int {
+	panic("list")
+}
+
+func (val *ValList) String() string {
+	panic("list")
+}
+
+func CreateValList(value *List) *ValList {
+	return &ValList{value}
 }

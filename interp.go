@@ -3,6 +3,11 @@ package trompe
 type Context struct {
 	Parent *Context
 	Clos   *Closure
+	Return Value
+}
+
+func (ctx *Context) Literal(i int) Value {
+	return ctx.Clos.Lits[i]
 }
 
 type Stack struct {
@@ -62,11 +67,17 @@ func (pc *ProgCounter) AddLabel(name string) {
 	pc.Labels[name] = pc.Count
 }
 
+func (pc *ProgCounter) Jump(label string) {
+	pc.Count = pc.Labels[label]
+}
+
 func Eval(prog *Program, stack *Stack, ctx *Context) {
+	var op int
+	var i int
+	var top Value
 	pc := CreateProgCounter(ctx)
-	op := OpNop
-	i := 0
-	for pc.HasNext() {
+	cont := true
+	for cont && pc.HasNext() {
 		op = pc.Next()
 		switch op {
 		case OpNop:
@@ -82,7 +93,7 @@ func Eval(prog *Program, stack *Stack, ctx *Context) {
 			stack.Push(&ValInt{i})
 		case OpLoadLit:
 			i = pc.Next()
-			stack.Push(ctx.Clos.Lits[i])
+			stack.Push(ctx.Literal(i))
 		case OpLoadLocal:
 			i = pc.Next()
 			stack.Push(stack.Get(i))
@@ -93,9 +104,35 @@ func Eval(prog *Program, stack *Stack, ctx *Context) {
 			stack.Pop()
 		case OpLabel:
 			i = pc.Next()
-			pc.AddLabel(ctx.Clos.Lits[i].String())
+			pc.AddLabel(ctx.Literal(i).String())
+		case OpJump:
+			i = pc.Next()
+			pc.Jump(ctx.Literal(i).String())
+		case OpBranchTrue:
+			i = pc.Next()
+			top = stack.Top()
+			if top.Bool() {
+				pc.Jump(ctx.Literal(i).String())
+			}
+		case OpBranchFalse:
+			i = pc.Next()
+			top = stack.Top()
+			if !top.Bool() {
+				pc.Jump(ctx.Literal(i).String())
+			}
+		case OpReturn:
+			ctx.Return = stack.Top()
+			cont = false
+		case OpList:
+			i = pc.Next()
+			list := ListNil
+			for j := 0; j < i; j++ {
+				list = list.Cons(stack.Top())
+				stack.Pop()
+			}
+			stack.Push(CreateValList(list))
 		default:
-			break
+			panic("unknown opcode")
 		}
 	}
 }

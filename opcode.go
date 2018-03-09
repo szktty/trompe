@@ -3,8 +3,7 @@ package trompe
 type Opcode = int
 
 const (
-	OpNop      = iota
-	OpPosition // position
+	OpNop = iota
 	OpLoadUnit
 	OpLoadTrue
 	OpLoadFalse
@@ -16,8 +15,7 @@ const (
 	OpStore     // index of local
 	OpPop
 	OpReturn
-	OpLabel // name
-	OpLoopHead
+	OpLabel       // name
 	OpJump        // index
 	OpBranchTrue  // index
 	OpBranchFalse // index
