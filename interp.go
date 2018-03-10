@@ -1,5 +1,7 @@
 package trompe
 
+import "fmt"
+
 type Context struct {
 	Parent *Context
 	Clos   Closure
@@ -59,6 +61,22 @@ func (s *Stack) Pop() {
 	s.Index--
 }
 
+func (s *Stack) Inspect() {
+	fmt.Printf("stack:\n")
+	for i, value := range s.Locals {
+		if i > s.Index {
+			continue
+		}
+		if i == s.Index {
+			fmt.Printf(" -> ")
+		} else {
+			fmt.Printf("    ")
+		}
+		fmt.Printf("%d: %s\n", i, value.Desc())
+	}
+	fmt.Printf("\n")
+}
+
 type Program struct {
 	Path string
 }
@@ -70,7 +88,7 @@ type ProgCounter struct {
 }
 
 func CreateProgCounter(ctx *Context) ProgCounter {
-	return ProgCounter{Count: -1, Ctx: ctx, Labels: make(map[string]int)}
+	return ProgCounter{Count: 0, Ctx: ctx, Labels: make(map[string]int)}
 }
 
 func (pc *ProgCounter) HasNext() bool {
@@ -90,7 +108,7 @@ func (pc *ProgCounter) Jump(label string) {
 	pc.Count = pc.Labels[label]
 }
 
-func Eval(prog *Program, ctx *Context) Value {
+func (prog *Program) Eval(ctx *Context) Value {
 	var op int
 	var i int
 	var top Value
@@ -100,6 +118,7 @@ func Eval(prog *Program, ctx *Context) Value {
 	stack := CreateStack(16)
 	args := make([]Value, 16)
 	for cont && pc.HasNext() {
+		stack.Inspect()
 		op = pc.Next()
 		switch op {
 		case OpNop:

@@ -8,12 +8,14 @@ const (
 	OpLoadTrue
 	OpLoadFalse
 	OpLoadInt // int
-	OpLoadSome
 	OpLoadNone
+	OpLoadRef
 	OpLoadLit   // index of value in literal list *)
 	OpLoadLocal // index
 	OpLoadAttr  // index of literal string
-	OpStore     // index of local
+	OpLoadPrim  // index of literal string
+	OpStore     // index of literal string
+	OpStoreRef
 	OpStoreAttr // index of literal string
 	OpPop
 	OpReturn
@@ -22,7 +24,7 @@ const (
 	OpBranchTrue  // index
 	OpBranchFalse // index
 	OpCall        // length
-	OpPrimitive   // index of literal string
-	OpList        // length
-	OpTuple       // length
+	OpSome
+	OpList  // length
+	OpTuple // length
 )
