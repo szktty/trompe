@@ -43,6 +43,12 @@ func (code *CompiledCode) Inspect() string {
 			s += "load true"
 		case OpLoadFalse:
 			s += "load false"
+		case OpLoadZero:
+			s += "load 0"
+		case OpLoadOne:
+			s += "load 1"
+		case OpLoadNegOne:
+			s += "load -1"
 		case OpLoadInt:
 			i := code.Ops[pc+1]
 			pc++
@@ -67,6 +73,10 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("load primitive %s", code.LiteralDesc(i))
+		case OpLoadArg:
+			i := code.Ops[pc+1]
+			pc++
+			s += fmt.Sprintf("load arg %d", i)
 		case OpStore:
 			i := code.Ops[pc+1]
 			pc++
@@ -81,26 +91,58 @@ func (code *CompiledCode) Inspect() string {
 			s += "pop"
 		case OpReturn:
 			s += "return"
+		case OpReturnUnit:
+			s += "return ()"
 		case OpLabel:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("label %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("label L%d", i)
+		case OpLoopHead:
+			s += "loop head"
 		case OpJump:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("jump %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("jump L%d", i)
 		case OpBranchTrue:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("branch true %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("branch true L%d", i)
 		case OpBranchFalse:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("branch false %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("branch false L%d", i)
+		case OpBegin:
+			s += "begin block"
+		case OpEnd:
+			s += "end block"
 		case OpCall:
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("call %d", i)
+		case OpEq:
+			s += "=="
+		case OpNe:
+			s += "=="
+		case OpLt:
+			s += "<"
+		case OpLe:
+			s += "<="
+		case OpGt:
+			s += ">"
+		case OpGe:
+			s += ">="
+		case OpMatch:
+			s += "match"
+		case OpAdd:
+			s += "+"
+		case OpSub:
+			s += "-"
+		case OpMul:
+			s += "*"
+		case OpDiv:
+			s += "/"
+		case OpMod:
+			s += "%"
 		case OpSome:
 			s += "create some"
 		case OpList:
@@ -112,7 +154,7 @@ func (code *CompiledCode) Inspect() string {
 			pc++
 			s += fmt.Sprintf("create tuple %d", i)
 		default:
-			panic("unknown opcode")
+			panic(fmt.Sprintf("unknown opcode %d", code.Ops[pc]))
 		}
 		b.WriteString(s + "\n")
 	}
@@ -127,27 +169,182 @@ func (prim *Primitive) Apply(prog *Program, ctx *Context) Value {
 	return prim.Func(prog, ctx.Args, ctx.Len)
 }
 
-func CompiledCodeTest() {
+/*
+	show "Hello, world!"
+*/
+func TestCompiledCodeHelloWorld() {
 	code := CompiledCode{
 		Lits: []Value{
-			CreateValStr("hello"),
-			CreateValStr("loophead"),
+			CreateValStr("show"),
+			CreateValStr("Hello, world!"),
 		},
 		Ops: []int{
-			OpNop,
-			OpLoadUnit,
-			OpLoadTrue,
-			OpLoadFalse,
-			OpLoadInt, 12345,
-			OpLoadLit, 0,
-			OpPop,
-			OpLabel, 1,
-			OpReturn,
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 1, // "Hello, world!"
+			OpCall, 1,
+			OpReturnUnit,
 		},
 	}
 	fmt.Println(code.Inspect())
 
-	prog := Program{}
-	ctx := CreateContext(nil, &code, nil, 0)
-	prog.Eval(&ctx)
+	/*
+		prog := Program{}
+		ctx := CreateContext(nil, &code, nil, 0)
+		prog.Eval(&ctx)
+	*/
+}
+
+/*
+	match (arg1 % 3, arg1 % 5) with
+	case (0, 0) then show("FizzBuzz")
+	case (0, _) then show("Fizz")
+	case (_, 0) then show("Buzz")
+	else show(arg1)
+	end
+*/
+func TestCompiledCodeFizzBuzzMatch() {
+	code := CompiledCode{
+		Lits: []Value{
+			CreateValStr("show"),
+			CreateValStr("Fizz"),
+			CreateValStr("Buzz"),
+			CreateValStr("FizzBuzz"),
+			// TODO: match patterns
+			&ValCase{},
+			&ValCase{},
+			&ValCase{},
+		},
+		Ops: []int{
+			OpLoadArg, 0,
+			OpLoadInt, 3,
+			OpMod,
+			OpLoadArg, 0,
+			OpLoadInt, 5,
+			OpMod,
+			OpTuple, 2,
+
+			OpBegin,
+			OpLoadLit, 4, // pattern 1
+			OpMatch,
+			OpBranchFalse, 0, // label 0
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 3, // "FizzBuzz",
+			OpCall, 1,
+			OpEnd,
+			OpJump, 4, // label 4
+			OpLabel, 0,
+
+			OpBegin,
+			OpLoadLit, 5, // pattern 2
+			OpMatch,
+			OpBranchFalse, 1, // label 1
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 3, // "FizzBuzz",
+			OpCall, 1,
+			OpEnd,
+			OpJump, 4, // label 4
+			OpLabel, 1,
+
+			OpBegin,
+			OpLoadLit, 6, // pattern 3
+			OpMatch,
+			OpBranchFalse, 2, // label 2
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 3, // "FizzBuzz",
+			OpCall, 1,
+			OpEnd,
+			OpJump, 4, // label 4
+			OpLabel, 2,
+
+			OpBegin,
+			OpLoadLit, 6, // pattern 3
+			OpMatch,
+			OpBranchFalse, 2, // label 3
+			OpLoadPrim, 0, // "show"
+			OpLoadArg, 0, // arg 1
+			OpCall, 1,
+			OpEnd,
+			OpJump, 4, // label 4
+			OpLabel, 3,
+
+			OpLabel, 4, // match end
+			OpReturnUnit,
+		},
+	}
+	fmt.Println(code.Inspect())
+
+	/*
+		prog := Program{}
+		ctx := CreateContext(nil, &code, nil, 0)
+		prog.Eval(&ctx)
+	*/
+}
+
+/*
+	if arg1 == 3 then
+		show("Fizz")
+	else if arg1 == 5 then
+		show("Buzz")
+	else if arg1 == 15 then
+		show("FizzBuzz")
+	else
+		show(arg1)
+	end
+*/
+func TestCompiledCodeFizzBuzzCompare() {
+	code := CompiledCode{
+		Lits: []Value{
+			CreateValStr("show"),
+			CreateValStr("Fizz"),
+			CreateValStr("Buzz"),
+			CreateValStr("FizzBuzz"),
+		},
+		Ops: []int{
+			OpLoadArg, 0, // arg 1
+			OpLoadInt, 3, // 3
+			OpEq,             // ==
+			OpBranchFalse, 0, // label 0
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 1, // "Fizz"
+			OpCall, 1,
+			OpJump, 4, // label 4
+			OpLabel, 0,
+
+			OpLoadArg, 0, // arg 1
+			OpLoadInt, 5, // 5
+			OpEq,             // ==
+			OpBranchFalse, 1, // label 1
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 2, // "Buzz"
+			OpCall, 1,
+			OpJump, 4, // label 4
+			OpLabel, 1,
+
+			OpLoadArg, 0, // arg 1
+			OpLoadInt, 15, // 15
+			OpEq,             // ==
+			OpBranchFalse, 2, // label 2
+			OpLoadPrim, 0, // "show"
+			OpLoadLit, 3, // "FizzBuzz"
+			OpCall, 1,
+			OpJump, 4, // label 4
+			OpLabel, 2,
+
+			OpLoadPrim, 0, // "show"
+			OpLoadArg, 0, // arg 1
+			OpCall, 1,
+			OpJump, 4, // label 4
+			OpLabel, 3,
+
+			OpLabel, 4,
+			OpReturnUnit,
+		},
+	}
+	fmt.Println(code.Inspect())
+
+	/*
+		prog := Program{}
+		ctx := CreateContext(nil, &code, nil, 0)
+		prog.Eval(&ctx)
+	*/
 }

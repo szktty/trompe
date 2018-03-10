@@ -7,10 +7,18 @@ type Context struct {
 	Clos   Closure
 	Args   []Value
 	Len    int
+	Env    *Env
 }
 
+// TODO: Env
 func CreateContext(parent *Context, clos Closure, args []Value, len int) Context {
-	return Context{Parent: parent, Clos: clos, Args: args, Len: len}
+	return Context{
+		Parent: parent,
+		Clos:   clos,
+		Args:   args,
+		Len:    len,
+		Env:    nil,
+	}
 }
 
 func (ctx *Context) CompiledCode() *CompiledCode {
@@ -172,6 +180,9 @@ func (prog *Program) Eval(ctx *Context) Value {
 			newCtx := CreateContext(ctx, clos, args, i)
 			retVal = clos.Apply(prog, &newCtx)
 			stack.Push(retVal)
+		case OpSome:
+			top = stack.TopPop()
+			stack.Push(CreateValOpt(top))
 		case OpList:
 			i = pc.Next()
 			list := ListNil

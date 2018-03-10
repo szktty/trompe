@@ -28,5 +28,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("hello! %d\n", trompe.OpNop)
+	if flag.Arg(0) == "test" {
+		trompe.TestCompiledCodeHelloWorld()
+		trompe.TestCompiledCodeFizzBuzzCompare()
+		trompe.TestCompiledCodeFizzBuzzMatch()
+	}
 }

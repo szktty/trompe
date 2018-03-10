@@ -11,6 +11,7 @@ const (
 	ValTupleType
 	ValClosType
 	ValOptType
+	ValCaseType
 )
 
 type Value interface {
@@ -20,6 +21,7 @@ type Value interface {
 	Int() int
 	String() string
 	Closure() Closure
+	// Case() Case
 }
 
 type ValUnit struct{}
@@ -36,13 +38,10 @@ type ValStr struct {
 	Value string
 }
 
-type ValOpt struct {
-	Value *Value // nullable
-}
-
 var SharedValUnit = &ValUnit{}
 var SharedValTrue = &ValBool{true}
 var SharedValFalse = &ValBool{false}
+var SharedValNone = &ValOpt{nil}
 
 func (val *ValUnit) Type() int {
 	return ValUnitType
@@ -211,4 +210,65 @@ func (val *ValClos) Closure() Closure {
 
 func CreateValClos(value Closure) *ValClos {
 	return &ValClos{value}
+}
+
+type ValOpt struct {
+	Value Value // nullable
+}
+
+func CreateValOpt(value Value) *ValOpt {
+	return &ValOpt{value}
+}
+
+func (val *ValOpt) Type() int {
+	return ValOptType
+}
+
+func (val *ValOpt) Desc() string {
+	return fmt.Sprintf("closure %p", val.Value)
+}
+
+func (val *ValOpt) Bool() bool {
+	panic("Opt")
+}
+
+func (val *ValOpt) Int() int {
+	panic("Opt")
+}
+
+func (val *ValOpt) String() string {
+	panic("Opt")
+}
+
+func (val *ValOpt) Closure() Closure {
+	panic("Opt")
+}
+
+type ValCase struct {
+	// TODO
+}
+
+func (val *ValCase) Type() int {
+	return ValCaseType
+}
+
+func (val *ValCase) Desc() string {
+	// TODO
+	return "case"
+}
+
+func (val *ValCase) Bool() bool {
+	panic("Case")
+}
+
+func (val *ValCase) Int() int {
+	panic("Case")
+}
+
+func (val *ValCase) String() string {
+	panic("Case")
+}
+
+func (val *ValCase) Closure() Closure {
+	panic("Case")
 }
