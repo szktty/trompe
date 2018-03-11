@@ -3,21 +3,21 @@ package trompe
 import "fmt"
 
 type Context struct {
-	Parent *Context
-	Clos   Closure
-	Args   []Value
-	Len    int
-	Env    *Env
+	Parent  *Context
+	Clos    Closure
+	Args    []Value
+	NumArgs int
+	Env     *Env
 }
 
 // TODO: Env
-func CreateContext(parent *Context, clos Closure, args []Value, len int) Context {
+func CreateContext(parent *Context, clos Closure, args []Value, numArgs int) Context {
 	return Context{
-		Parent: parent,
-		Clos:   clos,
-		Args:   args,
-		Len:    len,
-		Env:    nil,
+		Parent:  parent,
+		Clos:    clos,
+		Args:    args,
+		NumArgs: numArgs,
+		Env:     nil,
 	}
 }
 
@@ -126,17 +126,18 @@ func (prog *Program) Eval(ctx *Context) Value {
 	stack := CreateStack(16)
 	args := make([]Value, 16)
 	for cont && pc.HasNext() {
-		stack.Inspect()
 		op = pc.Next()
+		fmt.Printf("op: %s\n", GetOpName(op))
+		stack.Inspect()
 		switch op {
 		case OpNop:
 			break
 		case OpLoadUnit:
-			stack.Push(SharedValUnit)
+			stack.Push(LangUnit)
 		case OpLoadTrue:
-			stack.Push(SharedValTrue)
+			stack.Push(LangTrue)
 		case OpLoadFalse:
-			stack.Push(SharedValFalse)
+			stack.Push(LangFalse)
 		case OpLoadInt:
 			i = pc.Next()
 			stack.Push(&ValInt{i})
@@ -146,6 +147,10 @@ func (prog *Program) Eval(ctx *Context) Value {
 		case OpLoadLocal:
 			i = pc.Next()
 			stack.Push(stack.Get(i))
+		case OpLoadPrim:
+			i = pc.Next()
+			prim := GetPrim(ctx.Literal(i).String())
+			stack.Push(prim)
 		case OpStore:
 			i = pc.Next()
 			stack.Set(i, stack.Top())
@@ -153,6 +158,8 @@ func (prog *Program) Eval(ctx *Context) Value {
 			stack.Pop()
 		case OpReturn:
 			return stack.Top()
+		case OpReturnUnit:
+			return LangUnit
 		case OpLabel:
 			i = pc.Next()
 			pc.AddLabel(ctx.Literal(i).String())
@@ -191,7 +198,7 @@ func (prog *Program) Eval(ctx *Context) Value {
 			}
 			stack.Push(CreateValList(list))
 		default:
-			panic("unknown opcode")
+			panic("unsupported opcode")
 		}
 	}
 

@@ -28,6 +28,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	trompe.Init()
+
 	if flag.Arg(0) == "test" {
 		trompe.TestCompiledCodeHelloWorld()
 		trompe.TestCompiledCodeFizzBuzzCompare()

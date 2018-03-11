@@ -44,10 +44,10 @@ type ValTuple struct {
 	Values []Value
 }
 
-var SharedValUnit = &ValUnit{}
-var SharedValTrue = &ValBool{true}
-var SharedValFalse = &ValBool{false}
-var SharedValNone = &ValOpt{nil}
+var LangUnit = &ValUnit{}
+var LangTrue = &ValBool{true}
+var LangFalse = &ValBool{false}
+var LangNone = &ValOpt{nil}
 
 func (val *ValUnit) Type() int {
 	return ValUnitType

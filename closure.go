@@ -159,14 +159,6 @@ func (code *CompiledCode) Inspect() string {
 	return b.String()
 }
 
-type Primitive struct {
-	Func func(*Program, []Value, int) Value
-}
-
-func (prim *Primitive) Apply(prog *Program, ctx *Context) Value {
-	return prim.Func(prog, ctx.Args, ctx.Len)
-}
-
 /*
 	show "Hello, world!"
 */
@@ -185,11 +177,9 @@ func TestCompiledCodeHelloWorld() {
 	}
 	fmt.Println(code.Inspect())
 
-	/*
-		prog := Program{}
-		ctx := CreateContext(nil, &code, nil, 0)
-		prog.Eval(&ctx)
-	*/
+	prog := Program{}
+	ctx := CreateContext(nil, &code, nil, 0)
+	prog.Eval(&ctx)
 }
 
 /*
