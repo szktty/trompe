@@ -116,11 +116,12 @@ func (pc *ProgCounter) Jump(label string) {
 	pc.Count = pc.Labels[label]
 }
 
-func (prog *Program) Eval(ctx *Context) Value {
+func (prog *Program) Eval(ctx *Context) (Value, error) {
 	var op int
 	var i int
 	var top Value
 	var retVal Value
+	var err error
 	pc := CreateProgCounter(ctx)
 	cont := true
 	stack := CreateStack(16)
@@ -157,9 +158,10 @@ func (prog *Program) Eval(ctx *Context) Value {
 		case OpPop:
 			stack.Pop()
 		case OpReturn:
-			return stack.Top()
+			break
 		case OpReturnUnit:
-			return LangUnit
+			stack.Push(LangUnit)
+			break
 		case OpLabel:
 			i = pc.Next()
 			pc.AddLabel(ctx.Literal(i).String())
@@ -185,7 +187,7 @@ func (prog *Program) Eval(ctx *Context) Value {
 			}
 			clos := stack.TopPop().Closure()
 			newCtx := CreateContext(ctx, clos, args, i)
-			retVal = clos.Apply(prog, &newCtx)
+			retVal, err = clos.Apply(prog, &newCtx)
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()
@@ -202,5 +204,9 @@ func (prog *Program) Eval(ctx *Context) Value {
 		}
 	}
 
-	return stack.Top()
+	if err != nil {
+		return nil, err
+	} else {
+		return stack.Top(), nil
+	}
 }

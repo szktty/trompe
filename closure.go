@@ -6,7 +6,7 @@ import (
 )
 
 type Closure interface {
-	Apply(*Program, *Context) Value
+	Apply(*Program, *Context) (Value, error)
 }
 
 type CompiledCode struct {
@@ -14,7 +14,7 @@ type CompiledCode struct {
 	Ops  []Opcode
 }
 
-func (code *CompiledCode) Apply(prog *Program, ctx *Context) Value {
+func (code *CompiledCode) Apply(prog *Program, ctx *Context) (Value, error) {
 	return prog.Eval(ctx)
 }
 
