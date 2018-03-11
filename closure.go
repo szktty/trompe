@@ -97,8 +97,6 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("label L%d", i)
-		case OpLoopHead:
-			s += "loop head"
 		case OpJump:
 			i := code.Ops[pc+1]
 			pc++
