@@ -11,7 +11,7 @@ const (
 	ValTupleType
 	ValClosType
 	ValOptType
-	ValCaseType
+	ValPtnType
 )
 
 type Value interface {
@@ -20,8 +20,10 @@ type Value interface {
 	Bool() bool
 	Int() int
 	String() string
+	List() *List
+	Tuple() []Value
 	Closure() Closure
-	// Case() Case
+	// Pattern() Pattern
 }
 
 type ValUnit struct{}
@@ -36,6 +38,10 @@ type ValInt struct {
 
 type ValStr struct {
 	Value string
+}
+
+type ValTuple struct {
+	Values []Value
 }
 
 var SharedValUnit = &ValUnit{}
@@ -67,6 +73,14 @@ func (val *ValUnit) Closure() Closure {
 	panic("unit")
 }
 
+func (val *ValUnit) List() *List {
+	panic("unit")
+}
+
+func (val *ValUnit) Tuple() []Value {
+	panic("unit")
+}
+
 func (val *ValBool) Type() int {
 	return ValBoolType
 }
@@ -95,6 +109,14 @@ func (val *ValBool) Closure() Closure {
 	panic("bool")
 }
 
+func (val *ValBool) List() *List {
+	panic("bool")
+}
+
+func (val *ValBool) Tuple() []Value {
+	panic("bool")
+}
+
 func (val *ValInt) Type() int {
 	return ValIntType
 }
@@ -117,6 +139,14 @@ func (val *ValInt) String() string {
 
 func (val *ValInt) Closure() Closure {
 	panic("not closure")
+}
+
+func (val *ValInt) List() *List {
+	panic("int")
+}
+
+func (val *ValInt) Tuple() []Value {
+	panic("int")
 }
 
 func (val *ValStr) Type() int {
@@ -145,6 +175,14 @@ func CreateValStr(value string) *ValStr {
 
 func (val *ValStr) Closure() Closure {
 	panic("not closure")
+}
+
+func (val *ValStr) List() *List {
+	panic("string")
+}
+
+func (val *ValStr) Tuple() []Value {
+	panic("string")
 }
 
 type ValList struct {
@@ -176,8 +214,53 @@ func (val *ValList) Closure() Closure {
 	panic("not closure")
 }
 
+func (val *ValList) List() *List {
+	return val.Value
+}
+
+func (val *ValList) Tuple() []Value {
+	panic("list")
+}
+
 func CreateValList(value *List) *ValList {
 	return &ValList{value}
+}
+
+func CreateValTuple(value ...Value) *ValTuple {
+	return &ValTuple{value}
+}
+
+func (val *ValTuple) Type() int {
+	return ValTupleType
+}
+
+func (val *ValTuple) Desc() string {
+	// TODO
+	return fmt.Sprintf("list")
+}
+
+func (val *ValTuple) Bool() bool {
+	panic("tuple")
+}
+
+func (val *ValTuple) Int() int {
+	panic("tuple")
+}
+
+func (val *ValTuple) String() string {
+	panic("tuple")
+}
+
+func (val *ValTuple) Closure() Closure {
+	panic("not closure")
+}
+
+func (val *ValTuple) List() *List {
+	panic("tuple")
+}
+
+func (val *ValTuple) Tuple() []Value {
+	return val.Values
 }
 
 type ValClos struct {
@@ -206,6 +289,14 @@ func (val *ValClos) String() string {
 
 func (val *ValClos) Closure() Closure {
 	return val.Value
+}
+
+func (val *ValClos) List() *List {
+	panic("Clos")
+}
+
+func (val *ValClos) Tuple() []Value {
+	panic("closure")
 }
 
 func CreateValClos(value Closure) *ValClos {
@@ -244,31 +335,50 @@ func (val *ValOpt) Closure() Closure {
 	panic("Opt")
 }
 
-type ValCase struct {
-	// TODO
+func (val *ValOpt) List() *List {
+	panic("Opt")
 }
 
-func (val *ValCase) Type() int {
-	return ValCaseType
+func (val *ValOpt) Tuple() []Value {
+	panic("Opt")
 }
 
-func (val *ValCase) Desc() string {
-	// TODO
-	return "case"
+type ValPtn struct {
+	Value Pattern
 }
 
-func (val *ValCase) Bool() bool {
-	panic("Case")
+func CreateValPtn(ptn Pattern) *ValPtn {
+	return &ValPtn{ptn}
 }
 
-func (val *ValCase) Int() int {
-	panic("Case")
+func (val *ValPtn) Type() int {
+	return ValPtnType
 }
 
-func (val *ValCase) String() string {
-	panic("Case")
+func (val *ValPtn) Desc() string {
+	return val.Value.Desc()
 }
 
-func (val *ValCase) Closure() Closure {
-	panic("Case")
+func (val *ValPtn) Bool() bool {
+	panic("Pattern")
+}
+
+func (val *ValPtn) Int() int {
+	panic("Pattern")
+}
+
+func (val *ValPtn) String() string {
+	panic("Pattern")
+}
+
+func (val *ValPtn) Closure() Closure {
+	panic("Pattern")
+}
+
+func (val *ValPtn) List() *List {
+	panic("Pattern")
+}
+
+func (val *ValPtn) Tuple() []Value {
+	panic("Pattern")
 }

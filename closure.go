@@ -202,6 +202,7 @@ func TestCompiledCodeHelloWorld() {
 	else show(arg1)
 	end
 */
+
 func TestCompiledCodeFizzBuzzMatch() {
 	code := CompiledCode{
 		Lits: []Value{
@@ -209,10 +210,9 @@ func TestCompiledCodeFizzBuzzMatch() {
 			CreateValStr("Fizz"),
 			CreateValStr("Buzz"),
 			CreateValStr("FizzBuzz"),
-			// TODO: match patterns
-			&ValCase{},
-			&ValCase{},
-			&ValCase{},
+			CreateValPtn(CreatePtnTuple(&PtnInt{0}, &PtnInt{0})),
+			CreateValPtn(CreatePtnTuple(&PtnInt{0}, PtnWildcard)),
+			CreateValPtn(CreatePtnTuple(PtnWildcard, &PtnInt{0})),
 		},
 		Ops: []int{
 			OpLoadArg, 0,

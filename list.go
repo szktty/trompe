@@ -1,16 +1,25 @@
 package trompe
 
 type List struct {
-	Value interface{}
+	Value Value
 	Next  *List
 }
 
 var ListNil = &List{nil, nil}
 
-func CreateList(value interface{}) *List {
+func CreateList(value Value) *List {
 	return &List{Value: value, Next: nil}
 }
 
-func (l *List) Cons(value interface{}) *List {
+func (l *List) Len() int {
+	i := 0
+	for l.Next != nil {
+		l = l.Next
+		i++
+	}
+	return i
+}
+
+func (l *List) Cons(value Value) *List {
 	return &List{Value: value, Next: l}
 }
