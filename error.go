@@ -5,6 +5,7 @@ import "fmt"
 const (
 	GenericError = iota
 	InvalidArityError
+	KeyError
 )
 
 type RuntimeError struct {
@@ -33,7 +34,12 @@ func (err *RuntimeError) Error() string {
 }
 
 func CreateInvalidArityError(ctx *Context, nargs int) *RuntimeError {
-	return CreateRuntimeError(nil, InvalidArityError, "")
+	return CreateRuntimeError(ctx, InvalidArityError, "")
+}
+
+func CreateKeyError(ctx *Context, name string) *RuntimeError {
+	return CreateRuntimeError(ctx, KeyError,
+		fmt.Sprintf("key %s not found", name))
 }
 
 func ValidateArity(ctx *Context, expected int, actual int) *RuntimeError {

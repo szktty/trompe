@@ -1,12 +1,12 @@
 package trompe
 
-type Position struct {
+type Pos struct {
 	Line   int
 	Col    int
 	Offset int
 }
 
-type Location struct {
-	Start Position
-	End   Position
+type Loc struct {
+	Start Pos
+	End   Pos
 }
