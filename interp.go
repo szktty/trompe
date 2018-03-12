@@ -148,6 +148,15 @@ func (prog *Program) Eval(ctx *Context) (Value, error) {
 		case OpLoadLocal:
 			i = pc.Next()
 			stack.Push(stack.Get(i))
+		case OpLoadAttr:
+			i = pc.Next()
+			name := ctx.Literal(i).String()
+			attr := ctx.Env.GetAttr(name)
+			if attr == nil {
+				err = CreateKeyError(ctx, name)
+				break
+			}
+			stack.Push(attr)
 		case OpLoadPrim:
 			i = pc.Next()
 			prim := GetPrim(ctx.Literal(i).String())
