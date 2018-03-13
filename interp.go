@@ -92,11 +92,11 @@ type Program struct {
 type ProgCounter struct {
 	Count  int
 	Ctx    *Context
-	Labels map[string]int
+	Labels map[int]int
 }
 
 func CreateProgCounter(ctx *Context) ProgCounter {
-	return ProgCounter{Count: 0, Ctx: ctx, Labels: make(map[string]int)}
+	return ProgCounter{Count: 0, Ctx: ctx, Labels: make(map[int]int, 16)}
 }
 
 func (pc *ProgCounter) HasNext() bool {
@@ -108,12 +108,12 @@ func (pc *ProgCounter) Next() int {
 	return pc.Ctx.CompiledCode().Ops[pc.Count-1]
 }
 
-func (pc *ProgCounter) AddLabel(name string) {
-	pc.Labels[name] = pc.Count
+func (pc *ProgCounter) AddLabel(n int) {
+	pc.Labels[n] = pc.Count
 }
 
-func (pc *ProgCounter) Jump(label string) {
-	pc.Count = pc.Labels[label]
+func (pc *ProgCounter) Jump(n int) {
+	pc.Count = pc.Labels[n]
 }
 
 func (prog *Program) Eval(ctx *Context) (Value, error) {
@@ -173,21 +173,21 @@ func (prog *Program) Eval(ctx *Context) (Value, error) {
 			break
 		case OpLabel:
 			i = pc.Next()
-			pc.AddLabel(ctx.Literal(i).String())
+			pc.AddLabel(i)
 		case OpJump:
 			i = pc.Next()
-			pc.Jump(ctx.Literal(i).String())
+			pc.Jump(i)
 		case OpBranchTrue:
 			i = pc.Next()
 			top = stack.Top()
 			if top.Bool() {
-				pc.Jump(ctx.Literal(i).String())
+				pc.Jump(i)
 			}
 		case OpBranchFalse:
 			i = pc.Next()
 			top = stack.Top()
 			if !top.Bool() {
-				pc.Jump(ctx.Literal(i).String())
+				pc.Jump(i)
 			}
 		case OpCall:
 			i = pc.Next()

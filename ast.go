@@ -6,7 +6,7 @@ type Comment struct {
 }
 
 type Node interface {
-	Loc() Loc
+	Loc() *Loc
 }
 
 type Chunk struct {
@@ -109,6 +109,46 @@ type AnonFunExp struct {
 type PtnExp interface {
 }
 
+func (chunk *Chunk) Loc() *Loc {
+	return &chunk.loc
+}
+
+func (block *Block) Loc() *Loc {
+	return &block.loc
+}
+
 func (exp *UnitExp) Loc() *Loc {
 	return &exp.loc
+}
+
+func (exp *BoolExp) Loc() *Loc {
+	return &exp.loc
+}
+
+func (exp *IntExp) Loc() *Loc {
+	return &exp.loc
+}
+
+func (exp *StrExp) Loc() *Loc {
+	return &exp.loc
+}
+
+func (exp *ListExp) Loc() *Loc {
+	return &exp.Elts.Open
+}
+
+func (exp *TupleExp) Loc() *Loc {
+	return &exp.Elts.Open
+}
+
+func (exp *SomeExp) Loc() *Loc {
+	return &exp.SomeLoc
+}
+
+func (exp *NoneExp) Loc() *Loc {
+	return &exp.loc
+}
+
+func (exp *AnonFunExp) Loc() *Loc {
+	return &exp.Open
 }
