@@ -13,7 +13,7 @@ const (
 	OpLoadInt    // int
 	OpLoadNone
 	OpLoadRef
-	OpLoadLit   // index of value in literal list *)
+	OpLoadLit   // index of value in literal list
 	OpLoadLocal // index
 	OpLoadAttr  // index of literal string
 	OpLoadPrim  // index of literal string
