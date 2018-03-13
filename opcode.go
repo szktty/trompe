@@ -24,7 +24,7 @@ const (
 	OpPop
 	OpReturn
 	OpReturnUnit
-	OpLabel       // name
+	OpLabel       // label number
 	OpJump        // index
 	OpBranchTrue  // index
 	OpBranchFalse // index
