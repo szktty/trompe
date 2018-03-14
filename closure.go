@@ -10,8 +10,9 @@ type Closure interface {
 }
 
 type CompiledCode struct {
-	Lits []Value
-	Ops  []Opcode
+	Lits   []Value
+	Ops    []Opcode
+	Labels map[int]int
 }
 
 func (code *CompiledCode) Apply(prog *Program, ctx *Context) (Value, error) {
@@ -89,6 +90,8 @@ func (code *CompiledCode) Inspect() string {
 			s += fmt.Sprintf("store attr %s", code.LiteralDesc(i))
 		case OpPop:
 			s += "pop"
+		case OpDup:
+			s += "dup"
 		case OpReturn:
 			s += "return"
 		case OpReturnUnit:

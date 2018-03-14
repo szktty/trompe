@@ -22,6 +22,7 @@ const (
 	OpStoreRef
 	OpStoreAttr // index of literal string
 	OpPop
+	OpDup
 	OpReturn
 	OpReturnUnit
 	OpLabel       // label number

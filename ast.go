@@ -27,31 +27,61 @@ type LetStat struct {
 	Let Loc
 	Ptn PtnExp
 	Eq  Loc
+	Exp Exp
 }
 
 type IfStat struct {
 	Cond []IfCond
+	Else *ElseStat
 	End  Loc
 }
 
 type IfCond struct {
-	If   Loc
-	Cond Node
-	Then Loc
+	If     Loc
+	Cond   Exp
+	Then   Loc
+	Action Block
+}
+
+type ElseStat struct {
+	Else   Loc
+	Action Block
+}
+
+type CaseStat struct {
+	Case  Loc
+	Cond  Exp
+	Claus []CaseClau
+	Else  *ElseStat
+}
+
+type CaseClau struct {
+	Ptn    PtnExp
+	In     Loc
+	Action *Block
 }
 
 type RetStat struct {
 	Ret   Loc
-	Value Node
+	Value Exp
 }
 
-type FunCall struct {
-	Prefix Node
-	Args   EltList
+type FunCallStat struct {
+	Exp *FunCallExp
 }
 
 type Exp interface {
 	Node
+}
+
+type FunCallExp struct {
+	Prefix Node
+	Args   EltList
+}
+
+type VarExp struct {
+	loc  Loc
+	Name string
 }
 
 type UnitExp struct {
@@ -107,6 +137,7 @@ type AnonFunExp struct {
 }
 
 type PtnExp interface {
+	Node
 }
 
 func (chunk *Chunk) Loc() *Loc {
@@ -115,6 +146,34 @@ func (chunk *Chunk) Loc() *Loc {
 
 func (block *Block) Loc() *Loc {
 	return &block.loc
+}
+
+func (stat *LetStat) Loc() *Loc {
+	return &stat.Let
+}
+
+func (stat *IfStat) Loc() *Loc {
+	return &stat.Cond[0].If
+}
+
+func (stat *CaseStat) Loc() *Loc {
+	return &stat.Case
+}
+
+func (stat *RetStat) Loc() *Loc {
+	return &stat.Ret
+}
+
+func (stat *FunCallStat) Loc() *Loc {
+	return stat.Exp.Loc()
+}
+
+func (exp *FunCallExp) Loc() *Loc {
+	return exp.Prefix.Loc()
+}
+
+func (exp *VarExp) Loc() *Loc {
+	return &exp.loc
 }
 
 func (exp *UnitExp) Loc() *Loc {

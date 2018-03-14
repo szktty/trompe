@@ -6,11 +6,12 @@ import (
 )
 
 type codeComp struct {
-	comp   *compiler
-	args   []string
-	lits   []Value
-	ops    []int
-	labels int
+	comp     *compiler
+	args     []string
+	lits     []Value
+	ops      []int
+	labels   int
+	labelMap map[int]int
 }
 
 type compiler struct {
@@ -19,10 +20,11 @@ type compiler struct {
 
 func createCodeComp(comp *compiler) *codeComp {
 	return &codeComp{
-		comp:   comp,
-		lits:   make([]Value, 16),
-		ops:    make([]int, 64),
-		labels: -1,
+		comp:     comp,
+		lits:     make([]Value, 16),
+		ops:      make([]int, 64),
+		labels:   -1,
+		labelMap: make(map[int]int, 16),
 	}
 }
 
@@ -33,6 +35,12 @@ func (c *codeComp) addArg(name string) {
 func (c *codeComp) newLabel() int {
 	c.labels += 1
 	return c.labels
+}
+
+func (c *codeComp) addLabel(label int) {
+	c.labelMap[label] = len(c.ops)
+	c.addOp(OpLabel)
+	c.addOp(label)
 }
 
 func (c *codeComp) addOp(op int) {
@@ -64,6 +72,73 @@ func (c *codeComp) compile(node Node) {
 	switch node := node.(type) {
 	case *Chunk:
 		c.compile(node.Block)
+	case *Block:
+		for _, stat := range node.Stats {
+			c.compile(stat)
+		}
+	case *LetStat:
+		c.compile(node.Ptn)
+		c.compile(node.Exp)
+		c.addOp(OpMatch)
+		c.addOp(OpPop)
+	case *IfStat:
+		endL := c.newLabel()
+		for _, cond := range node.Cond {
+			nextL := c.newLabel()
+			c.compile(cond.Cond)
+			c.addOp(OpBranchFalse)
+			c.addOp(nextL)
+			c.compile(&cond.Action)
+			c.addOp(OpJump)
+			c.addOp(endL)
+			c.addLabel(nextL)
+		}
+		if node.Else != nil {
+			c.compile(&node.Else.Action)
+		}
+		c.addOp(OpLabel)
+		c.addLabel(endL)
+	case *CaseStat:
+		endL := c.newLabel()
+		c.compile(node.Cond)
+		for _, clau := range node.Claus {
+			nextL := c.newLabel()
+			c.addOp(OpDup)
+			c.compile(clau.Ptn)
+			c.addOp(OpMatch)
+			c.addOp(OpBranchFalse)
+			c.addOp(nextL)
+			c.compile(clau.Action)
+			c.addOp(OpJump)
+			c.addOp(endL)
+			c.addLabel(nextL)
+		}
+		c.addOp(OpPop) // Cond
+		if node.Else != nil {
+			c.compile(&node.Else.Action)
+		}
+		c.addLabel(endL)
+	case *RetStat:
+		if node.Value == nil {
+			c.addOp(OpReturnUnit)
+		} else {
+			c.compile(node.Value)
+			c.addOp(OpReturn)
+		}
+	case *FunCallStat:
+		c.compile(node.Exp)
+		c.addOp(OpPop)
+	case *FunCallExp:
+		c.compile(node.Prefix)
+		for _, arg := range node.Args.Elts {
+			c.compile(arg)
+		}
+		c.addOp(OpCall)
+		c.addOp(len(node.Args.Elts))
+	case *VarExp:
+		i := c.addStr(node.Name)
+		c.addOp(OpLoadLocal)
+		c.addOp(i)
 	case *UnitExp:
 		c.addOp(OpLoadUnit)
 	case *BoolExp:

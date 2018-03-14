@@ -166,6 +166,8 @@ func (prog *Program) Eval(ctx *Context) (Value, error) {
 			stack.Set(i, stack.Top())
 		case OpPop:
 			stack.Pop()
+		case OpDup:
+			stack.Push(stack.Top())
 		case OpReturn:
 			break
 		case OpReturnUnit:
