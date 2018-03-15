@@ -12,6 +12,7 @@ type codeComp struct {
 	ops      []int
 	labels   int
 	labelMap map[int]int
+	funComps map[string]*codeComp
 }
 
 type compiler struct {
@@ -25,7 +26,13 @@ func createCodeComp(comp *compiler) *codeComp {
 		ops:      make([]int, 64),
 		labels:   -1,
 		labelMap: make(map[int]int, 16),
+		funComps: make(map[string]*codeComp, 16),
 	}
+}
+
+func (c *codeComp) newCodeComp() *codeComp {
+	new := createCodeComp(c.comp)
+	return new
 }
 
 func (c *codeComp) addArg(name string) {
@@ -63,6 +70,10 @@ func (c *codeComp) addStr(s string) int {
 	return c.addLit(CreateValStr(s))
 }
 
+func (c *codeComp) addFun(name string, comp *codeComp) {
+	c.funComps[name] = comp
+}
+
 func (c *codeComp) code() *CompiledCode {
 	// TODO
 	return nil
@@ -71,7 +82,7 @@ func (c *codeComp) code() *CompiledCode {
 func (c *codeComp) compile(node Node) {
 	switch node := node.(type) {
 	case *Chunk:
-		c.compile(node.Block)
+		c.compile(&node.Block)
 	case *Block:
 		for _, stat := range node.Stats {
 			c.compile(stat)
@@ -81,6 +92,17 @@ func (c *codeComp) compile(node Node) {
 		c.compile(node.Exp)
 		c.addOp(OpMatch)
 		c.addOp(OpPop)
+	case *DefStat:
+		defComp := c.newCodeComp()
+		defComp.args = node.Args.NameStrs()
+		defComp.compile(&node.Block)
+		c.addFun(node.Name.Value, defComp)
+	case *ShortDefStat:
+		defComp := c.newCodeComp()
+		defComp.args = node.Args.NameStrs()
+		defComp.compile(node.Exp)
+		defComp.addOp(OpReturn)
+		c.addFun(node.Name.Value, defComp)
 	case *IfStat:
 		endL := c.newLabel()
 		for _, cond := range node.Cond {
@@ -135,6 +157,18 @@ func (c *codeComp) compile(node Node) {
 		}
 		c.addOp(OpCall)
 		c.addOp(len(node.Args.Elts))
+	case *CondOpExp:
+		falseL := c.newLabel()
+		endL := c.newLabel()
+		c.compile(node.Cond)
+		c.addOp(OpBranchFalse)
+		c.addOp(falseL)
+		c.compile(node.True)
+		c.addOp(OpJump)
+		c.addOp(endL)
+		c.addLabel(falseL)
+		c.compile(node.False)
+		c.addLabel(endL)
 	case *VarExp:
 		i := c.addStr(node.Name)
 		c.addOp(OpLoadLocal)

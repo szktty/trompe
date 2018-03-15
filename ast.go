@@ -11,7 +11,7 @@ type Node interface {
 
 type Chunk struct {
 	loc   Loc
-	Block Node
+	Block Block
 }
 
 type Block struct {
@@ -28,6 +28,39 @@ type LetStat struct {
 	Ptn PtnExp
 	Eq  Loc
 	Exp Exp
+}
+
+type DefStat struct {
+	Def   Loc
+	Name  StrTok
+	Open  Loc
+	Args  ArgNodeList
+	Close Loc
+	Block Block
+	End   Loc
+}
+
+type ShortDefStat struct {
+	Def   Loc
+	Name  StrTok
+	Open  Loc
+	Args  ArgNodeList
+	Close Loc
+	Eq    Loc
+	Exp   Exp
+}
+
+type ArgNodeList struct {
+	Names []StrTok
+	Sep   []Loc
+}
+
+func (args *ArgNodeList) NameStrs() []string {
+	nameStrs := make([]string, len(args.Names))
+	for _, tok := range args.Names {
+		nameStrs = append(nameStrs, tok.Value)
+	}
+	return nameStrs
 }
 
 type IfStat struct {
@@ -77,6 +110,14 @@ type Exp interface {
 type FunCallExp struct {
 	Prefix Node
 	Args   EltList
+}
+
+type CondOpExp struct {
+	Colon Loc
+	Q     Loc
+	Cond  Exp
+	True  Exp
+	False Exp
 }
 
 type VarExp struct {
@@ -152,6 +193,14 @@ func (stat *LetStat) Loc() *Loc {
 	return &stat.Let
 }
 
+func (stat *DefStat) Loc() *Loc {
+	return &stat.Def
+}
+
+func (stat *ShortDefStat) Loc() *Loc {
+	return &stat.Def
+}
+
 func (stat *IfStat) Loc() *Loc {
 	return &stat.Cond[0].If
 }
@@ -170,6 +219,10 @@ func (stat *FunCallStat) Loc() *Loc {
 
 func (exp *FunCallExp) Loc() *Loc {
 	return exp.Prefix.Loc()
+}
+
+func (exp *CondOpExp) Loc() *Loc {
+	return &exp.Colon
 }
 
 func (exp *VarExp) Loc() *Loc {
