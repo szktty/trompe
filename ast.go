@@ -1,6 +1,6 @@
 package trompe
 
-type Comment struct {
+type CommentNode struct {
 	Loc  Loc
 	Text string
 }
@@ -9,53 +9,53 @@ type Node interface {
 	Loc() *Loc
 }
 
-type Chunk struct {
+type ChunkNode struct {
 	loc   Loc
-	Block Block
+	Block BlockNode
 }
 
-type Block struct {
+type BlockNode struct {
 	loc   Loc
 	Stats []Node
 }
 
-type Stat interface {
+type StatNode interface {
 	Node
 }
 
-type LetStat struct {
+type LetStatNode struct {
 	Let Loc
-	Ptn PtnExp
+	Ptn PtnExpNode
 	Eq  Loc
-	Exp Exp
+	Exp ExpNode
 }
 
-type DefStat struct {
+type DefStatNode struct {
 	Def   Loc
 	Name  StrTok
 	Open  Loc
-	Args  ArgNodeList
+	Args  ArgNodeListNode
 	Close Loc
-	Block Block
+	Block BlockNode
 	End   Loc
 }
 
-type ShortDefStat struct {
+type ShortDefStatNode struct {
 	Def   Loc
 	Name  StrTok
 	Open  Loc
-	Args  ArgNodeList
+	Args  ArgNodeListNode
 	Close Loc
 	Eq    Loc
-	Exp   Exp
+	Exp   ExpNode
 }
 
-type ArgNodeList struct {
+type ArgNodeListNode struct {
 	Names []StrTok
 	Sep   []Loc
 }
 
-func (args *ArgNodeList) NameStrs() []string {
+func (args *ArgNodeListNode) NameStrs() []string {
 	nameStrs := make([]string, len(args.Names))
 	for _, tok := range args.Names {
 		nameStrs = append(nameStrs, tok.Value)
@@ -63,204 +63,204 @@ func (args *ArgNodeList) NameStrs() []string {
 	return nameStrs
 }
 
-type IfStat struct {
-	Cond []IfCond
-	Else *ElseStat
+type IfStatNode struct {
+	Cond []IfCondNode
+	Else *ElseStatNode
 	End  Loc
 }
 
-type IfCond struct {
+type IfCondNode struct {
 	If     Loc
-	Cond   Exp
+	Cond   ExpNode
 	Then   Loc
-	Action Block
+	Action BlockNode
 }
 
-type ElseStat struct {
+type ElseStatNode struct {
 	Else   Loc
-	Action Block
+	Action BlockNode
 }
 
-type CaseStat struct {
+type CaseStatNode struct {
 	Case  Loc
-	Cond  Exp
-	Claus []CaseClau
-	Else  *ElseStat
+	Cond  ExpNode
+	Claus []CaseClauNode
+	Else  *ElseStatNode
 }
 
-type CaseClau struct {
-	Ptn    PtnExp
+type CaseClauNode struct {
+	Ptn    PtnExpNode
 	In     Loc
-	Action *Block
+	Action *BlockNode
 }
 
-type RetStat struct {
+type RetStatNode struct {
 	Ret   Loc
-	Value Exp
+	Value ExpNode
 }
 
-type FunCallStat struct {
-	Exp *FunCallExp
+type FunCallStatNode struct {
+	Exp *FunCallExpNode
 }
 
-type Exp interface {
+type ExpNode interface {
 	Node
 }
 
-type FunCallExp struct {
+type FunCallExpNode struct {
 	Prefix Node
-	Args   EltList
+	Args   EltListNode
 }
 
-type CondOpExp struct {
+type CondOpExpNode struct {
 	Colon Loc
 	Q     Loc
-	Cond  Exp
-	True  Exp
-	False Exp
+	Cond  ExpNode
+	True  ExpNode
+	False ExpNode
 }
 
-type VarExp struct {
+type VarExpNode struct {
 	loc  Loc
 	Name string
 }
 
-type UnitExp struct {
+type UnitExpNode struct {
 	loc Loc
 }
 
-type BoolExp struct {
+type BoolExpNode struct {
 	loc   Loc
 	Value bool
 }
 
-type IntExp struct {
+type IntExpNode struct {
 	loc   Loc
 	Value string
 }
 
-type StrExp struct {
+type StrExpNode struct {
 	loc   Loc
 	Value string
 }
 
-type ListExp struct {
-	Elts EltList
+type ListExpNode struct {
+	Elts EltListNode
 }
 
-type EltList struct {
+type EltListNode struct {
 	Open  Loc
 	Close Loc
 	Elts  []Node
 	Seps  []Loc
 }
 
-type TupleExp struct {
-	Elts EltList
+type TupleExpNode struct {
+	Elts EltListNode
 }
 
-type SomeExp struct {
+type SomeExpNode struct {
 	SomeLoc Loc
-	Value   Exp
+	Value   ExpNode
 }
 
-type NoneExp struct {
+type NoneExpNode struct {
 	loc Loc
 }
 
-type AnonFunExp struct {
+type AnonFunExpNode struct {
 	Open    Loc
 	Close   Loc
 	Args    []Node
 	ArgSeps []Loc
 	In      Loc
-	Block   Block
+	Block   BlockNode
 }
 
-type PtnExp interface {
+type PtnExpNode interface {
 	Node
 }
 
-func (chunk *Chunk) Loc() *Loc {
+func (chunk *ChunkNode) Loc() *Loc {
 	return &chunk.loc
 }
 
-func (block *Block) Loc() *Loc {
+func (block *BlockNode) Loc() *Loc {
 	return &block.loc
 }
 
-func (stat *LetStat) Loc() *Loc {
+func (stat *LetStatNode) Loc() *Loc {
 	return &stat.Let
 }
 
-func (stat *DefStat) Loc() *Loc {
+func (stat *DefStatNode) Loc() *Loc {
 	return &stat.Def
 }
 
-func (stat *ShortDefStat) Loc() *Loc {
+func (stat *ShortDefStatNode) Loc() *Loc {
 	return &stat.Def
 }
 
-func (stat *IfStat) Loc() *Loc {
+func (stat *IfStatNode) Loc() *Loc {
 	return &stat.Cond[0].If
 }
 
-func (stat *CaseStat) Loc() *Loc {
+func (stat *CaseStatNode) Loc() *Loc {
 	return &stat.Case
 }
 
-func (stat *RetStat) Loc() *Loc {
+func (stat *RetStatNode) Loc() *Loc {
 	return &stat.Ret
 }
 
-func (stat *FunCallStat) Loc() *Loc {
+func (stat *FunCallStatNode) Loc() *Loc {
 	return stat.Exp.Loc()
 }
 
-func (exp *FunCallExp) Loc() *Loc {
+func (exp *FunCallExpNode) Loc() *Loc {
 	return exp.Prefix.Loc()
 }
 
-func (exp *CondOpExp) Loc() *Loc {
+func (exp *CondOpExpNode) Loc() *Loc {
 	return &exp.Colon
 }
 
-func (exp *VarExp) Loc() *Loc {
+func (exp *VarExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *UnitExp) Loc() *Loc {
+func (exp *UnitExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *BoolExp) Loc() *Loc {
+func (exp *BoolExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *IntExp) Loc() *Loc {
+func (exp *IntExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *StrExp) Loc() *Loc {
+func (exp *StrExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *ListExp) Loc() *Loc {
+func (exp *ListExpNode) Loc() *Loc {
 	return &exp.Elts.Open
 }
 
-func (exp *TupleExp) Loc() *Loc {
+func (exp *TupleExpNode) Loc() *Loc {
 	return &exp.Elts.Open
 }
 
-func (exp *SomeExp) Loc() *Loc {
+func (exp *SomeExpNode) Loc() *Loc {
 	return &exp.SomeLoc
 }
 
-func (exp *NoneExp) Loc() *Loc {
+func (exp *NoneExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *AnonFunExp) Loc() *Loc {
+func (exp *AnonFunExpNode) Loc() *Loc {
 	return &exp.Open
 }
