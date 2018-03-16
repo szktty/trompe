@@ -1,4 +1,4 @@
-grammar trompe;
+grammar Trompe;
 
 chunk
     : block EOF
