@@ -4,8 +4,8 @@ all:
 	go build -o trompe cmd/trompe/main.go
 
 syntax:
-	antlr4 -Dlanguage=Go trompe.g4
+	antlr4 -Dlanguage=Go parser/trompe.g4
 
 clean:
-	rm -f trompe.interp trompe.tokens trompeLexer.interp trompeLexer.tokens trompe_base_listener.go trompe_lexer.go trompe_listener.go trompe_parser.go trompe
+	rm -f parser/trompe.interp parser/trompe.tokens parser/trompeLexer.interp parser/trompeLexer.tokens parser/trompe_base_listener.go parser/trompe_lexer.go parser/trompe_listener.go parser/trompe_parser.go trompe
 
