@@ -1,8 +1,13 @@
 package trompe
 
-type CommentNode struct {
+type Token struct {
 	Loc  Loc
 	Text string
+}
+
+type CommentNode struct {
+	Begin Loc
+	Text  Token
 }
 
 type Node interface {
@@ -25,14 +30,14 @@ type StatNode interface {
 
 type LetStatNode struct {
 	Let Loc
-	Ptn PtnExpNode
+	Ptn PtnNode
 	Eq  Loc
 	Exp ExpNode
 }
 
 type DefStatNode struct {
 	Def   Loc
-	Name  StrTok
+	Name  Token
 	Open  Loc
 	Args  ArgNodeListNode
 	Close Loc
@@ -42,7 +47,7 @@ type DefStatNode struct {
 
 type ShortDefStatNode struct {
 	Def   Loc
-	Name  StrTok
+	Name  Token
 	Open  Loc
 	Args  ArgNodeListNode
 	Close Loc
@@ -51,14 +56,14 @@ type ShortDefStatNode struct {
 }
 
 type ArgNodeListNode struct {
-	Names []StrTok
+	Names []Token
 	Sep   []Loc
 }
 
 func (args *ArgNodeListNode) NameStrs() []string {
 	nameStrs := make([]string, len(args.Names))
 	for _, tok := range args.Names {
-		nameStrs = append(nameStrs, tok.Value)
+		nameStrs = append(nameStrs, tok.Text)
 	}
 	return nameStrs
 }
@@ -89,7 +94,7 @@ type CaseStatNode struct {
 }
 
 type CaseClauNode struct {
-	Ptn    PtnExpNode
+	Ptn    PtnNode
 	In     Loc
 	Action *BlockNode
 }
@@ -121,12 +126,12 @@ type CondOpExpNode struct {
 }
 
 type VarExpNode struct {
-	loc  Loc
-	Name string
+	Name Token
 }
 
 type UnitExpNode struct {
-	loc Loc
+	Open  Loc
+	Close Loc
 }
 
 type BoolExpNode struct {
@@ -177,8 +182,46 @@ type AnonFunExpNode struct {
 	Block   BlockNode
 }
 
-type PtnExpNode interface {
+type PtnNode interface {
 	Node
+}
+
+type UnitPtnNode struct {
+	Open  Loc
+	Close Loc
+}
+
+type BoolPtnNode struct {
+	Text Token
+}
+
+type IntPtnNode struct {
+	Text Token
+}
+
+type StrPtnNode struct {
+	Text Token
+}
+
+type ListPtnNode struct {
+	Elts EltPtnListNode
+}
+
+type ConsPtnNode struct {
+	Left  PtnNode
+	Sep   Loc
+	Right PtnNode
+}
+
+type TuplePtnNode struct {
+	Elts EltPtnListNode
+}
+
+type EltPtnListNode struct {
+	Open  Loc
+	Close Loc
+	Elts  []PtnNode
+	Seps  []Loc
 }
 
 func (chunk *ChunkNode) Loc() *Loc {
@@ -226,11 +269,11 @@ func (exp *CondOpExpNode) Loc() *Loc {
 }
 
 func (exp *VarExpNode) Loc() *Loc {
-	return &exp.loc
+	return &exp.Name.Loc
 }
 
 func (exp *UnitExpNode) Loc() *Loc {
-	return &exp.loc
+	return &exp.Open
 }
 
 func (exp *BoolExpNode) Loc() *Loc {
@@ -263,4 +306,30 @@ func (exp *NoneExpNode) Loc() *Loc {
 
 func (exp *AnonFunExpNode) Loc() *Loc {
 	return &exp.Open
+}
+
+func (ptn *UnitPtnNode) Loc() *Loc {
+	return &ptn.Open
+}
+
+func (ptn *BoolPtnNode) Loc() *Loc {
+	return &ptn.Text.Loc
+}
+
+func (ptn *IntPtnNode) Loc() *Loc {
+	return &ptn.Text.Loc
+}
+func (ptn *StrPtnNode) Loc() *Loc {
+	return &ptn.Text.Loc
+}
+func (ptn *ListPtnNode) Loc() *Loc {
+	return &ptn.Elts.Open
+}
+
+func (ptn *ConsPtnNode) Loc() *Loc {
+	return ptn.Left.Loc()
+}
+
+func (ptn *TuplePtnNode) Loc() *Loc {
+	return &ptn.Elts.Open
 }

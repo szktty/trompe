@@ -96,13 +96,13 @@ func (c *codeComp) compile(node Node) {
 		defComp := c.newCodeComp()
 		defComp.args = node.Args.NameStrs()
 		defComp.compile(&node.Block)
-		c.addFun(node.Name.Value, defComp)
+		c.addFun(node.Name.Text, defComp)
 	case *ShortDefStatNode:
 		defComp := c.newCodeComp()
 		defComp.args = node.Args.NameStrs()
 		defComp.compile(node.Exp)
 		defComp.addOp(OpReturn)
-		c.addFun(node.Name.Value, defComp)
+		c.addFun(node.Name.Text, defComp)
 	case *IfStatNode:
 		endL := c.newLabel()
 		for _, cond := range node.Cond {
@@ -170,7 +170,7 @@ func (c *codeComp) compile(node Node) {
 		c.compile(node.False)
 		c.addLabel(endL)
 	case *VarExpNode:
-		i := c.addStr(node.Name)
+		i := c.addStr(node.Name.Text)
 		c.addOp(OpLoadLocal)
 		c.addOp(i)
 	case *UnitExpNode:
