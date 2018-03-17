@@ -98,7 +98,7 @@ prefixexp
     ;
 
 funcall
-    : var_OrExp nameAndArgs+
+    : fun=var_OrExp args_=args
     ;
 
 var_OrExp
@@ -134,7 +134,7 @@ funcall
 */
 
 args
-    : '(' explist? ')'
+    : o='(' exps=explist? c=')'
     ;
 
 list
