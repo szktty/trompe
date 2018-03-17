@@ -10,30 +10,59 @@ block
 
 stat
     : ';'
-    | var_list '=' explist
-    | functioncall
-    | 'break'
-    | 'do' block 'end'
+    | letdecl
+    | fundef
+    | funcall
+    | doblock
     | 'if' exp 'then' block ('elseif' exp 'then' block)* ('else' block)? 'end'
-    | 'function' funcname funcbody
-    | 'local' 'function' NAME funcbody
-    | 'local' namelist ('=' explist)?
+    | case_
     ;
 
 retstat
-    : 'return' explist? ';'?
+    : 'return' exp? ';'?
     ;
 
-funcname
-    : NAME ('.' NAME)* (':' NAME)?
+doblock
+    : 'do' block 'end'
     ;
 
-var_list
-    : var_ (',' var_)*
+letdecl
+    : 'let' pattern '=' exp
     ;
 
-namelist
+fundef
+    : 'def' NAME '(' parlist? ')' block 'end'
+    | 'def' NAME '(' parlist? ')' '=' exp
+    ;
+
+parlist
     : NAME (',' NAME)*
+    ;
+
+case_
+    : 'case' exp 'of' caseclau? ('else' block)? 'end'
+    ;
+
+caseclau
+    : 'when' pattern guard? 'then' block
+    ;
+
+guard
+    : 'in' exp
+    ;
+
+pattern
+    : unit
+    | bool_
+    | int_
+    | float_
+    | string_
+    | '[' patlist? ']'
+    | '(' patlist? ')'
+    ;
+
+patlist
+    : pattern (',' pattern)*
     ;
 
 explist
@@ -41,13 +70,18 @@ explist
     ;
 
 exp
-    : 'nil' | 'false' | 'true'
-    | number
+    : unit
+    | bool_
+    | int_
+    | hexint
+    | float_
+    | hexfloat
     | string_
-    | '...'
-    | functiondef
     | prefixexp
+    | list
+    | tuple
     | tableconstructor
+    | anonfun
     | <assoc=right> exp operatorPower exp
     | operatorUnary exp
     | exp operatorMulDivMod exp
@@ -63,7 +97,7 @@ prefixexp
     : var_OrExp nameAndArgs*
     ;
 
-functioncall
+funcall
     : var_OrExp nameAndArgs+
     ;
 
@@ -72,7 +106,11 @@ var_OrExp
     ;
 
 var_
-    : (NAME | '(' exp ')' var_Suffix) var_Suffix*
+    : (modulepath | '(' exp ')' var_Suffix) var_Suffix*
+    ;
+
+modulepath
+    : NAME ('.' NAME)*
     ;
 
 var_Suffix
@@ -88,27 +126,27 @@ var_
     : NAME | prefixexp '[' exp ']' | prefixexp '.' NAME
     ;
 prefixexp
-    : var_ | functioncall | '(' exp ')'
+    : var_ | funcall | '(' exp ')'
     ;
-functioncall
+funcall
     : prefixexp args | prefixexp ':' NAME args
     ;
 */
 
 args
-    : '(' explist? ')' | tableconstructor | string_
+    : '(' explist? ')'
     ;
 
-functiondef
-    : 'function' funcbody
+list
+    : '[' eltlist? ']'
     ;
 
-funcbody
-    : '(' parlist? ')' block 'end'
+tuple
+    : '(' eltlist? ')'
     ;
 
-parlist
-    : namelist (',' '...')? | '...'
+eltlist
+    : exp (',' exp)* ','?
     ;
 
 tableconstructor
@@ -116,15 +154,15 @@ tableconstructor
     ;
 
 fieldlist
-    : field (fieldsep field)* fieldsep?
+    : field (',' field)* ','?
     ;
 
 field
-    : '[' exp ']' '=' exp | NAME '=' exp | exp
+    : NAME '=' exp
     ;
 
-fieldsep
-    : ',' | ';'
+anonfun
+    : '[' (parlist | unit)? 'in' block ']'
     ;
 
 operatorOr
@@ -154,8 +192,29 @@ operatorUnary
 operatorPower
     : '^';
 
-number
-    : INT | HEX | FLOAT | HEX_FLOAT
+unit
+    : '(' ')'
+    ;
+
+bool_
+    : 'true'
+    | 'false'
+    ;
+
+int_
+    : INT
+    ;
+
+hexint
+    : HEX
+    ;
+
+float_
+    : FLOAT
+    ;
+
+hexfloat
+    : HEX_FLOAT
     ;
 
 string_
