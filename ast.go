@@ -39,7 +39,7 @@ type DefStatNode struct {
 	Def   Loc
 	Name  Token
 	Open  Loc
-	Args  ArgNodeListNode
+	Args  ArgListNode
 	Close Loc
 	Block BlockNode
 	End   Loc
@@ -49,18 +49,18 @@ type ShortDefStatNode struct {
 	Def   Loc
 	Name  Token
 	Open  Loc
-	Args  ArgNodeListNode
+	Args  ArgListNode
 	Close Loc
 	Eq    Loc
 	Exp   ExpNode
 }
 
-type ArgNodeListNode struct {
+type ArgListNode struct {
 	Names []Token
 	Sep   []Loc
 }
 
-func (args *ArgNodeListNode) NameStrs() []string {
+func (args *ArgListNode) NameStrs() []string {
 	nameStrs := make([]string, len(args.Names))
 	for _, tok := range args.Names {
 		nameStrs = append(nameStrs, tok.Text)

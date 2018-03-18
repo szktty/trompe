@@ -35,10 +35,6 @@ func (l *ChunkListener) EnterChunk(ctx *ChunkContext) {
 	}
 }
 
-func (l *ChunkListener) ExitChunk(ctx *ChunkContext) {
-	fmt.Println("exit chunk")
-}
-
 type BlockListener struct {
 	*BaseTrompeListener
 	Node BlockNode
@@ -60,10 +56,6 @@ func (l *BlockListener) EnterBlock(ctx *BlockContext) {
 	l.Node = BlockNode{Stats: stats}
 }
 
-func (l *BlockListener) ExitBlock(ctx *BlockContext) {
-	fmt.Println("exit block")
-}
-
 type StatListener struct {
 	*BaseTrompeListener
 	Node StatNode
@@ -71,6 +63,82 @@ type StatListener struct {
 
 func NewStatListener() *StatListener {
 	return new(StatListener)
+}
+
+func (l *StatListener) EnterStat(ctx *StatContext) {
+	if funcallCtx := ctx.Funcall(); funcallCtx != nil {
+		funcall := NewFuncallListener()
+		funcallCtx.EnterRule(funcall)
+	}
+}
+
+type FuncallListener struct {
+	*BaseTrompeListener
+	Args []ExpNode
+}
+
+func NewFuncallListener() *FuncallListener {
+	return new(FuncallListener)
+}
+
+func (l *FuncallListener) EnterFuncall(ctx *FuncallContext) {
+	// TODO: '(', ')'
+	if argsCtx := ctx.Arglist(); argsCtx != nil {
+		args := NewArglistListener()
+		argsCtx.EnterRule(args)
+	}
+}
+
+type ArglistListener struct {
+	*BaseTrompeListener
+	Node ArgListNode
+}
+
+func NewArglistListener() *ArglistListener {
+	return new(ArglistListener)
+}
+
+func (l *ArglistListener) EnterArglist(ctx *ArglistContext) {
+	// TODO: '(', ')'
+	if expsCtx := ctx.Explist(); expsCtx != nil {
+		exps := NewExplistListener()
+		expsCtx.EnterRule(exps)
+	}
+}
+
+type ExplistListener struct {
+	*BaseTrompeListener
+	Exps []ExpNode
+}
+
+func NewExplistListener() *ExplistListener {
+	return new(ExplistListener)
+}
+
+func (l *ExplistListener) EnterExplist(ctx *ExplistContext) {
+	expLen := len(ctx.AllExp())
+	exps := make([]Node, expLen)
+	for _, expCtx := range ctx.AllExp() {
+		exp := NewExpListener()
+		expCtx.EnterRule(exp)
+		exps = append(exps, exp.Exp)
+	}
+	// TODO
+	//l.Exps = Node{Exps: exps}
+}
+
+type ExpListener struct {
+	*BaseTrompeListener
+	Exp ExpNode
+}
+
+func NewExpListener() *ExpListener {
+	return new(ExpListener)
+}
+
+func (l *ExpListener) EnterExp(ctx *ExpContext) {
+	// TODO
+	fmt.Printf("enter exp\n")
 }
 
 func Parse(file string) Node {

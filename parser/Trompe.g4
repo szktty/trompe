@@ -14,7 +14,7 @@ stat
     | fundef
     | funcall
     | doblock
-    | 'if' exp 'then' block ('elseif' exp 'then' block)* ('else' block)? 'end'
+    | if_
     | case_
     ;
 
@@ -37,6 +37,10 @@ fundef
 
 parlist
     : NAME (',' NAME)*
+    ;
+
+if_
+    : 'if' exp 'then' block ('elseif' exp 'then' block)* ('else' block)? 'end'
     ;
 
 case_
@@ -82,6 +86,7 @@ exp
     | tuple
     | tableconstructor
     | anonfun
+    | statexp
     | <assoc=right> exp operatorPower exp
     | operatorUnary exp
     | exp operatorMulDivMod exp
@@ -98,7 +103,7 @@ prefixexp
     ;
 
 funcall
-    : fun=var_OrExp args_=args
+    : var_OrExp arglist
     ;
 
 var_OrExp
@@ -118,7 +123,7 @@ var_Suffix
     ;
 
 nameAndArgs
-    : (':' NAME)? args
+    : (':' NAME)? arglist
     ;
 
 /*
@@ -133,8 +138,8 @@ funcall
     ;
 */
 
-args
-    : o='(' exps=explist? c=')'
+arglist
+    : '(' explist? ')'
     ;
 
 list
@@ -163,6 +168,10 @@ field
 
 anonfun
     : '[' (parlist | unit)? 'in' block ']'
+    ;
+
+statexp
+    : '[' stat ']'
     ;
 
 operatorOr
