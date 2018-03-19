@@ -39,5 +39,7 @@ func main() {
 	}
 
 	file := flag.Arg(0)
-	parser.Parse(file)
+	node := parser.Parse(file)
+	var _ = node
+	//trompe.Compile(file, node)
 }

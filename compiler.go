@@ -151,7 +151,7 @@ func (c *codeComp) compile(node Node) {
 		c.compile(node.Exp)
 		c.addOp(OpPop)
 	case *FunCallExpNode:
-		c.compile(node.Prefix)
+		c.compile(node.Callable)
 		for _, arg := range node.Args.Elts {
 			c.compile(arg)
 		}

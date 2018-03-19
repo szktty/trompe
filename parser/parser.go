@@ -64,7 +64,7 @@ func (l *StatListener) EnterStat(ctx *StatContext) {
 
 type FuncallListener struct {
 	*BaseTrompeListener
-	Args []ExpNode
+	Exp FunCallExpNode
 }
 
 func NewFuncallListener() *FuncallListener {
@@ -72,16 +72,44 @@ func NewFuncallListener() *FuncallListener {
 }
 
 func (l *FuncallListener) EnterFuncall(ctx *FuncallContext) {
+	fmt.Printf("enter funcall\n")
+	callable := NewCallableListener()
+	ctx.Callable().EnterRule(callable)
+
 	// TODO: '(', ')'
+	args := NewArglistListener()
 	if argsCtx := ctx.Arglist(); argsCtx != nil {
-		args := NewArglistListener()
 		argsCtx.EnterRule(args)
+	}
+
+	l.Exp = FunCallExpNode{Callable: callable.Exp, Args: args.Exps}
+}
+
+type CallableListener struct {
+	*BaseTrompeListener
+	Exp ExpNode
+}
+
+func NewCallableListener() *CallableListener {
+	return new(CallableListener)
+}
+
+func (l *CallableListener) EnterCallable(ctx *CallableContext) {
+	fmt.Printf("enter callable\n")
+	if varCtx := ctx.Var_(); varCtx != nil {
+		var_ := NewVarExpListener()
+		ctx.Var_().EnterRule(var_)
+		l.Exp = &var_.Exp
+	} else {
+		exp := NewParenexpListener()
+		ctx.Parenexp().EnterRule(exp)
+		l.Exp = exp.Exp
 	}
 }
 
 type ArglistListener struct {
 	*BaseTrompeListener
-	Node ArgListNode
+	Exps EltListNode
 }
 
 func NewArglistListener() *ArglistListener {
@@ -93,12 +121,13 @@ func (l *ArglistListener) EnterArglist(ctx *ArglistContext) {
 	if expsCtx := ctx.Explist(); expsCtx != nil {
 		exps := NewExplistListener()
 		expsCtx.EnterRule(exps)
+		l.Exps = exps.Exps
 	}
 }
 
 type ExplistListener struct {
 	*BaseTrompeListener
-	Exps []ExpNode
+	Exps EltListNode
 }
 
 func NewExplistListener() *ExplistListener {
@@ -113,8 +142,7 @@ func (l *ExplistListener) EnterExplist(ctx *ExplistContext) {
 		expCtx.EnterRule(exp)
 		exps = append(exps, exp.Exp)
 	}
-	// TODO
-	//l.Exps = Node{Exps: exps}
+	l.Exps = EltListNode{Elts: exps}
 }
 
 type ExpListener struct {
@@ -128,7 +156,57 @@ func NewExpListener() *ExpListener {
 
 func (l *ExpListener) EnterExp(ctx *ExpContext) {
 	// TODO
-	fmt.Printf("enter exp\n")
+	fmt.Printf("enter exp: %s\n", ctx.GetText())
+
+	if strCtx := ctx.String_(); strCtx != nil {
+		str := NewStringListener()
+		strCtx.EnterRule(str)
+		l.Exp = &str.String
+	}
+}
+
+type ParenexpListener struct {
+	*BaseTrompeListener
+	Exp ExpNode
+}
+
+func NewParenexpListener() *ParenexpListener {
+	return new(ParenexpListener)
+}
+
+func (l *ParenexpListener) EnterParenexp(ctx *ParenexpContext) {
+	// TODO: open, close
+	exp := NewExpListener()
+	ctx.Exp().EnterRule(exp)
+	l.Exp = exp.Exp
+}
+
+type VarExpListener struct {
+	*BaseTrompeListener
+	Exp VarExpNode
+}
+
+func NewVarExpListener() *VarExpListener {
+	return new(VarExpListener)
+}
+
+func (l *VarExpListener) EnterVar_(ctx *Var_Context) {
+	// TODO
+	fmt.Printf("enter var\n")
+}
+
+type StringListener struct {
+	*BaseTrompeListener
+	String StrExpNode
+}
+
+func NewStringListener() *StringListener {
+	return new(StringListener)
+}
+
+func (l *StringListener) EnterString(ctx *String_Context) {
+	fmt.Printf("enter string\n")
+	l.String = StrExpNode{Value: ctx.GetText()}
 }
 
 func Parse(file string) Node {

@@ -39,7 +39,7 @@ type DefStatNode struct {
 	Def   Loc
 	Name  Token
 	Open  Loc
-	Args  ArgListNode
+	Args  ParamListNode
 	Close Loc
 	Block BlockNode
 	End   Loc
@@ -49,20 +49,20 @@ type ShortDefStatNode struct {
 	Def   Loc
 	Name  Token
 	Open  Loc
-	Args  ArgListNode
+	Args  ParamListNode
 	Close Loc
 	Eq    Loc
 	Exp   ExpNode
 }
 
-type ArgListNode struct {
+type ParamListNode struct {
 	Names []Token
 	Sep   []Loc
 }
 
-func (args *ArgListNode) NameStrs() []string {
-	nameStrs := make([]string, len(args.Names))
-	for _, tok := range args.Names {
+func (params *ParamListNode) NameStrs() []string {
+	nameStrs := make([]string, len(params.Names))
+	for _, tok := range params.Names {
 		nameStrs = append(nameStrs, tok.Text)
 	}
 	return nameStrs
@@ -112,9 +112,15 @@ type ExpNode interface {
 	Node
 }
 
+type ParenExpNode struct {
+	Open  Loc
+	Close Loc
+	Exp   Node
+}
+
 type FunCallExpNode struct {
-	Prefix Node
-	Args   EltListNode
+	Callable Node
+	Args     EltListNode
 }
 
 type CondOpExpNode struct {
@@ -260,8 +266,12 @@ func (stat *FunCallStatNode) Loc() *Loc {
 	return stat.Exp.Loc()
 }
 
+func (exp *ParenExpNode) Loc() *Loc {
+	return &exp.Open
+}
+
 func (exp *FunCallExpNode) Loc() *Loc {
-	return exp.Prefix.Loc()
+	return exp.Callable.Loc()
 }
 
 func (exp *CondOpExpNode) Loc() *Loc {

@@ -96,7 +96,11 @@ exp
     | exp operatorAnd exp
     | exp operatorOr exp
     | exp operatorBitwise exp
-    | '(' exp ')'
+    | parenexp
+    ;
+
+parenexp
+    : o='(' exp c=')'
     ;
 
 prefixexp
@@ -109,7 +113,7 @@ funcall
 
 callable
     : var_
-    | '(' exp ')'
+    | parenexp
     ;
 
 var_
