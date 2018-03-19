@@ -96,18 +96,20 @@ exp
     | exp operatorAnd exp
     | exp operatorOr exp
     | exp operatorBitwise exp
+    | '(' exp ')'
     ;
 
 prefixexp
-    : var_OrExp nameAndArgs*
+    : callable nameAndArgs*
     ;
 
 funcall
-    : var_OrExp arglist
+    : callable arglist
     ;
 
-var_OrExp
-    : var_ | '(' exp ')'
+callable
+    : var_
+    | '(' exp ')'
     ;
 
 var_
