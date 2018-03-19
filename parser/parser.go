@@ -6,16 +6,6 @@ import (
 	. "github.com/szktty/trompe"
 )
 
-func ToLoc(tok antlr.Token) Loc {
-	line := tok.GetLine()
-	col := tok.GetColumn()
-	offset := tok.GetStart()
-	len_ := tok.GetStop() - offset
-	start := Pos{Line: line, Col: col, Offset: offset}
-	end := Pos{Line: line, Col: col, Offset: offset + len_}
-	return Loc{start, end}
-}
-
 type ChunkListener struct {
 	*BaseTrompeListener
 	Node ChunkNode
