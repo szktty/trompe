@@ -18,7 +18,7 @@ type CommentNode struct {
 
 type Node interface {
 	Loc() *Loc
-	Write(*bytes.Buffer)
+	WriteTo(*bytes.Buffer)
 }
 
 type ChunkNode struct {
@@ -234,7 +234,7 @@ func NewTokenAntlr(tok antlr.Token) Token {
 
 func NodeDesc(node Node) string {
 	buf := bytes.NewBuffer(nil)
-	node.Write(buf)
+	node.WriteTo(buf)
 	return buf.String()
 }
 
@@ -242,10 +242,10 @@ func (chunk *ChunkNode) Loc() *Loc {
 	return &chunk.loc
 }
 
-func (chunk *ChunkNode) Write(buf *bytes.Buffer) {
+func (chunk *ChunkNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(chunk ")
 	if block := chunk.Block; block != nil {
-		block.Write(buf)
+		block.WriteTo(buf)
 	} else {
 		buf.WriteString("none")
 	}
@@ -256,11 +256,11 @@ func (block *BlockNode) Loc() *Loc {
 	return &block.loc
 }
 
-func (block *BlockNode) Write(buf *bytes.Buffer) {
+func (block *BlockNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(block [")
 	fmt.Println(block.Stats)
 	for _, stat := range block.Stats {
-		stat.Write(buf)
+		stat.WriteTo(buf)
 		buf.WriteString(" ")
 	}
 	buf.WriteString("])")
@@ -270,11 +270,11 @@ func (stat *LetStatNode) Loc() *Loc {
 	return &stat.Let
 }
 
-func (stat *LetStatNode) Write(buf *bytes.Buffer) {
+func (stat *LetStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(let ")
-	stat.Ptn.Write(buf)
+	stat.Ptn.WriteTo(buf)
 	buf.WriteString(" ")
-	stat.Exp.Write(buf)
+	stat.Exp.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -282,10 +282,10 @@ func (stat *DefStatNode) Loc() *Loc {
 	return &stat.Def
 }
 
-func (stat *DefStatNode) Write(buf *bytes.Buffer) {
+func (stat *DefStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(def \"%s\" [", stat.Name.Text))
 	if stat.Params != nil {
-		stat.Params.Write(buf)
+		stat.Params.WriteTo(buf)
 	}
 	buf.WriteString("])")
 }
@@ -294,9 +294,9 @@ func (stat *ShortDefStatNode) Loc() *Loc {
 	return &stat.Def
 }
 
-func (stat *ShortDefStatNode) Write(buf *bytes.Buffer) {
+func (stat *ShortDefStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(shortdef \"%s\" ", stat.Name.Text))
-	stat.Exp.Write(buf)
+	stat.Exp.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -304,7 +304,7 @@ func (params *ParamListNode) Loc() *Loc {
 	return &params.Names[0].Loc
 }
 
-func (params *ParamListNode) Write(buf *bytes.Buffer) {
+func (params *ParamListNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(params [")
 	for _, param := range params.Names {
 		buf.WriteString(fmt.Sprintf("\"%s\" ", param.Text))
@@ -324,15 +324,15 @@ func (stat *IfStatNode) Loc() *Loc {
 	return &stat.Cond[0].If
 }
 
-func (stat *IfStatNode) Write(buf *bytes.Buffer) {
+func (stat *IfStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(if \"%s\" [")
 	for _, cond := range stat.Cond {
-		cond.Write(buf)
+		cond.WriteTo(buf)
 		buf.WriteString(" ")
 	}
 	buf.WriteString("] ")
 	if else_ := stat.ElseAction; else_ == nil {
-		else_.Write(buf)
+		else_.WriteTo(buf)
 	} else {
 		buf.WriteString("none")
 	}
@@ -343,11 +343,11 @@ func (cond *IfCondNode) Loc() *Loc {
 	return &cond.If
 }
 
-func (cond *IfCondNode) Write(buf *bytes.Buffer) {
+func (cond *IfCondNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(ifcond ")
-	cond.Cond.Write(buf)
+	cond.Cond.WriteTo(buf)
 	buf.WriteString(" ")
-	cond.Action.Write(buf)
+	cond.Action.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -355,17 +355,17 @@ func (stat *CaseStatNode) Loc() *Loc {
 	return &stat.Case
 }
 
-func (stat *CaseStatNode) Write(buf *bytes.Buffer) {
+func (stat *CaseStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(case ")
-	stat.Cond.Write(buf)
+	stat.Cond.WriteTo(buf)
 	buf.WriteString(" ")
 	for _, clau := range stat.Claus {
-		clau.Write(buf)
+		clau.WriteTo(buf)
 		buf.WriteString(" ")
 	}
 	buf.WriteString("] ")
 	if else_ := stat.ElseAction; else_ != nil {
-		else_.Write(buf)
+		else_.WriteTo(buf)
 	} else {
 		buf.WriteString("none")
 	}
@@ -376,17 +376,17 @@ func (clau *CaseClauNode) Loc() *Loc {
 	return &clau.When
 }
 
-func (clau *CaseClauNode) Write(buf *bytes.Buffer) {
+func (clau *CaseClauNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(caseclau ")
-	clau.Ptn.Write(buf)
+	clau.Ptn.WriteTo(buf)
 	buf.WriteString(" ")
 	if clau.Guard != nil {
-		clau.Guard.Write(buf)
+		clau.Guard.WriteTo(buf)
 	} else {
 		buf.WriteString("none")
 	}
 	buf.WriteString(" ")
-	clau.Action.Write(buf)
+	clau.Action.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -394,10 +394,10 @@ func (stat *RetStatNode) Loc() *Loc {
 	return &stat.Ret
 }
 
-func (stat *RetStatNode) Write(buf *bytes.Buffer) {
+func (stat *RetStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(return ")
 	if exp := stat.Exp; exp != nil {
-		exp.Write(buf)
+		exp.WriteTo(buf)
 	} else {
 		buf.WriteString("none")
 	}
@@ -408,9 +408,9 @@ func (exp *ParenExpNode) Loc() *Loc {
 	return &exp.Open
 }
 
-func (exp *ParenExpNode) Write(buf *bytes.Buffer) {
+func (exp *ParenExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(paren ")
-	exp.Exp.Write(buf)
+	exp.Exp.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -418,11 +418,11 @@ func (exp *FunCallExpNode) Loc() *Loc {
 	return exp.Callable.Loc()
 }
 
-func (exp *FunCallExpNode) Write(buf *bytes.Buffer) {
+func (exp *FunCallExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(funcall ")
-	exp.Callable.Write(buf)
+	exp.Callable.WriteTo(buf)
 	buf.WriteString(" ")
-	exp.Args.Write(buf)
+	exp.Args.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -430,13 +430,13 @@ func (exp *CondOpExpNode) Loc() *Loc {
 	return &exp.Colon
 }
 
-func (exp *CondOpExpNode) Write(buf *bytes.Buffer) {
+func (exp *CondOpExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(condop")
-	exp.Cond.Write(buf)
+	exp.Cond.WriteTo(buf)
 	buf.WriteString("  ")
-	exp.True.Write(buf)
+	exp.True.WriteTo(buf)
 	buf.WriteString("  ")
-	exp.False.Write(buf)
+	exp.False.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -448,7 +448,7 @@ func (exp *VarExpNode) Loc() *Loc {
 	return &exp.Name.Loc
 }
 
-func (exp *VarExpNode) Write(buf *bytes.Buffer) {
+func (exp *VarExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(var \"%s\")", exp.Name.Text))
 }
 
@@ -456,7 +456,7 @@ func (exp *UnitExpNode) Loc() *Loc {
 	return &exp.Open
 }
 
-func (exp *UnitExpNode) Write(buf *bytes.Buffer) {
+func (exp *UnitExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(unit)")
 }
 
@@ -464,7 +464,7 @@ func (exp *BoolExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *BoolExpNode) Write(buf *bytes.Buffer) {
+func (exp *BoolExpNode) WriteTo(buf *bytes.Buffer) {
 	var value string
 	if exp.Value {
 		value = "true"
@@ -478,7 +478,7 @@ func (exp *IntExpNode) Loc() *Loc {
 	return &exp.Value.Loc
 }
 
-func (exp *IntExpNode) Write(buf *bytes.Buffer) {
+func (exp *IntExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(int \"%s\")", exp.Value.Text))
 }
 
@@ -486,7 +486,7 @@ func (exp *StrExpNode) Loc() *Loc {
 	return &exp.Value.Loc
 }
 
-func (exp *StrExpNode) Write(buf *bytes.Buffer) {
+func (exp *StrExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(str \"%s\")", exp.Value.Text))
 }
 
@@ -494,9 +494,9 @@ func (exp *ListExpNode) Loc() *Loc {
 	return &exp.Elts.Open
 }
 
-func (exp *ListExpNode) Write(buf *bytes.Buffer) {
+func (exp *ListExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(list ")
-	exp.Elts.Write(buf)
+	exp.Elts.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -504,9 +504,9 @@ func (exp *TupleExpNode) Loc() *Loc {
 	return &exp.Elts.Open
 }
 
-func (exp *TupleExpNode) Write(buf *bytes.Buffer) {
+func (exp *TupleExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(tuple ")
-	exp.Elts.Write(buf)
+	exp.Elts.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -514,10 +514,10 @@ func (exp *EltListNode) Loc() *Loc {
 	return &exp.Open
 }
 
-func (elts *EltListNode) Write(buf *bytes.Buffer) {
+func (elts *EltListNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(eltlist [")
 	for _, elt := range elts.Elts {
-		elt.Write(buf)
+		elt.WriteTo(buf)
 		buf.WriteString(" ")
 	}
 	buf.WriteString("])")
@@ -527,9 +527,9 @@ func (exp *SomeExpNode) Loc() *Loc {
 	return &exp.SomeLoc
 }
 
-func (exp *SomeExpNode) Write(buf *bytes.Buffer) {
+func (exp *SomeExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(some ")
-	exp.Value.Write(buf)
+	exp.Value.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -537,7 +537,7 @@ func (exp *NoneExpNode) Loc() *Loc {
 	return &exp.loc
 }
 
-func (exp *NoneExpNode) Write(buf *bytes.Buffer) {
+func (exp *NoneExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(none)")
 }
 
@@ -545,11 +545,11 @@ func (exp *AnonFunExpNode) Loc() *Loc {
 	return &exp.Open
 }
 
-func (exp *AnonFunExpNode) Write(buf *bytes.Buffer) {
+func (exp *AnonFunExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(anonfun ")
-	exp.Params.Write(buf)
+	exp.Params.WriteTo(buf)
 	buf.WriteString(" ")
-	exp.Block.Write(buf)
+	exp.Block.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -557,7 +557,7 @@ func (ptn *UnitPtnNode) Loc() *Loc {
 	return &ptn.Open
 }
 
-func (ptn *UnitPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *UnitPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(unitptn)")
 }
 
@@ -565,7 +565,7 @@ func (ptn *BoolPtnNode) Loc() *Loc {
 	return &ptn.loc
 }
 
-func (ptn *BoolPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *BoolPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(bool ")
 	if ptn.Value {
 		buf.WriteString("true")
@@ -579,7 +579,7 @@ func (ptn *IntPtnNode) Loc() *Loc {
 	return &ptn.Value.Loc
 }
 
-func (ptn *IntPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *IntPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(intptn \"%s\")", ptn.Value.Text))
 }
 
@@ -587,7 +587,7 @@ func (ptn *StrPtnNode) Loc() *Loc {
 	return &ptn.Value.Loc
 }
 
-func (ptn *StrPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *StrPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString(fmt.Sprintf("(strptn \"%s\")", ptn.Value.Text))
 }
 
@@ -595,9 +595,9 @@ func (ptn *ListPtnNode) Loc() *Loc {
 	return &ptn.Elts.Open
 }
 
-func (ptn *ListPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *ListPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(listptn ")
-	ptn.Elts.Write(buf)
+	ptn.Elts.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -605,11 +605,11 @@ func (ptn *ConsPtnNode) Loc() *Loc {
 	return ptn.Left.Loc()
 }
 
-func (ptn *ConsPtnNode) Write(buf *bytes.Buffer) {
+func (ptn *ConsPtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(consptn ")
-	ptn.Left.Write(buf)
+	ptn.Left.WriteTo(buf)
 	buf.WriteString(" ")
-	ptn.Right.Write(buf)
+	ptn.Right.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -617,9 +617,9 @@ func (ptn *TuplePtnNode) Loc() *Loc {
 	return &ptn.Elts.Open
 }
 
-func (ptn *TuplePtnNode) Write(buf *bytes.Buffer) {
+func (ptn *TuplePtnNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(tupleptn ")
-	ptn.Elts.Write(buf)
+	ptn.Elts.WriteTo(buf)
 	buf.WriteString(")")
 }
 
@@ -627,10 +627,10 @@ func (elts *EltPtnListNode) Loc() *Loc {
 	return &elts.Open
 }
 
-func (elts *EltPtnListNode) Write(buf *bytes.Buffer) {
+func (elts *EltPtnListNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(eltptnlist [")
 	for _, elt := range elts.Elts {
-		elt.Write(buf)
+		elt.WriteTo(buf)
 		buf.WriteString(" ")
 	}
 	buf.WriteString("])")
