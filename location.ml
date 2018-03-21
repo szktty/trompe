@@ -1,4 +1,4 @@
-open Core.Std
+open Base
 
 type t = {
   start : Position.t;
@@ -10,7 +10,7 @@ let create (start : Position.t) (end_ : Position.t) =
   let len = end_.offset - start.offset in
   if len < 0 then
     raise (Invalid_argument
-             (sprintf "Location.create: start > end (%d, %d)"
+             (Printf.sprintf "Location.create: start > end (%d, %d)"
                 start.offset end_.offset))
   else
     { start; end_; len }
@@ -26,3 +26,8 @@ let contains_pos loc (pos : Position.t) =
 
 let contains_offset loc offset =
   loc.start.offset <= offset && offset < loc.end_.offset
+
+let equal loc1 loc2 =
+  (Position.equal loc1.start loc2.start) &&
+  (Position.equal loc1.end_ loc2.end_) &&
+  (loc1.len = loc2.len)
