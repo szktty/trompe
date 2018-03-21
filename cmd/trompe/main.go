@@ -11,6 +11,7 @@ import (
 var debugModeOpt = flag.Bool("d", false, "debug mode")
 var verboseModeOpt = flag.Bool("v", false, "verbose mode")
 var versionModeOpt = flag.Bool("version", false, "print version")
+var debugAstOpt = flag.Bool("debug-ast", false, "parse a file and print ast")
 
 func main() {
 	flag.Parse()
@@ -30,6 +31,12 @@ func main() {
 	}
 
 	trompe.Init()
+
+	if *debugAstOpt {
+		file := flag.Arg(0)
+		node := parser.Parse(file)
+		fmt.Printf("%s\n", trompe.NodeDesc(node))
+	}
 
 	if flag.Arg(0) == "test" {
 		trompe.TestCompiledCodeHelloWorld()
