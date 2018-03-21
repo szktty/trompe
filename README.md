@@ -11,19 +11,13 @@ Trompe is licensed under the Apache License, Version 2.0.
 
 ## Requirements
 
-- OCaml 4.04+
-- OPAM 1.2.2
-- Core
-- OMake 0.9.8.6-0.rc1
-- Menhir
+- Go 1.10+
+- Antlr 4.7.1+
 
-## Installation
-
-Do at directory repository toplevel.
+## Build
 
 ```
-$ opam pin add omake 0.9.8.6-0.rc1
-$ opam pin add trompe .
+$ make
 ```
 
 ## Grammar
@@ -132,10 +126,10 @@ end
 
 ```
 case i do
-  | 0 -> "0"
-  | 1 -> "1"
-  | 2 -> "2"
-  | _ -> "_"
+when 0 then "0"
+when 1 then "1"
+when 2 then "2"
+when _ then "_"
 end
 ```
 
