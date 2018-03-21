@@ -31,7 +31,7 @@ $ opam pin add trompe .
 ### Comments
 
 ```
-# comment end of line
+-- comment end of line
 ```
 
 ### Unit
