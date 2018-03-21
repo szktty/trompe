@@ -7,7 +7,7 @@ import (
 
 type codeComp struct {
 	comp     *compiler
-	args     []string
+	params   []string
 	lits     []Value
 	ops      []int
 	labels   int
@@ -35,8 +35,8 @@ func (c *codeComp) newCodeComp() *codeComp {
 	return new
 }
 
-func (c *codeComp) addArg(name string) {
-	c.args = append(c.args, name)
+func (c *codeComp) addParam(name string) {
+	c.params = append(c.params, name)
 }
 
 func (c *codeComp) newLabel() int {
@@ -82,7 +82,7 @@ func (c *codeComp) code() *CompiledCode {
 func (c *codeComp) compile(node Node) {
 	switch node := node.(type) {
 	case *ChunkNode:
-		c.compile(&node.Block)
+		c.compile(node.Block)
 	case *BlockNode:
 		for _, stat := range node.Stats {
 			c.compile(stat)
@@ -94,12 +94,12 @@ func (c *codeComp) compile(node Node) {
 		c.addOp(OpPop)
 	case *DefStatNode:
 		defComp := c.newCodeComp()
-		defComp.args = node.Args.NameStrs()
+		defComp.params = node.Params.NameStrs()
 		defComp.compile(&node.Block)
 		c.addFun(node.Name.Text, defComp)
 	case *ShortDefStatNode:
 		defComp := c.newCodeComp()
-		defComp.args = node.Args.NameStrs()
+		defComp.params = node.Params.NameStrs()
 		defComp.compile(node.Exp)
 		defComp.addOp(OpReturn)
 		c.addFun(node.Name.Text, defComp)
@@ -116,7 +116,7 @@ func (c *codeComp) compile(node Node) {
 			c.addLabel(nextL)
 		}
 		if node.Else != nil {
-			c.compile(&node.Else.Action)
+			c.compile(node.ElseAction)
 		}
 		c.addOp(OpLabel)
 		c.addLabel(endL)
@@ -137,19 +137,16 @@ func (c *codeComp) compile(node Node) {
 		}
 		c.addOp(OpPop) // Cond
 		if node.Else != nil {
-			c.compile(&node.Else.Action)
+			c.compile(node.ElseAction)
 		}
 		c.addLabel(endL)
 	case *RetStatNode:
-		if node.Value == nil {
+		if node.Exp == nil {
 			c.addOp(OpReturnUnit)
 		} else {
-			c.compile(node.Value)
+			c.compile(node.Exp)
 			c.addOp(OpReturn)
 		}
-	case *FunCallStatNode:
-		c.compile(node.Exp)
-		c.addOp(OpPop)
 	case *FunCallExpNode:
 		c.compile(node.Callable)
 		for _, arg := range node.Args.Elts {
@@ -182,14 +179,14 @@ func (c *codeComp) compile(node Node) {
 			c.addOp(OpLoadFalse)
 		}
 	case *IntExpNode:
-		val, err := strconv.Atoi(node.Value)
+		val, err := strconv.Atoi(node.Value.Text)
 		if err != nil {
 			panic(fmt.Sprintf("atoi failed: %s", err.Error()))
 		}
 		c.addOp(OpLoadInt)
 		c.addOp(val)
 	case *StrExpNode:
-		i := c.addStr(node.Value)
+		i := c.addStr(node.Value.Text)
 		c.addOp(OpLoadLit)
 		c.addOp(i)
 	case *ListExpNode:
@@ -213,12 +210,8 @@ func (c *codeComp) compile(node Node) {
 		c.addOp(OpLoadNone)
 	case *AnonFunExpNode:
 		anonComp := createCodeComp(c.comp)
-		for _, arg := range node.Args {
-			if nameExp, ok := arg.(*StrExpNode); ok {
-				anonComp.addArg(nameExp.Value)
-			} else {
-				panic("not StrExp")
-			}
+		for _, name := range node.Params.Names {
+			anonComp.addParam(name.Text)
 		}
 		anonComp.compile(&node.Block)
 		code := anonComp.code()

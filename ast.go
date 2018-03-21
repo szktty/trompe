@@ -3,6 +3,7 @@ package trompe
 import (
 	"bytes"
 	"fmt"
+	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
 type Token struct {
@@ -22,7 +23,7 @@ type Node interface {
 
 type ChunkNode struct {
 	loc   Loc
-	Block BlockNode
+	Block *BlockNode
 }
 
 type BlockNode struct {
@@ -55,7 +56,7 @@ type ShortDefStatNode struct {
 	Def    Loc
 	Name   Token
 	Open   Loc
-	Params ParamListNode
+	Params *ParamListNode
 	Close  Loc
 	Eq     Loc
 	Exp    ExpNode
@@ -66,18 +67,11 @@ type ParamListNode struct {
 	Sep   []Loc
 }
 
-func (params *ParamListNode) NameStrs() []string {
-	nameStrs := make([]string, len(params.Names))
-	for _, tok := range params.Names {
-		nameStrs = append(nameStrs, tok.Text)
-	}
-	return nameStrs
-}
-
 type IfStatNode struct {
-	Cond []IfCondNode
-	Else *ElseStatNode
-	End  Loc
+	Cond       []IfCondNode
+	Else       *Loc
+	ElseAction *BlockNode
+	End        Loc
 }
 
 type IfCondNode struct {
@@ -87,21 +81,20 @@ type IfCondNode struct {
 	Action BlockNode
 }
 
-type ElseStatNode struct {
-	Else   Loc
-	Action BlockNode
-}
-
 type CaseStatNode struct {
-	Case  Loc
-	Cond  ExpNode
-	Claus []CaseClauNode
-	Else  *ElseStatNode
+	Case       Loc
+	Cond       ExpNode
+	Claus      []CaseClauNode
+	Else       *Loc
+	ElseAction *BlockNode
 }
 
 type CaseClauNode struct {
+	When   Loc
 	Ptn    PtnNode
-	In     Loc
+	In     *Loc
+	Guard  ExpNode
+	Then   Loc
 	Action *BlockNode
 }
 
@@ -182,7 +175,7 @@ type NoneExpNode struct {
 type AnonFunExpNode struct {
 	Open   Loc
 	Close  Loc
-	Params ParamListNode
+	Params *ParamListNode
 	In     Loc
 	Block  BlockNode
 }
@@ -230,13 +223,32 @@ type EltPtnListNode struct {
 	Seps  []Loc
 }
 
+func NewToken(loc Loc, text string) Token {
+	return Token{loc, text}
+}
+
+func NewTokenAntlr(tok antlr.Token) Token {
+	fmt.Printf("antlr token %s\n", tok.GetText())
+	return Token{Loc: NewLocAntlr(tok), Text: tok.GetText()}
+}
+
+func NodeDesc(node Node) string {
+	buf := bytes.NewBuffer(nil)
+	node.Write(buf)
+	return buf.String()
+}
+
 func (chunk *ChunkNode) Loc() *Loc {
 	return &chunk.loc
 }
 
 func (chunk *ChunkNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("(chunk ")
-	chunk.Block.Write(buf)
+	if block := chunk.Block; block != nil {
+		block.Write(buf)
+	} else {
+		buf.WriteString("none")
+	}
 	buf.WriteString(")")
 }
 
@@ -246,6 +258,7 @@ func (block *BlockNode) Loc() *Loc {
 
 func (block *BlockNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("(block [")
+	fmt.Println(block.Stats)
 	for _, stat := range block.Stats {
 		stat.Write(buf)
 		buf.WriteString(" ")
@@ -299,13 +312,12 @@ func (params *ParamListNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("])")
 }
 
-func (elts *EltListNode) Write(buf *bytes.Buffer) {
-	buf.WriteString("(eltlist [")
-	for _, elt := range elts.Elts {
-		elt.Write(buf)
-		buf.WriteString(" ")
+func (params *ParamListNode) NameStrs() []string {
+	nameStrs := make([]string, len(params.Names))
+	for _, tok := range params.Names {
+		nameStrs = append(nameStrs, tok.Text)
 	}
-	buf.WriteString("])")
+	return nameStrs
 }
 
 func (stat *IfStatNode) Loc() *Loc {
@@ -319,11 +331,23 @@ func (stat *IfStatNode) Write(buf *bytes.Buffer) {
 		buf.WriteString(" ")
 	}
 	buf.WriteString("] ")
-	if else_ := stat.Else; else_ != nil {
+	if else_ := stat.ElseAction; else_ == nil {
 		else_.Write(buf)
 	} else {
 		buf.WriteString("none")
 	}
+	buf.WriteString(")")
+}
+
+func (cond *IfCondNode) Loc() *Loc {
+	return &cond.If
+}
+
+func (cond *IfCondNode) Write(buf *bytes.Buffer) {
+	buf.WriteString("(ifcond ")
+	cond.Cond.Write(buf)
+	buf.WriteString(" ")
+	cond.Action.Write(buf)
 	buf.WriteString(")")
 }
 
@@ -340,11 +364,29 @@ func (stat *CaseStatNode) Write(buf *bytes.Buffer) {
 		buf.WriteString(" ")
 	}
 	buf.WriteString("] ")
-	if else_ := stat.Else; else_ != nil {
+	if else_ := stat.ElseAction; else_ != nil {
 		else_.Write(buf)
 	} else {
 		buf.WriteString("none")
 	}
+	buf.WriteString(")")
+}
+
+func (clau *CaseClauNode) Loc() *Loc {
+	return &clau.When
+}
+
+func (clau *CaseClauNode) Write(buf *bytes.Buffer) {
+	buf.WriteString("(caseclau ")
+	clau.Ptn.Write(buf)
+	buf.WriteString(" ")
+	if clau.Guard != nil {
+		clau.Guard.Write(buf)
+	} else {
+		buf.WriteString("none")
+	}
+	buf.WriteString(" ")
+	clau.Action.Write(buf)
 	buf.WriteString(")")
 }
 
@@ -379,7 +421,7 @@ func (exp *FunCallExpNode) Loc() *Loc {
 func (exp *FunCallExpNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("(funcall ")
 	exp.Callable.Write(buf)
-	buf.WriteString("  ")
+	buf.WriteString(" ")
 	exp.Args.Write(buf)
 	buf.WriteString(")")
 }
@@ -396,6 +438,10 @@ func (exp *CondOpExpNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("  ")
 	exp.False.Write(buf)
 	buf.WriteString(")")
+}
+
+func NewVarExpNode(name Token) VarExpNode {
+	return VarExpNode{name}
 }
 
 func (exp *VarExpNode) Loc() *Loc {
@@ -575,4 +621,17 @@ func (ptn *TuplePtnNode) Write(buf *bytes.Buffer) {
 	buf.WriteString("(tupleptn ")
 	ptn.Elts.Write(buf)
 	buf.WriteString(")")
+}
+
+func (elts *EltPtnListNode) Loc() *Loc {
+	return &elts.Open
+}
+
+func (elts *EltPtnListNode) Write(buf *bytes.Buffer) {
+	buf.WriteString("(eltptnlist [")
+	for _, elt := range elts.Elts {
+		elt.Write(buf)
+		buf.WriteString(" ")
+	}
+	buf.WriteString("])")
 }

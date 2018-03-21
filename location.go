@@ -15,7 +15,7 @@ type Loc struct {
 	End   Pos
 }
 
-func TokenLoc(tok antlr.Token) Loc {
+func NewLocAntlr(tok antlr.Token) Loc {
 	line := tok.GetLine()
 	col := tok.GetColumn()
 	offset := tok.GetStart()
