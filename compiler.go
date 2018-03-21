@@ -222,15 +222,9 @@ func (c *codeComp) compile(node Node) {
 	}
 }
 
-type CompiledProg struct {
-	Path string
-	Code *CompiledCode
-}
-
-func Compile(path string, node Node) *CompiledProg {
+func Compile(path string, node Node) *CompiledCode {
 	comp := &compiler{path: path}
 	codeComp := &codeComp{comp: comp}
 	codeComp.compile(node)
-	code := codeComp.code()
-	return &CompiledProg{Path: path, Code: code}
+	return codeComp.code()
 }

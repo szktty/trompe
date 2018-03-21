@@ -87,6 +87,7 @@ func (s *Stack) Inspect() {
 
 type Program struct {
 	Path string
+	Code *CompiledCode
 }
 
 type ProgCounter struct {
@@ -116,7 +117,7 @@ func (pc *ProgCounter) Jump(n int) {
 	pc.Count = pc.Labels[n]
 }
 
-func (prog *Program) Eval(ctx *Context) (Value, error) {
+func (ctx *Context) Eval() (Value, error) {
 	var op int
 	var i int
 	var top Value
@@ -198,7 +199,7 @@ func (prog *Program) Eval(ctx *Context) (Value, error) {
 			}
 			clos := stack.TopPop().Closure()
 			newCtx := CreateContext(ctx, clos, args, i)
-			retVal, err = clos.Apply(prog, &newCtx)
+			retVal, err = clos.Apply(&newCtx)
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()

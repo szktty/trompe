@@ -2,7 +2,7 @@ package trompe
 
 import "fmt"
 
-func LibCorePrimShow(prog *Program, args []Value, nargs int) (Value, error) {
+func LibCorePrimShow(ctx *Context, args []Value, nargs int) (Value, error) {
 	if err := ValidateArity(nil, 1, nargs); err != nil {
 		return nil, err
 	}

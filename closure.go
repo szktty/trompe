@@ -6,7 +6,7 @@ import (
 )
 
 type Closure interface {
-	Apply(*Program, *Context) (Value, error)
+	Apply(*Context) (Value, error)
 }
 
 type CompiledCode struct {
@@ -15,8 +15,8 @@ type CompiledCode struct {
 	Labels map[int]int
 }
 
-func (code *CompiledCode) Apply(prog *Program, ctx *Context) (Value, error) {
-	return prog.Eval(ctx)
+func (code *CompiledCode) Apply(ctx *Context) (Value, error) {
+	return ctx.Eval()
 }
 
 func (code *CompiledCode) LiteralDesc(i int) string {
@@ -180,9 +180,8 @@ func TestCompiledCodeHelloWorld() {
 	}
 	fmt.Println(code.Inspect())
 
-	prog := Program{}
 	ctx := CreateContext(nil, &code, nil, 0)
-	prog.Eval(&ctx)
+	ctx.Eval()
 }
 
 /*

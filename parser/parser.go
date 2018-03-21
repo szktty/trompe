@@ -21,7 +21,7 @@ func (l *ChunkListener) EnterChunk(ctx *ChunkContext) {
 	if blockCtx != nil {
 		block := NewBlockListener()
 		blockCtx.EnterRule(block)
-		l.Node = ChunkNode{Block: block.Node}
+		l.Node = ChunkNode{Block: &block.Node}
 	}
 }
 
@@ -36,8 +36,7 @@ func NewBlockListener() *BlockListener {
 
 func (l *BlockListener) EnterBlock(ctx *BlockContext) {
 	fmt.Println("enter block")
-	statLen := len(ctx.AllStat()) + 1
-	stats := make([]Node, statLen)
+	var stats []Node
 	for _, statCtx := range ctx.AllStat() {
 		stat := NewStatListener()
 		statCtx.EnterRule(stat)
@@ -59,12 +58,13 @@ func (l *StatListener) EnterStat(ctx *StatContext) {
 	if funcallCtx := ctx.Funcall(); funcallCtx != nil {
 		funcall := NewFuncallListener()
 		funcallCtx.EnterRule(funcall)
+		l.Node = &funcall.Node
 	}
 }
 
 type FuncallListener struct {
 	*BaseTrompeListener
-	Exp FunCallExpNode
+	Node FunCallExpNode
 }
 
 func NewFuncallListener() *FuncallListener {
@@ -82,12 +82,12 @@ func (l *FuncallListener) EnterFuncall(ctx *FuncallContext) {
 		argsCtx.EnterRule(args)
 	}
 
-	l.Exp = FunCallExpNode{Callable: callable.Exp, Args: args.Exps}
+	l.Node = FunCallExpNode{Callable: callable.Node, Args: args.Node}
 }
 
 type CallableListener struct {
 	*BaseTrompeListener
-	Exp ExpNode
+	Node ExpNode
 }
 
 func NewCallableListener() *CallableListener {
@@ -99,17 +99,17 @@ func (l *CallableListener) EnterCallable(ctx *CallableContext) {
 	if varCtx := ctx.Var_(); varCtx != nil {
 		var_ := NewVarExpListener()
 		ctx.Var_().EnterRule(var_)
-		l.Exp = &var_.Exp
+		l.Node = &var_.Node
 	} else {
 		exp := NewParenexpListener()
 		ctx.Parenexp().EnterRule(exp)
-		l.Exp = exp.Exp
+		l.Node = exp.Node
 	}
 }
 
 type ArglistListener struct {
 	*BaseTrompeListener
-	Exps EltListNode
+	Node EltListNode
 }
 
 func NewArglistListener() *ArglistListener {
@@ -121,13 +121,13 @@ func (l *ArglistListener) EnterArglist(ctx *ArglistContext) {
 	if expsCtx := ctx.Explist(); expsCtx != nil {
 		exps := NewExplistListener()
 		expsCtx.EnterRule(exps)
-		l.Exps = exps.Exps
+		l.Node = exps.Node
 	}
 }
 
 type ExplistListener struct {
 	*BaseTrompeListener
-	Exps EltListNode
+	Node EltListNode
 }
 
 func NewExplistListener() *ExplistListener {
@@ -135,19 +135,18 @@ func NewExplistListener() *ExplistListener {
 }
 
 func (l *ExplistListener) EnterExplist(ctx *ExplistContext) {
-	expLen := len(ctx.AllExp())
-	exps := make([]Node, expLen)
+	var exps []Node
 	for _, expCtx := range ctx.AllExp() {
 		exp := NewExpListener()
 		expCtx.EnterRule(exp)
-		exps = append(exps, exp.Exp)
+		exps = append(exps, exp.Node)
 	}
-	l.Exps = EltListNode{Elts: exps}
+	l.Node = EltListNode{Elts: exps}
 }
 
 type ExpListener struct {
 	*BaseTrompeListener
-	Exp ExpNode
+	Node ExpNode
 }
 
 func NewExpListener() *ExpListener {
@@ -161,13 +160,13 @@ func (l *ExpListener) EnterExp(ctx *ExpContext) {
 	if strCtx := ctx.String_(); strCtx != nil {
 		str := NewStringListener()
 		strCtx.EnterRule(str)
-		l.Exp = &str.String
+		l.Node = &str.Node
 	}
 }
 
 type ParenexpListener struct {
 	*BaseTrompeListener
-	Exp ExpNode
+	Node ExpNode
 }
 
 func NewParenexpListener() *ParenexpListener {
@@ -178,12 +177,12 @@ func (l *ParenexpListener) EnterParenexp(ctx *ParenexpContext) {
 	// TODO: open, close
 	exp := NewExpListener()
 	ctx.Exp().EnterRule(exp)
-	l.Exp = exp.Exp
+	l.Node = exp.Node
 }
 
 type VarExpListener struct {
 	*BaseTrompeListener
-	Exp VarExpNode
+	Node VarExpNode
 }
 
 func NewVarExpListener() *VarExpListener {
@@ -193,20 +192,21 @@ func NewVarExpListener() *VarExpListener {
 func (l *VarExpListener) EnterVar_(ctx *Var_Context) {
 	// TODO
 	fmt.Printf("enter var\n")
+	l.Node = NewVarExpNode(NewTokenAntlr(ctx.GetStart()))
 }
 
 type StringListener struct {
 	*BaseTrompeListener
-	String StrExpNode
+	Node StrExpNode
 }
 
 func NewStringListener() *StringListener {
 	return new(StringListener)
 }
 
-func (l *StringListener) EnterString(ctx *String_Context) {
+func (l *StringListener) EnterString_(ctx *String_Context) {
 	fmt.Printf("enter string\n")
-	l.String = StrExpNode{Value: ctx.GetText()}
+	l.Node = StrExpNode{Value: NewTokenAntlr(ctx.GetStart())}
 }
 
 func Parse(file string) Node {
@@ -218,5 +218,6 @@ func Parse(file string) Node {
 	tree := p.Chunk()
 	listener := NewChunkListener()
 	antlr.ParseTreeWalkerDefault.EnterRule(listener, tree)
+	fmt.Printf("%s\n", NodeDesc(&listener.Node))
 	return &listener.Node
 }

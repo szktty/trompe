@@ -47,6 +47,7 @@ func main() {
 
 	file := flag.Arg(0)
 	node := parser.Parse(file)
-	var _ = node
-	//trompe.Compile(file, node)
+	code := trompe.Compile(file, node)
+	ctx := trompe.CreateContext(nil, code, nil, 0)
+	ctx.Eval()
 }
