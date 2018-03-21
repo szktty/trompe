@@ -1,9 +1,9 @@
 def fizzbuzz(i) 
-  case (i % 3, i % 5) do
-    | (0, 0) -> "fizzbuzz"
-    | (_, 0) -> "buzz"
-    | (0, _) -> "fizz"
-    | (_, _) -> Int.to_string(i)
+  case (i % 3, i % 5) of
+  when (0, 0) then "fizzbuzz"
+  when (_, 0) then "buzz"
+  when (0, _) then "fizz"
+  when (_, _) then Int.to_string(i)
   end
 end
 
