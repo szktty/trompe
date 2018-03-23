@@ -10,14 +10,17 @@ type Context struct {
 	Env     *Env
 }
 
-// TODO: Env
-func CreateContext(parent *Context, clos Closure, args []Value, numArgs int) Context {
+func CreateContext(parent *Context,
+	env *Env,
+	clos Closure,
+	args []Value,
+	numArgs int) Context {
 	return Context{
 		Parent:  parent,
 		Clos:    clos,
 		Args:    args,
 		NumArgs: numArgs,
-		Env:     nil,
+		Env:     NewEnv(env),
 	}
 }
 
@@ -80,7 +83,11 @@ func (s *Stack) Inspect() {
 		} else {
 			fmt.Printf("    ")
 		}
-		fmt.Printf("%d: %s\n", i, value.Desc())
+		if value == nil {
+			fmt.Printf("%d: nil\n", i)
+		} else {
+			fmt.Printf("%d: %s\n", i, value.Desc())
+		}
 	}
 	fmt.Printf("\n")
 }
@@ -129,7 +136,7 @@ func (ctx *Context) Eval() (Value, error) {
 	args := make([]Value, 16)
 	for cont && pc.HasNext() {
 		op = pc.Next()
-		fmt.Printf("op: %s\n", GetOpName(op))
+		fmt.Printf("next op: %s\n", GetOpName(op))
 		stack.Inspect()
 		switch op {
 		case OpNop:
@@ -148,11 +155,17 @@ func (ctx *Context) Eval() (Value, error) {
 			stack.Push(ctx.Literal(i))
 		case OpLoadLocal:
 			i = pc.Next()
-			stack.Push(stack.Get(i))
+			name := ctx.Literal(i).String()
+			value := ctx.Env.Get(name)
+			if value == nil {
+				err = CreateKeyError(ctx, name)
+				break
+			}
+			stack.Push(value)
 		case OpLoadAttr:
 			i = pc.Next()
 			name := ctx.Literal(i).String()
-			attr := ctx.Env.GetAttr(name)
+			attr := ctx.Env.Get(name)
 			if attr == nil {
 				err = CreateKeyError(ctx, name)
 				break
@@ -161,7 +174,8 @@ func (ctx *Context) Eval() (Value, error) {
 		case OpLoadPrim:
 			i = pc.Next()
 			prim := GetPrim(ctx.Literal(i).String())
-			stack.Push(prim)
+			clos := CreateValClos(prim)
+			stack.Push(clos)
 		case OpStore:
 			i = pc.Next()
 			stack.Set(i, stack.Top())
@@ -198,7 +212,8 @@ func (ctx *Context) Eval() (Value, error) {
 				args[j] = stack.TopPop()
 			}
 			clos := stack.TopPop().Closure()
-			newCtx := CreateContext(ctx, clos, args, i)
+			// TODO: env
+			newCtx := CreateContext(ctx, ctx.Env, clos, args, i)
 			retVal, err = clos.Apply(&newCtx)
 			stack.Push(retVal)
 		case OpSome:

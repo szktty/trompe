@@ -15,6 +15,10 @@ type CompiledCode struct {
 	Labels map[int]int
 }
 
+func NewCompiledCode(lits []Value, ops []Opcode, labels map[int]int) *CompiledCode {
+	return &CompiledCode{Lits: lits, Ops: ops, Labels: labels}
+}
+
 func (code *CompiledCode) Apply(ctx *Context) (Value, error) {
 	return ctx.Eval()
 }
@@ -180,7 +184,7 @@ func TestCompiledCodeHelloWorld() {
 	}
 	fmt.Println(code.Inspect())
 
-	ctx := CreateContext(nil, &code, nil, 0)
+	ctx := CreateContext(nil, nil, &code, nil, 0)
 	ctx.Eval()
 }
 

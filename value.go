@@ -10,6 +10,7 @@ const (
 	ValListType
 	ValTupleType
 	ValClosType
+	ValPrimType
 	ValOptType
 	ValPtnType
 )
@@ -23,6 +24,7 @@ type Value interface {
 	List() *List
 	Tuple() []Value
 	Closure() Closure
+	//Prim() string
 	// Pattern() Pattern
 }
 
@@ -301,6 +303,46 @@ func (val *ValClos) Tuple() []Value {
 
 func CreateValClos(value Closure) *ValClos {
 	return &ValClos{value}
+}
+
+type ValPrim struct {
+	Name string
+}
+
+func NewValPrim(name string) *ValPrim {
+	return &ValPrim{name}
+}
+
+func (val *ValPrim) Type() int {
+	return ValPrimType
+}
+
+func (val *ValPrim) Desc() string {
+	return fmt.Sprintf("prim %s", val.Name)
+}
+
+func (val *ValPrim) Bool() bool {
+	panic("Prim")
+}
+
+func (val *ValPrim) Int() int {
+	panic("Prim")
+}
+
+func (val *ValPrim) String() string {
+	panic("Prim")
+}
+
+func (val *ValPrim) Closure() Closure {
+	return GetPrim(val.Name)
+}
+
+func (val *ValPrim) List() *List {
+	panic("Prim")
+}
+
+func (val *ValPrim) Tuple() []Value {
+	panic("Prim")
 }
 
 type ValOpt struct {

@@ -22,8 +22,8 @@ type compiler struct {
 func createCodeComp(comp *compiler) *codeComp {
 	return &codeComp{
 		comp:     comp,
-		lits:     make([]Value, 16),
-		ops:      make([]int, 64),
+		lits:     make([]Value, 0),
+		ops:      make([]int, 0),
 		labels:   -1,
 		labelMap: make(map[int]int, 16),
 		funComps: make(map[string]*codeComp, 16),
@@ -75,8 +75,7 @@ func (c *codeComp) addFun(name string, comp *codeComp) {
 }
 
 func (c *codeComp) code() *CompiledCode {
-	// TODO
-	return nil
+	return NewCompiledCode(c.lits, c.ops, c.labelMap)
 }
 
 func (c *codeComp) compile(node Node) {

@@ -1,24 +1,40 @@
 package trompe
 
 type Env struct {
-	Parent *Env
-	Attrs  map[string]Value
+	Attrs   map[string]Value
+	Imports []*Module
 }
 
-func CreateEnv(parent *Env) *Env {
-	return &Env{parent, make(map[string]Value, 0)}
-}
-
-func (env *Env) GetAttr(name string) Value {
-	for env != nil {
-		if value := env.Attrs[name]; value != nil {
-			return value
+func NewEnv(src *Env) *Env {
+	var newMap map[string]Value
+	var imports []*Module
+	if src != nil {
+		newMap = make(map[string]Value, len(src.Attrs))
+		for k, v := range src.Attrs {
+			newMap[k] = v
 		}
-		env = env.Parent
+		imports = make([]*Module, len(src.Imports))
+		for i, m := range src.Imports {
+			imports[i] = m
+		}
+	} else {
+		newMap = make(map[string]Value, 16)
+		imports = []*Module{}
 	}
-	return nil
+	return &Env{newMap, imports}
 }
 
-func (env *Env) SetAttr(name string, value Value) {
+func (env *Env) AddImport(m *Module) {
+	env.Imports = append(env.Imports, m)
+}
+
+func (env *Env) Get(name string) Value {
+	if value := env.Attrs[name]; value != nil {
+		return value
+	}
+	return GetModuleAttr(env.Imports, name)
+}
+
+func (env *Env) Set(name string, value Value) {
 	env.Attrs[name] = value
 }

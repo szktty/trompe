@@ -13,13 +13,15 @@ type Module struct {
 	Imports []*Module
 }
 
-var root = CreateModule(nil, "")
+var RootModule *Module
+
+var OpenedModules []*Module
 
 var sep = "."
 
 func GetModule(path string) *Module {
 	comps := strings.Split(path, sep)
-	owner := root
+	owner := RootModule
 	for _, name := range comps {
 		if m, ok := owner.Subs[name]; ok {
 			owner = m
@@ -31,16 +33,38 @@ func GetModule(path string) *Module {
 }
 
 func AddTopModule(m *Module) {
-	root.AddSub(m)
+	RootModule.AddSub(m)
 }
 
-func CreateModule(parent *Module, name string) *Module {
+func AddOpenedModule(m *Module) {
+	OpenedModules = append(OpenedModules, m)
+}
+
+func GetModuleAttr(imports []*Module, name string) Value {
+	for _, m := range imports {
+		if value := m.Get(name); value != nil {
+			return value
+		}
+	}
+	for _, m := range OpenedModules {
+		if value := m.Get(name); value != nil {
+			return value
+		}
+	}
+	return nil
+}
+
+func NewModule(parent *Module, name string, attrs map[string]Value) *Module {
+	if attrs == nil {
+		attrs = make(map[string]Value, 16)
+	}
 	return &Module{
 		Parent:  parent,
 		Subs:    make(map[string]*Module, 8),
 		Name:    name,
-		Attrs:   make(map[string]Value, 16),
-		Imports: make([]*Module, 4)}
+		Attrs:   attrs,
+		Imports: []*Module{},
+	}
 }
 
 func (m *Module) Path() string {
@@ -56,4 +80,11 @@ func (m *Module) Path() string {
 
 func (m *Module) AddSub(sub *Module) {
 	m.Subs[sub.Name] = sub
+}
+
+func (m *Module) Get(name string) Value {
+	if value := m.Attrs[name]; value != nil {
+		return value
+	}
+	return GetModuleAttr(m.Imports, name)
 }
