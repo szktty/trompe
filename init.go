@@ -1,6 +1,14 @@
 package trompe
 
+import (
+	"math/rand"
+	"time"
+)
+
 func Init() {
+	now := time.Now()
+	rand.Seed(now.Unix())
+
 	InstallPrims()
 	InstallModules()
 }

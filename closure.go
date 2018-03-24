@@ -2,6 +2,7 @@ package trompe
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 )
 
@@ -10,13 +11,19 @@ type Closure interface {
 }
 
 type CompiledCode struct {
+	Id     int
 	Lits   []Value
 	Ops    []Opcode
 	Labels map[int]int
 }
 
 func NewCompiledCode(lits []Value, ops []Opcode, labels map[int]int) *CompiledCode {
-	return &CompiledCode{Lits: lits, Ops: ops, Labels: labels}
+	return &CompiledCode{
+		Id:     int(rand.Int31()),
+		Lits:   lits,
+		Ops:    ops,
+		Labels: labels,
+	}
 }
 
 func (code *CompiledCode) Apply(ctx *Context) (Value, error) {
@@ -29,6 +36,7 @@ func (code *CompiledCode) LiteralDesc(i int) string {
 
 func (code *CompiledCode) Inspect() string {
 	var b strings.Builder
+	b.WriteString(fmt.Sprintf("id: %d\n", code.Id))
 	b.WriteString("literals:\n")
 	for i, value := range code.Lits {
 		s := fmt.Sprintf("    %d: %s\n", i, value.Desc())

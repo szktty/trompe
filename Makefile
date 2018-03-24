@@ -2,6 +2,7 @@
 
 all:
 	go build -o trompe cmd/trompe/main.go
+	go build -o trompec cmd/trompec/main.go
 
 syntax:
 	antlr4 -Dlanguage=Go parser/Trompe.g4

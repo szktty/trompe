@@ -37,6 +37,7 @@ setup.log
 
 # generated programs
 trompe
+trompec
 parser/*.interp
 parser/*.tokens
 parser/*_base_listener.go
