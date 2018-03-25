@@ -199,7 +199,7 @@ func TestCompiledCodeHelloWorld() {
 	fmt.Println(code.Inspect())
 
 	ip := NewInterp()
-	ctx := CreateContext(nil, nil, &code, nil, 0)
+	ctx := CreateContext(nil, nil, nil, &code, nil, 0)
 	ip.Eval(&ctx, &code)
 }
 

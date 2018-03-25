@@ -49,6 +49,8 @@ func main() {
 	node := parser.Parse(file)
 	code := trompe.Compile(file, node)
 	fmt.Println(code.Inspect())
-	ctx := trompe.CreateContext(nil, nil, code, nil, 0)
-	ctx.Eval()
+	m := trompe.NewModule(nil, file)
+	ctx := trompe.CreateContext(nil, m, nil, code, nil, 0)
+	ip := trompe.NewInterp()
+	ip.Eval(&ctx, code)
 }

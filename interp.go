@@ -4,6 +4,7 @@ import "fmt"
 
 type Context struct {
 	Parent  *Context
+	Module  *Module
 	Clos    Closure
 	Args    []Value
 	NumArgs int
@@ -11,12 +12,14 @@ type Context struct {
 }
 
 func CreateContext(parent *Context,
+	module *Module,
 	env *Env,
 	clos Closure,
 	args []Value,
 	numArgs int) Context {
 	return Context{
 		Parent:  parent,
+		Module:  module,
 		Clos:    clos,
 		Args:    args,
 		NumArgs: numArgs,
@@ -211,8 +214,7 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 				args[j] = stack.TopPop()
 			}
 			clos := stack.TopPop().Closure()
-			// TODO: env
-			newCtx := CreateContext(ctx, ctx.Env, clos, args, i)
+			newCtx := CreateContext(ctx, ctx.Module, ctx.Env, clos, args, i)
 			retVal, err = clos.Apply(ip, &newCtx)
 			stack.Push(retVal)
 		case OpSome:
