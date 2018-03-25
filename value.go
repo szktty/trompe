@@ -13,6 +13,7 @@ const (
 	ValPrimType
 	ValOptType
 	ValPtnType
+	ValModRefType
 )
 
 type Value interface {
@@ -156,7 +157,7 @@ func (val *ValStr) Type() int {
 }
 
 func (val *ValStr) Desc() string {
-	return fmt.Sprintf("\"%s\"", val.Value)
+	return val.Value
 }
 
 func (val *ValStr) Bool() bool {
@@ -423,4 +424,56 @@ func (val *ValPtn) List() *List {
 
 func (val *ValPtn) Tuple() []Value {
 	panic("Pattern")
+}
+
+type ValModRef struct {
+	Path  string
+	Cache *Module
+}
+
+func NewValModRef(path string) *ValModRef {
+	return &ValModRef{Path: path}
+}
+
+func NewValModRefWithModule(m *Module) *ValModRef {
+	return &ValModRef{Cache: m}
+}
+
+func (val *ValModRef) Type() int {
+	return ValModRefType
+}
+
+func (val *ValModRef) Desc() string {
+	return fmt.Sprintf("{%s}", val.Path)
+}
+
+func (val *ValModRef) Bool() bool {
+	panic("ModRef")
+}
+
+func (val *ValModRef) Int() int {
+	panic("ModRef")
+}
+
+func (val *ValModRef) String() string {
+	panic("ModRef")
+}
+
+func (val *ValModRef) Closure() Closure {
+	panic("ModRef")
+}
+
+func (val *ValModRef) List() *List {
+	panic("ModRef")
+}
+
+func (val *ValModRef) Tuple() []Value {
+	panic("ModRef")
+}
+
+func (val *ValModRef) Module() *Module {
+	if val.Cache == nil {
+		val.Cache = GetModule(val.Path)
+	}
+	return val.Cache
 }

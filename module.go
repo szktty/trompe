@@ -5,12 +5,11 @@ import (
 )
 
 type Module struct {
-	Parent  *Module
-	Subs    map[string]*Module
-	Name    string
-	File    string
-	Attrs   map[string]Value
-	Imports []*Module
+	Parent *Module
+	Subs   map[string]*Module
+	Name   string
+	File   string
+	Env    *Env
 }
 
 var RootModule *Module
@@ -56,11 +55,10 @@ func GetModuleAttr(imports []*Module, name string) Value {
 
 func NewModule(parent *Module, name string) *Module {
 	return &Module{
-		Parent:  parent,
-		Subs:    make(map[string]*Module, 8),
-		Name:    name,
-		Attrs:   make(map[string]Value, 8),
-		Imports: []*Module{},
+		Parent: parent,
+		Subs:   make(map[string]*Module, 8),
+		Name:   name,
+		Env:    NewEnv(nil),
 	}
 }
 
@@ -80,14 +78,11 @@ func (m *Module) AddSub(sub *Module) {
 }
 
 func (m *Module) GetAttr(name string) Value {
-	if value := m.Attrs[name]; value != nil {
-		return value
-	}
-	return GetModuleAttr(m.Imports, name)
+	return m.Env.Get(name)
 }
 
 func (m *Module) AddAttr(name string, value Value) {
-	m.Attrs[name] = value
+	m.Env.Set(name, value)
 }
 
 func (m *Module) AddPrim(name string, primName string) {

@@ -43,13 +43,20 @@ func (code *CompiledCode) LiteralDesc(i int) string {
 func (code *CompiledCode) Inspect() string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("id: %d\n", code.Id))
+
+	b.WriteString("symbols:\n")
+	for i, name := range code.Syms {
+		s := fmt.Sprintf("    %d: \"%s\"\n", i, name)
+		b.WriteString(s)
+	}
+
 	b.WriteString("literals:\n")
 	for i, value := range code.Lits {
 		s := fmt.Sprintf("    %d: %s\n", i, value.Desc())
 		b.WriteString(s)
 	}
 
-	b.WriteString("\nopcodes:\n")
+	b.WriteString("opcodes:\n")
 	pc := 0
 	for ; pc < len(code.Ops); pc++ {
 		s := fmt.Sprintf("    %d: ", pc)
@@ -83,29 +90,31 @@ func (code *CompiledCode) Inspect() string {
 		case OpLoadLocal:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("load local %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("load local \"%s\"", code.Syms[i])
 		case OpLoadAttr:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("load attr %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("load attr \"%s\"", code.Syms[i])
 		case OpLoadPrim:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("load primitive %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("load primitive %s", code.Syms[i])
 		case OpLoadArg:
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("load arg %d", i)
-		case OpStore:
+		case OpLoadModule:
+			s += "load module"
+		case OpStoreLocal:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("store %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("store local \"%s\"", code.LiteralDesc(i))
 		case OpStoreRef:
 			s += fmt.Sprintf("store ref")
 		case OpStoreAttr:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("store attr %s", code.LiteralDesc(i))
+			s += fmt.Sprintf("store attr \"%s\"", code.LiteralDesc(i))
 		case OpPop:
 			s += "pop"
 		case OpDup:
@@ -137,7 +146,7 @@ func (code *CompiledCode) Inspect() string {
 		case OpCall:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("call %d", i)
+			s += fmt.Sprintf("call with %d args", i)
 		case OpEq:
 			s += "=="
 		case OpNe:

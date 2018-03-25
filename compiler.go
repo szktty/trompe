@@ -8,6 +8,7 @@ import (
 type codeComp struct {
 	comp     *compiler
 	params   []string
+	syms     []string
 	lits     []Value
 	ops      []int
 	labels   int
@@ -22,6 +23,7 @@ type compiler struct {
 func createCodeComp(comp *compiler) *codeComp {
 	return &codeComp{
 		comp:     comp,
+		syms:     make([]string, 0),
 		lits:     make([]Value, 0),
 		ops:      make([]int, 0),
 		labels:   -1,
@@ -54,6 +56,16 @@ func (c *codeComp) addOp(op int) {
 	c.ops = append(c.ops, op)
 }
 
+func (c *codeComp) addSym(name string) int {
+	for i, name1 := range c.syms {
+		if name1 == name {
+			return i
+		}
+	}
+	c.syms = append(c.syms, name)
+	return len(c.syms) - 1
+}
+
 func (c *codeComp) addLit(val Value) int {
 	c.lits = append(c.lits, val)
 	return len(c.lits) - 1
@@ -76,6 +88,7 @@ func (c *codeComp) addFun(name string, comp *codeComp) {
 
 func (c *codeComp) code() *CompiledCode {
 	code := NewCompiledCode()
+	code.Syms = c.syms
 	code.Lits = c.lits
 	code.Ops = c.ops
 	code.Labels = c.labelMap
@@ -170,7 +183,7 @@ func (c *codeComp) compile(node Node) {
 		c.compile(node.False)
 		c.addLabel(endL)
 	case *VarExpNode:
-		i := c.addStr(node.Name.Text)
+		i := c.addSym(node.Name.Text)
 		c.addOp(OpLoadLocal)
 		c.addOp(i)
 	case *UnitExpNode:

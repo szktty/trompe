@@ -157,7 +157,7 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			stack.Push(code.Lits[i])
 		case OpLoadLocal:
 			i = pc.Next()
-			name := code.Lits[i].String()
+			name := code.Syms[i]
 			value := ctx.Env.Get(name)
 			if value == nil {
 				err = CreateKeyError(ctx, name)
@@ -166,8 +166,10 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			stack.Push(value)
 		case OpLoadAttr:
 			i = pc.Next()
-			name := code.Lits[i].String()
-			attr := ctx.Env.Get(name)
+			name := code.Syms[i]
+			ref := stack.TopPop().(*ValModRef)
+			m := ref.Module()
+			attr := m.Env.Get(name)
 			if attr == nil {
 				err = CreateKeyError(ctx, name)
 				break
@@ -178,9 +180,18 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			prim := GetPrim(code.Lits[i].String())
 			clos := CreateValClos(prim)
 			stack.Push(clos)
-		case OpStore:
+		case OpLoadModule:
+			stack.Push(NewValModRefWithModule(ctx.Module))
+		case OpStoreLocal:
 			i = pc.Next()
 			stack.Set(i, stack.Top())
+		case OpStoreAttr:
+			i = pc.Next()
+			name := code.Syms[i]
+			value := stack.TopPop()
+			ref := stack.TopPop().(*ValModRef)
+			m := ref.Module()
+			m.Env.Set(name, value)
 		case OpPop:
 			stack.Pop()
 		case OpDup:
