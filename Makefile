@@ -1,7 +1,11 @@
-.PHONY: all
+.PHONY: all trompe trompec
 
-all:
+all: syntax trompe trompec
+
+trompe:
 	go build -o trompe cmd/trompe/main.go
+
+trompec:
 	go build -o trompec cmd/trompec/main.go
 
 syntax:
