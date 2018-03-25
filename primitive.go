@@ -2,9 +2,11 @@ package trompe
 
 type Primitive struct {
 	Name  string
-	Func  func(*Context, []Value, int) (Value, error)
+	Func  PrimFun
 	Arity int
 }
+
+type PrimFun = func(*Context, []Value, int) (Value, error)
 
 var sharedPrims = map[string]*Primitive{}
 

@@ -42,27 +42,24 @@ func AddOpenedModule(m *Module) {
 
 func GetModuleAttr(imports []*Module, name string) Value {
 	for _, m := range imports {
-		if value := m.Get(name); value != nil {
+		if value := m.GetAttr(name); value != nil {
 			return value
 		}
 	}
 	for _, m := range OpenedModules {
-		if value := m.Get(name); value != nil {
+		if value := m.GetAttr(name); value != nil {
 			return value
 		}
 	}
 	return nil
 }
 
-func NewModule(parent *Module, name string, attrs map[string]Value) *Module {
-	if attrs == nil {
-		attrs = make(map[string]Value, 16)
-	}
+func NewModule(parent *Module, name string) *Module {
 	return &Module{
 		Parent:  parent,
 		Subs:    make(map[string]*Module, 8),
 		Name:    name,
-		Attrs:   attrs,
+		Attrs:   make(map[string]Value, 8),
 		Imports: []*Module{},
 	}
 }
@@ -82,9 +79,17 @@ func (m *Module) AddSub(sub *Module) {
 	m.Subs[sub.Name] = sub
 }
 
-func (m *Module) Get(name string) Value {
+func (m *Module) GetAttr(name string) Value {
 	if value := m.Attrs[name]; value != nil {
 		return value
 	}
 	return GetModuleAttr(m.Imports, name)
+}
+
+func (m *Module) AddAttr(name string, value Value) {
+	m.Attrs[name] = value
+}
+
+func (m *Module) AddPrim(name string, primName string) {
+	m.AddAttr(name, NewValPrim(primName))
 }

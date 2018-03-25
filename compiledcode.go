@@ -12,18 +12,24 @@ type Closure interface {
 
 type CompiledCode struct {
 	Id     int
+	Syms   []string
 	Lits   []Value
 	Ops    []Opcode
 	Labels map[int]int
 }
 
-func NewCompiledCode(lits []Value, ops []Opcode, labels map[int]int) *CompiledCode {
+func NewCompiledCode() *CompiledCode {
 	return &CompiledCode{
 		Id:     int(rand.Int31()),
-		Lits:   lits,
-		Ops:    ops,
-		Labels: labels,
+		Syms:   []string{},
+		Lits:   []Value{},
+		Ops:    []Opcode{},
+		Labels: make(map[int]int, 0),
 	}
+}
+
+func (code *CompiledCode) AddLit(value Value) {
+	code.Lits = append(code.Lits, value)
 }
 
 func (code *CompiledCode) Apply(ctx *Context) (Value, error) {

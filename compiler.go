@@ -75,7 +75,11 @@ func (c *codeComp) addFun(name string, comp *codeComp) {
 }
 
 func (c *codeComp) code() *CompiledCode {
-	return NewCompiledCode(c.lits, c.ops, c.labelMap)
+	code := NewCompiledCode()
+	code.Lits = c.lits
+	code.Ops = c.ops
+	code.Labels = c.labelMap
+	return code
 }
 
 func (c *codeComp) compile(node Node) {

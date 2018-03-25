@@ -12,11 +12,8 @@ func LibCorePrimShow(ctx *Context, args []Value, nargs int) (Value, error) {
 
 func InstallLibCore() {
 	SetPrim("show", LibCorePrimShow, 1)
-	m := NewModule(nil,
-		"core",
-		map[string]Value{
-			"show": NewValPrim("show"),
-		})
+	m := NewModule(nil, "core")
+	m.AddPrim("show", "show")
 	AddTopModule(m)
 	AddOpenedModule(m)
 

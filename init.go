@@ -18,6 +18,6 @@ func InstallPrims() {
 }
 
 func InstallModules() {
-	RootModule = NewModule(nil, "", nil)
+	RootModule = NewModule(nil, "")
 	InstallLibCore()
 }

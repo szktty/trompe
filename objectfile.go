@@ -3,12 +3,15 @@ package trompe
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 type ObjectFile struct {
-	Name  string        `json:"name"`
-	Attrs []*ObjectAttr `json:"attrs"`
-	Codes []*ObjectCode `json:"codes"`
+	Name     string        `json:"name"`
+	Attrs    []*ObjectAttr `json:"attrs"`
+	Codes    []*ObjectCode `json:"codes"`
+	CodeVals map[int]*CompiledCode
+	module   *Module
 }
 
 type ObjectAttr struct {
@@ -36,7 +39,12 @@ var ObjectValueTypeString = "string"
 var ObjectValueTypeCode = "code"
 
 func NewObjectFile(name string) *ObjectFile {
-	return &ObjectFile{Name: name}
+	return &ObjectFile{
+		Name:     name,
+		Attrs:    []*ObjectAttr{},
+		Codes:    []*ObjectCode{},
+		CodeVals: make(map[int]*CompiledCode, 0),
+	}
 }
 
 func (file *ObjectFile) AddAttr(attr *ObjectAttr) {
@@ -115,5 +123,49 @@ func UnmarshalObjectFile(data []byte) (*ObjectFile, error) {
 		return nil, err
 	} else {
 		return &objFile, nil
+	}
+}
+
+func (file *ObjectFile) Decode() *Module {
+	if file.module != nil {
+		return file.module
+	}
+
+	m := NewModule(nil, file.Name)
+	for _, objCode := range file.Codes {
+		objCode.Decode(file)
+	}
+	for _, objAttr := range file.Attrs {
+		m.AddAttr(objAttr.Name, objAttr.Value.Decode(file))
+	}
+	file.module = m
+	return m
+}
+
+func (objCode *ObjectCode) Decode(file *ObjectFile) {
+	code := NewCompiledCode()
+	code.Id = objCode.Id
+	code.Syms = objCode.Syms
+	code.Ops = objCode.Ops
+	file.CodeVals[code.Id] = code
+
+	for _, objVal := range objCode.Lits {
+		value := objVal.Decode(file)
+		code.AddLit(value)
+	}
+}
+
+func (value *ObjectValue) Decode(file *ObjectFile) Value {
+	switch value.Type {
+	case ObjectValueTypeUnit:
+		return LangUnit
+	case ObjectValueTypeString:
+		return CreateValStr(value.Value)
+	case ObjectValueTypeCode:
+		// TODO: error
+		id, _ := strconv.Atoi(value.Value)
+		return CreateValClos(file.CodeVals[id])
+	default:
+		panic("notimpl")
 	}
 }
