@@ -24,14 +24,6 @@ func CreateContext(parent *Context,
 	}
 }
 
-func (ctx *Context) CompiledCode() *CompiledCode {
-	return ctx.Clos.(*CompiledCode)
-}
-
-func (ctx *Context) Literal(i int) Value {
-	return ctx.CompiledCode().Lits[i]
-}
-
 type Stack struct {
 	Locals []Value
 	Index  int // -1 start
@@ -99,21 +91,21 @@ type Program struct {
 
 type ProgCounter struct {
 	Count  int
-	Ctx    *Context
+	Code   *CompiledCode
 	Labels map[int]int
 }
 
-func CreateProgCounter(ctx *Context) ProgCounter {
-	return ProgCounter{Count: 0, Ctx: ctx, Labels: make(map[int]int, 16)}
+func CreateProgCounter(code *CompiledCode) ProgCounter {
+	return ProgCounter{Count: 0, Code: code, Labels: make(map[int]int, 16)}
 }
 
 func (pc *ProgCounter) HasNext() bool {
-	return pc.Count < len(pc.Ctx.CompiledCode().Ops)
+	return pc.Count < len(pc.Code.Ops)
 }
 
 func (pc *ProgCounter) Next() int {
 	pc.Count += 1
-	return pc.Ctx.CompiledCode().Ops[pc.Count-1]
+	return pc.Code.Ops[pc.Count-1]
 }
 
 func (pc *ProgCounter) AddLabel(n int) {
@@ -124,13 +116,20 @@ func (pc *ProgCounter) Jump(n int) {
 	pc.Count = pc.Labels[n]
 }
 
-func (ctx *Context) Eval() (Value, error) {
+type Interp struct {
+}
+
+func NewInterp() *Interp {
+	return &Interp{}
+}
+
+func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 	var op int
 	var i int
 	var top Value
 	var retVal Value
 	var err error
-	pc := CreateProgCounter(ctx)
+	pc := CreateProgCounter(code)
 	cont := true
 	stack := CreateStack(16)
 	args := make([]Value, 16)
@@ -152,10 +151,10 @@ func (ctx *Context) Eval() (Value, error) {
 			stack.Push(&ValInt{i})
 		case OpLoadLit:
 			i = pc.Next()
-			stack.Push(ctx.Literal(i))
+			stack.Push(code.Lits[i])
 		case OpLoadLocal:
 			i = pc.Next()
-			name := ctx.Literal(i).String()
+			name := code.Lits[i].String()
 			value := ctx.Env.Get(name)
 			if value == nil {
 				err = CreateKeyError(ctx, name)
@@ -164,7 +163,7 @@ func (ctx *Context) Eval() (Value, error) {
 			stack.Push(value)
 		case OpLoadAttr:
 			i = pc.Next()
-			name := ctx.Literal(i).String()
+			name := code.Lits[i].String()
 			attr := ctx.Env.Get(name)
 			if attr == nil {
 				err = CreateKeyError(ctx, name)
@@ -173,7 +172,7 @@ func (ctx *Context) Eval() (Value, error) {
 			stack.Push(attr)
 		case OpLoadPrim:
 			i = pc.Next()
-			prim := GetPrim(ctx.Literal(i).String())
+			prim := GetPrim(code.Lits[i].String())
 			clos := CreateValClos(prim)
 			stack.Push(clos)
 		case OpStore:
@@ -214,7 +213,7 @@ func (ctx *Context) Eval() (Value, error) {
 			clos := stack.TopPop().Closure()
 			// TODO: env
 			newCtx := CreateContext(ctx, ctx.Env, clos, args, i)
-			retVal, err = clos.Apply(&newCtx)
+			retVal, err = clos.Apply(ip, &newCtx)
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()

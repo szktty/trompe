@@ -16,7 +16,7 @@ func NewPrim(name string,
 	return &Primitive{name, f, arity}
 }
 
-func (prim *Primitive) Apply(ctx *Context) (Value, error) {
+func (prim *Primitive) Apply(interp *Interp, ctx *Context) (Value, error) {
 	return prim.Func(ctx, ctx.Args, ctx.NumArgs)
 }
 

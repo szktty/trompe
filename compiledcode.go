@@ -7,7 +7,7 @@ import (
 )
 
 type Closure interface {
-	Apply(*Context) (Value, error)
+	Apply(*Interp, *Context) (Value, error)
 }
 
 type CompiledCode struct {
@@ -32,8 +32,8 @@ func (code *CompiledCode) AddLit(value Value) {
 	code.Lits = append(code.Lits, value)
 }
 
-func (code *CompiledCode) Apply(ctx *Context) (Value, error) {
-	return ctx.Eval()
+func (code *CompiledCode) Apply(ip *Interp, ctx *Context) (Value, error) {
+	return ip.Eval(ctx, code)
 }
 
 func (code *CompiledCode) LiteralDesc(i int) string {
@@ -198,8 +198,9 @@ func TestCompiledCodeHelloWorld() {
 	}
 	fmt.Println(code.Inspect())
 
+	ip := NewInterp()
 	ctx := CreateContext(nil, nil, &code, nil, 0)
-	ctx.Eval()
+	ip.Eval(&ctx, &code)
 }
 
 /*
