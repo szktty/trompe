@@ -85,6 +85,8 @@ func (m *Module) AddAttr(name string, value Value) {
 	m.Env.Set(name, value)
 }
 
-func (m *Module) AddPrim(name string, primName string) {
-	m.AddAttr(name, NewValPrim(primName))
+func (m *Module) AddPrim(name string,
+	f func(*Context, []Value, int) (Value, error),
+	arity int) {
+	m.AddAttr(name, NewPrim(f, arity))
 }

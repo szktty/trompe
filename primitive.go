@@ -1,32 +1,53 @@
 package trompe
 
+import (
+	"fmt"
+)
+
 type Primitive struct {
-	Name  string
 	Func  PrimFun
 	Arity int
 }
 
 type PrimFun = func(*Context, []Value, int) (Value, error)
 
-var sharedPrims = map[string]*Primitive{}
-
-func NewPrim(name string,
-	f func(*Context, []Value, int) (Value, error),
+func NewPrim(f func(*Context, []Value, int) (Value, error),
 	arity int) *Primitive {
-	return &Primitive{name, f, arity}
+	return &Primitive{f, arity}
+}
+
+func (prim *Primitive) Type() int {
+	return ValClosType
+}
+
+func (prim *Primitive) Desc() string {
+	return fmt.Sprintf("<prim %p>", prim)
+}
+
+func (prim *Primitive) Bool() bool {
+	panic("Prim")
+}
+
+func (prim *Primitive) Int() int {
+	panic("Prim")
+}
+
+func (prim *Primitive) String() string {
+	panic("Prim")
+}
+
+func (prim *Primitive) Closure() Closure {
+	return prim
+}
+
+func (prim *Primitive) List() *List {
+	panic("Prim")
+}
+
+func (prim *Primitive) Tuple() []Value {
+	panic("Prim")
 }
 
 func (prim *Primitive) Apply(interp *Interp, ctx *Context) (Value, error) {
 	return prim.Func(ctx, ctx.Args, ctx.NumArgs)
-}
-
-func GetPrim(name string) *Primitive {
-	return sharedPrims[name]
-}
-
-func SetPrim(
-	name string,
-	f func(*Context, []Value, int) (Value, error),
-	arity int) {
-	sharedPrims[name] = NewPrim(name, f, arity)
 }
