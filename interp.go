@@ -175,11 +175,6 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 				break
 			}
 			stack.Push(attr)
-		case OpLoadPrim:
-			i = pc.Next()
-			prim := GetPrim(code.Lits[i].String())
-			clos := CreateValClos(prim)
-			stack.Push(clos)
 		case OpLoadModule:
 			stack.Push(NewValModRefWithModule(ctx.Module))
 		case OpStoreLocal:

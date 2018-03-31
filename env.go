@@ -35,6 +35,7 @@ func (env *Env) Get(name string) Value {
 	return GetModuleAttr(env.Imports, name)
 }
 
+// TODO: Set -> Add
 func (env *Env) Set(name string, value Value) {
 	env.Attrs[name] = value
 }

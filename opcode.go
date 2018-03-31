@@ -16,7 +16,6 @@ const (
 	OpLoadLit   // index of value in literal list
 	OpLoadLocal // index
 	OpLoadAttr  // index of literal string
-	OpLoadPrim  // index of literal string
 	OpLoadArg   // index
 	OpLoadModule
 	OpStoreLocal // index of literal string
@@ -78,8 +77,6 @@ func GetOpName(op int) string {
 		return "OpLoadLocal"
 	case OpLoadAttr:
 		return "OpLoadAttr"
-	case OpLoadPrim:
-		return "OpLoadPrim"
 	case OpLoadArg:
 		return "OpLoadArg"
 	case OpStoreLocal:

@@ -95,10 +95,6 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("load attr \"%s\"", code.Syms[i])
-		case OpLoadPrim:
-			i := code.Ops[pc+1]
-			pc++
-			s += fmt.Sprintf("load primitive %s", code.Syms[i])
 		case OpLoadArg:
 			i := code.Ops[pc+1]
 			pc++
@@ -194,12 +190,15 @@ func (code *CompiledCode) Inspect() string {
 */
 func TestCompiledCodeHelloWorld() {
 	code := CompiledCode{
+		Syms: []string{
+			"show",
+		},
 		Lits: []Value{
 			CreateValStr("show"),
 			CreateValStr("Hello, world!"),
 		},
 		Ops: []int{
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 1, // "Hello, world!"
 			OpCall, 1,
 			OpReturnUnit,
@@ -223,8 +222,10 @@ func TestCompiledCodeHelloWorld() {
 
 func TestCompiledCodeFizzBuzzMatch() {
 	code := CompiledCode{
+		Syms: []string{
+			"show",
+		},
 		Lits: []Value{
-			CreateValStr("show"),
 			CreateValStr("Fizz"),
 			CreateValStr("Buzz"),
 			CreateValStr("FizzBuzz"),
@@ -245,7 +246,7 @@ func TestCompiledCodeFizzBuzzMatch() {
 			OpLoadLit, 4, // pattern 1
 			OpMatch,
 			OpBranchFalse, 0, // label 0
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 3, // "FizzBuzz",
 			OpCall, 1,
 			OpEnd,
@@ -256,7 +257,7 @@ func TestCompiledCodeFizzBuzzMatch() {
 			OpLoadLit, 5, // pattern 2
 			OpMatch,
 			OpBranchFalse, 1, // label 1
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 3, // "FizzBuzz",
 			OpCall, 1,
 			OpEnd,
@@ -267,7 +268,7 @@ func TestCompiledCodeFizzBuzzMatch() {
 			OpLoadLit, 6, // pattern 3
 			OpMatch,
 			OpBranchFalse, 2, // label 2
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 3, // "FizzBuzz",
 			OpCall, 1,
 			OpEnd,
@@ -278,7 +279,7 @@ func TestCompiledCodeFizzBuzzMatch() {
 			OpLoadLit, 6, // pattern 3
 			OpMatch,
 			OpBranchFalse, 2, // label 3
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadArg, 0, // arg 1
 			OpCall, 1,
 			OpEnd,
@@ -311,6 +312,9 @@ func TestCompiledCodeFizzBuzzMatch() {
 */
 func TestCompiledCodeFizzBuzzCompare() {
 	code := CompiledCode{
+		Syms: []string{
+			"show",
+		},
 		Lits: []Value{
 			CreateValStr("show"),
 			CreateValStr("Fizz"),
@@ -322,7 +326,7 @@ func TestCompiledCodeFizzBuzzCompare() {
 			OpLoadInt, 3, // 3
 			OpEq,             // ==
 			OpBranchFalse, 0, // label 0
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 1, // "Fizz"
 			OpCall, 1,
 			OpJump, 4, // label 4
@@ -332,7 +336,7 @@ func TestCompiledCodeFizzBuzzCompare() {
 			OpLoadInt, 5, // 5
 			OpEq,             // ==
 			OpBranchFalse, 1, // label 1
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 2, // "Buzz"
 			OpCall, 1,
 			OpJump, 4, // label 4
@@ -342,13 +346,13 @@ func TestCompiledCodeFizzBuzzCompare() {
 			OpLoadInt, 15, // 15
 			OpEq,             // ==
 			OpBranchFalse, 2, // label 2
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadLit, 3, // "FizzBuzz"
 			OpCall, 1,
 			OpJump, 4, // label 4
 			OpLabel, 2,
 
-			OpLoadPrim, 0, // "show"
+			OpLoadLocal, 0, // "show"
 			OpLoadArg, 0, // arg 1
 			OpCall, 1,
 			OpJump, 4, // label 4
