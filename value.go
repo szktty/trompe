@@ -11,6 +11,7 @@ const (
 	ValTupleType
 	ValClosType
 	ValOptType
+	ValRangeType
 	ValPtnType
 	ValModRefType
 )
