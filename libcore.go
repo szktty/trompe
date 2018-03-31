@@ -2,7 +2,7 @@ package trompe
 
 import "fmt"
 
-func LibCorePrimShow(ctx *Context, args []Value, nargs int) (Value, error) {
+func LibCoreShow(ctx *Context, args []Value, nargs int) (Value, error) {
 	if err := ValidateArity(nil, 1, nargs); err != nil {
 		return nil, err
 	}
@@ -11,7 +11,7 @@ func LibCorePrimShow(ctx *Context, args []Value, nargs int) (Value, error) {
 }
 
 func InstallLibCore() {
-	SetPrim("show", LibCorePrimShow, 1)
+	SetPrim("show", LibCoreShow, 1)
 	m := NewModule(nil, "core")
 	m.AddPrim("show", "show")
 	AddTopModule(m)
