@@ -173,7 +173,7 @@ field
     ;
 
 anonfun
-    : '[' (parlist | unit)? 'in' block ']'
+    : '[' (parlist | unit)? 'in' stat* exp ']'
     ;
 
 statexp

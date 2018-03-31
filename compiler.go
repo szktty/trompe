@@ -229,7 +229,11 @@ func (c *codeComp) compile(node Node) {
 		for _, name := range node.Params.Names {
 			anonComp.addParam(name.Text)
 		}
-		anonComp.compile(&node.Block)
+		for _, stat := range node.Stats {
+			anonComp.compile(stat)
+		}
+		anonComp.compile(node.Exp)
+		anonComp.addOp(OpReturn)
 		code := anonComp.code()
 		val := CreateValClos(code)
 		c.addLit(val)

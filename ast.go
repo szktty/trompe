@@ -177,7 +177,8 @@ type AnonFunExpNode struct {
 	Close  Loc
 	Params *ParamListNode
 	In     Loc
-	Block  BlockNode
+	Stats  []StatNode
+	Exp    ExpNode
 }
 
 type PtnNode interface {
@@ -548,9 +549,14 @@ func (exp *AnonFunExpNode) Loc() *Loc {
 func (exp *AnonFunExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(anonfun ")
 	exp.Params.WriteTo(buf)
-	buf.WriteString(" ")
-	exp.Block.WriteTo(buf)
-	buf.WriteString(")")
+	buf.WriteString(" [")
+	fmt.Println(exp.Stats)
+	for _, stat := range exp.Stats {
+		stat.WriteTo(buf)
+		buf.WriteString(" ")
+	}
+	exp.Exp.WriteTo(buf)
+	buf.WriteString("])")
 }
 
 func (ptn *UnitPtnNode) Loc() *Loc {
