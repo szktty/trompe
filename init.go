@@ -14,7 +14,7 @@ func Init() {
 }
 
 func InstallPrims() {
-	SetPrim("show", LibCorePrimShow, 1)
+	SetPrim("show", LibCoreShow, 1)
 }
 
 func InstallModules() {
