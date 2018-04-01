@@ -6,7 +6,7 @@ import (
 
 type Primitive struct {
 	Func  PrimFun
-	Arity int
+	arity int
 }
 
 type PrimFun = func(*Context, []Value, int) (Value, error)
@@ -46,6 +46,10 @@ func (prim *Primitive) List() *List {
 
 func (prim *Primitive) Tuple() []Value {
 	panic("Prim")
+}
+
+func (prim *Primitive) Arity() int {
+	return prim.arity
 }
 
 func (prim *Primitive) Apply(interp *Interp, ctx *Context) (Value, error) {

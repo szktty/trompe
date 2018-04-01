@@ -7,6 +7,7 @@ import (
 )
 
 type Closure interface {
+	Arity() int
 	Apply(*Interp, *Context) (Value, error)
 }
 
@@ -211,6 +212,11 @@ func (code *CompiledCode) List() *List {
 
 func (code *CompiledCode) Tuple() []Value {
 	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Arity() int {
+	// TODO
+	return 0
 }
 
 func (code *CompiledCode) Apply(ip *Interp, ctx *Context) (Value, error) {
