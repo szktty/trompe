@@ -11,6 +11,7 @@ import (
 var debugModeOpt = flag.Bool("d", false, "debug mode")
 var verboseModeOpt = flag.Bool("v", false, "verbose mode")
 var versionModeOpt = flag.Bool("version", false, "print version")
+var syntaxOpt = flag.Bool("syntax", false, "check syntax only")
 var debugAstOpt = flag.Bool("debug-ast", false, "parse a file and print ast")
 
 func main() {
@@ -36,6 +37,12 @@ func main() {
 		file := flag.Arg(0)
 		node := parser.Parse(file)
 		fmt.Printf("%s\n", trompe.NodeDesc(node))
+		os.Exit(0)
+	}
+
+	if *syntaxOpt {
+		file := flag.Arg(0)
+		parser.Parse(file)
 		os.Exit(0)
 	}
 
