@@ -36,6 +36,7 @@ func main() {
 		file := flag.Arg(0)
 		node := parser.Parse(file)
 		fmt.Printf("%s\n", trompe.NodeDesc(node))
+		os.Exit(0)
 	}
 
 	if flag.Arg(0) == "test" {
