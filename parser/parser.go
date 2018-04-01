@@ -100,7 +100,7 @@ func (l *CallableListener) EnterCallable(ctx *CallableContext) {
 		var_ := NewVarExpListener()
 		ctx.Var_().EnterRule(var_)
 		l.Node = &var_.Node
-	} else {
+	} else if parenCtx := ctx.Parenexp(); parenCtx != nil {
 		exp := NewParenexpListener()
 		ctx.Parenexp().EnterRule(exp)
 		l.Node = exp.Node
