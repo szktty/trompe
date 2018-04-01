@@ -220,6 +220,9 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 				args[j] = stack.TopPop()
 			}
 			clos := stack.TopPop().Closure()
+			if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
+				return nil, err
+			}
 			newCtx := CreateContext(ctx, ctx.Module, ctx.Env, clos, args, i)
 			retVal, err = clos.Apply(ip, &newCtx)
 			stack.Push(retVal)
