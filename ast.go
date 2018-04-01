@@ -67,6 +67,16 @@ type ParamListNode struct {
 	Sep   []Loc
 }
 
+type ForStatNode struct {
+	For   Loc
+	In    Loc
+	Do    Loc
+	End   Loc
+	Ptn   PtnNode
+	Exp   ExpNode
+	Block BlockNode
+}
+
 type IfStatNode struct {
 	Cond       []IfCondNode
 	Else       *Loc
@@ -319,6 +329,20 @@ func (params *ParamListNode) NameStrs() []string {
 		nameStrs = append(nameStrs, tok.Text)
 	}
 	return nameStrs
+}
+
+func (stat *ForStatNode) Loc() *Loc {
+	return &stat.For
+}
+
+func (stat *ForStatNode) WriteTo(buf *bytes.Buffer) {
+	buf.WriteString("(for ")
+	stat.Ptn.WriteTo(buf)
+	buf.WriteString(" ")
+	stat.Exp.WriteTo(buf)
+	buf.WriteString(" ")
+	stat.Block.WriteTo(buf)
+	buf.WriteString(")")
 }
 
 func (stat *IfStatNode) Loc() *Loc {

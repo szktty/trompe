@@ -14,6 +14,7 @@ stat
     | fundef
     | funcall
     | doblock
+    | for_
     | if_
     | case_
     ;
@@ -37,6 +38,10 @@ fundef
 
 parlist
     : NAME (',' NAME)*
+    ;
+
+for_
+    : 'for' pattern 'in' exp 'do' block 'end'
     ;
 
 if_
