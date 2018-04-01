@@ -265,46 +265,6 @@ func (val *ValTuple) Tuple() []Value {
 	return val.Values
 }
 
-type ValClos struct {
-	Value Closure
-}
-
-func (val *ValClos) Type() int {
-	return ValClosType
-}
-
-func (val *ValClos) Desc() string {
-	return fmt.Sprintf("closure %p", val.Value)
-}
-
-func (val *ValClos) Bool() bool {
-	panic("Clos")
-}
-
-func (val *ValClos) Int() int {
-	panic("Clos")
-}
-
-func (val *ValClos) String() string {
-	panic("Clos")
-}
-
-func (val *ValClos) Closure() Closure {
-	return val.Value
-}
-
-func (val *ValClos) List() *List {
-	panic("Clos")
-}
-
-func (val *ValClos) Tuple() []Value {
-	panic("closure")
-}
-
-func CreateValClos(value Closure) *ValClos {
-	return &ValClos{value}
-}
-
 type ValOpt struct {
 	Value Value // nullable
 }

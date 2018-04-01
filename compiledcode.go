@@ -32,10 +32,6 @@ func (code *CompiledCode) AddLit(value Value) {
 	code.Lits = append(code.Lits, value)
 }
 
-func (code *CompiledCode) Apply(ip *Interp, ctx *Context) (Value, error) {
-	return ip.Eval(ctx, code)
-}
-
 func (code *CompiledCode) LiteralDesc(i int) string {
 	return code.Lits[i].Desc()
 }
@@ -183,6 +179,42 @@ func (code *CompiledCode) Inspect() string {
 		b.WriteString(s + "\n")
 	}
 	return b.String()
+}
+
+func (code *CompiledCode) Type() int {
+	return ValClosType
+}
+
+func (code *CompiledCode) Desc() string {
+	return fmt.Sprintf("CompiledCode %p", code)
+}
+
+func (code *CompiledCode) Bool() bool {
+	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Int() int {
+	panic("CompiledCode")
+}
+
+func (code *CompiledCode) String() string {
+	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Closure() Closure {
+	return code
+}
+
+func (code *CompiledCode) List() *List {
+	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Tuple() []Value {
+	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Apply(ip *Interp, ctx *Context) (Value, error) {
+	return ip.Eval(ctx, code)
 }
 
 /*

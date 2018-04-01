@@ -164,7 +164,7 @@ func (value *ObjectValue) Decode(file *ObjectFile) Value {
 	case ObjectValueTypeCode:
 		// TODO: error
 		id, _ := strconv.Atoi(value.Value)
-		return CreateValClos(file.CodeVals[id])
+		return file.CodeVals[id]
 	default:
 		panic("notimpl")
 	}

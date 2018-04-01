@@ -235,8 +235,7 @@ func (c *codeComp) compile(node Node) {
 		anonComp.compile(node.Exp)
 		anonComp.addOp(OpReturn)
 		code := anonComp.code()
-		val := CreateValClos(code)
-		c.addLit(val)
+		c.addLit(code)
 	default:
 		panic(fmt.Sprintf("unsupported node %p", node))
 	}
