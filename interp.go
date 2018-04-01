@@ -243,6 +243,8 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 
 	if err != nil {
 		return nil, err
+	} else if stack.Index < 0 {
+		return LangUnit, nil
 	} else {
 		return stack.Top(), nil
 	}
