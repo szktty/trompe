@@ -66,8 +66,10 @@ pattern
     | int_
     | float_
     | string_
+    | pattern rangeop pattern
     | '[' patlist? ']'
     | '(' patlist? ')'
+    | NAME
     ;
 
 patlist
@@ -101,6 +103,7 @@ exp
     | exp operatorAnd exp
     | exp operatorOr exp
     | exp operatorBitwise exp
+    | exp rangeop exp
     | parenexp
     ;
 
@@ -239,6 +242,11 @@ hexfloat
 
 string_
     : NORMALSTRING | CHARSTRING | LONGSTRING
+    ;
+
+rangeop
+    : '.' '.' '.'
+    | '.' '.' '<'
     ;
 
 // LEXER
