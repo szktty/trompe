@@ -40,6 +40,9 @@ func (l *BlockListener) EnterBlock(ctx *BlockContext) {
 	for _, statCtx := range ctx.AllStat() {
 		stat := NewStatListener()
 		statCtx.EnterRule(stat)
+		if stat.Node == nil {
+			panic(fmt.Sprintf("stat not found: %s", statCtx.GetText()))
+		}
 		stats = append(stats, stat.Node)
 	}
 	l.Node = BlockNode{Stats: stats}
@@ -55,11 +58,44 @@ func NewStatListener() *StatListener {
 }
 
 func (l *StatListener) EnterStat(ctx *StatContext) {
+	fmt.Printf("enter stat\n")
 	if funcallCtx := ctx.Funcall(); funcallCtx != nil {
 		funcall := NewFuncallListener()
 		funcallCtx.EnterRule(funcall)
 		l.Node = &funcall.Node
+	} else if forCtx := ctx.For_(); forCtx != nil {
+		for_ := NewForStatListener()
+		forCtx.EnterRule(for_)
+		l.Node = &for_.Node
+	} else {
+		panic("not impl")
 	}
+}
+
+type ForStatListener struct {
+	*BaseTrompeListener
+	Node ForStatNode
+}
+
+func NewForStatListener() *ForStatListener {
+	return new(ForStatListener)
+}
+
+func (l *ForStatListener) EnterFor_(ctx *For_Context) {
+	fmt.Printf("enter for\n")
+	/*
+		ptn:= NewPatternListener()
+		ctx.Pattern().EnterRule(ptn)
+	*/
+
+	exp := NewExpListener()
+	ctx.Exp().EnterRule(exp)
+
+	block := NewBlockListener()
+	ctx.Block().EnterRule(block)
+
+	// TODO: pattern
+	l.Node = ForStatNode{Exp: exp.Node, Block: block.Node}
 }
 
 type FuncallListener struct {
@@ -73,38 +109,17 @@ func NewFuncallListener() *FuncallListener {
 
 func (l *FuncallListener) EnterFuncall(ctx *FuncallContext) {
 	fmt.Printf("enter funcall\n")
-	callable := NewCallableListener()
-	ctx.Callable().EnterRule(callable)
+	exp := NewSimpleExpListener()
+	ctx.Simpleexp().EnterRule(exp)
 
 	// TODO: '(', ')'
+	fmt.Printf("arglist\n")
 	args := NewArglistListener()
 	if argsCtx := ctx.Arglist(); argsCtx != nil {
 		argsCtx.EnterRule(args)
 	}
 
-	l.Node = FunCallExpNode{Callable: callable.Node, Args: args.Node}
-}
-
-type CallableListener struct {
-	*BaseTrompeListener
-	Node ExpNode
-}
-
-func NewCallableListener() *CallableListener {
-	return new(CallableListener)
-}
-
-func (l *CallableListener) EnterCallable(ctx *CallableContext) {
-	fmt.Printf("enter callable\n")
-	if varCtx := ctx.Var_(); varCtx != nil {
-		var_ := NewVarExpListener()
-		ctx.Var_().EnterRule(var_)
-		l.Node = &var_.Node
-	} else if parenCtx := ctx.Parenexp(); parenCtx != nil {
-		exp := NewParenexpListener()
-		ctx.Parenexp().EnterRule(exp)
-		l.Node = exp.Node
-	}
+	l.Node = FunCallExpNode{Callable: exp.Node, Args: args.Node}
 }
 
 type ArglistListener struct {
@@ -135,6 +150,7 @@ func NewExplistListener() *ExplistListener {
 }
 
 func (l *ExplistListener) EnterExplist(ctx *ExplistContext) {
+	fmt.Printf("enter explist\n")
 	var exps []Node
 	for _, expCtx := range ctx.AllExp() {
 		exp := NewExpListener()
@@ -156,11 +172,14 @@ func NewExpListener() *ExpListener {
 func (l *ExpListener) EnterExp(ctx *ExpContext) {
 	// TODO
 	fmt.Printf("enter exp: %s\n", ctx.GetText())
-
-	if strCtx := ctx.String_(); strCtx != nil {
-		str := NewStringListener()
-		strCtx.EnterRule(str)
-		l.Node = &str.Node
+	if expCtx := ctx.Simpleexp(); expCtx != nil {
+		exp := NewSimpleExpListener()
+		expCtx.EnterRule(exp)
+		l.Node = exp.Node
+	} else if ctx.Rangeop() != nil {
+		fmt.Printf("enter range\n")
+	} else {
+		panic("not impl")
 	}
 }
 
@@ -180,6 +199,44 @@ func (l *ParenexpListener) EnterParenexp(ctx *ParenexpContext) {
 	l.Node = exp.Node
 }
 
+type SimpleExpListener struct {
+	*BaseTrompeListener
+	Node ExpNode
+}
+
+func NewSimpleExpListener() *SimpleExpListener {
+	return new(SimpleExpListener)
+}
+
+func (l *SimpleExpListener) EnterSimpleexp(ctx *SimpleexpContext) {
+	// TODO
+	fmt.Printf("enter simpleexp: %s\n", ctx.GetText())
+	fmt.Printf("int %s\n", ctx.Int_())
+	fmt.Printf("int %s\n", ctx.Hexint())
+	fmt.Printf("float %s\n", ctx.Float_())
+	fmt.Printf("float %s\n", ctx.Hexfloat())
+
+	if parenCtx := ctx.Parenexp(); parenCtx != nil {
+		exp := NewParenexpListener()
+		ctx.Parenexp().EnterRule(exp)
+		l.Node = exp.Node
+	} else if varCtx := ctx.Var_(); varCtx != nil {
+		var_ := NewVarExpListener()
+		ctx.Var_().EnterRule(var_)
+		l.Node = &var_.Node
+	} else if intCtx := ctx.Int_(); intCtx != nil {
+		int_ := NewIntListener()
+		intCtx.EnterRule(int_)
+		l.Node = &int_.Node
+	} else if strCtx := ctx.String_(); strCtx != nil {
+		str := NewStringListener()
+		strCtx.EnterRule(str)
+		l.Node = &str.Node
+	} else {
+		panic("not impl")
+	}
+}
+
 type VarExpListener struct {
 	*BaseTrompeListener
 	Node VarExpNode
@@ -193,6 +250,20 @@ func (l *VarExpListener) EnterVar_(ctx *Var_Context) {
 	// TODO
 	fmt.Printf("enter var\n")
 	l.Node = NewVarExpNode(NewTokenAntlr(ctx.GetStart()))
+}
+
+type IntListener struct {
+	*BaseTrompeListener
+	Node IntExpNode
+}
+
+func NewIntListener() *IntListener {
+	return new(IntListener)
+}
+
+func (l *IntListener) EnterInt_(ctx *Int_Context) {
+	fmt.Printf("enter int\n")
+	l.Node = IntExpNode{Value: NewTokenAntlr(ctx.GetStart())}
 }
 
 type StringListener struct {

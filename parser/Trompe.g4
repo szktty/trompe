@@ -76,11 +76,27 @@ patlist
     : pattern (',' pattern)*
     ;
 
-explist
-    : exp (',' exp)*
+exp
+    : simpleexp
+    | funcall
+    /*
+    | <assoc=right> exp operatorPower exp
+    | operatorUnary exp
+    | exp operatorMulDivMod exp
+    | exp operatorAddSub exp
+    | exp operatorComparison exp
+    | exp operatorAnd exp
+    | exp operatorOr exp
+    | exp operatorBitwise exp
+    */
+    | exp rangeop exp
     ;
 
-exp
+parenexp
+    : o='(' exp c=')'
+    ;
+
+simpleexp
     : unit
     | bool_
     | int_
@@ -88,72 +104,33 @@ exp
     | float_
     | hexfloat
     | string_
-    | prefixexp
     | list
     | tuple
     | tableconstructor
     | anonfun
     | statexp
-    | <assoc=right> exp operatorPower exp
-    | operatorUnary exp
-    | exp operatorMulDivMod exp
-    | exp operatorAddSub exp
-    | <assoc=right> exp operatorStrcat exp
-    | exp operatorComparison exp
-    | exp operatorAnd exp
-    | exp operatorOr exp
-    | exp operatorBitwise exp
-    | exp rangeop exp
+    | var_
     | parenexp
-    ;
-
-parenexp
-    : o='(' exp c=')'
-    ;
-
-prefixexp
-    : callable nameAndArgs*
     ;
 
 funcall
-    : callable arglist
+    : simpleexp arglist
     ;
 
-callable
-    : var_
-    | parenexp
+arglist
+    : '(' explist? ')'
+    ;
+
+explist
+    : exp (',' exp)*
     ;
 
 var_
-    : (modulepath | '(' exp ')' var_Suffix) var_Suffix*
+    : modulepath
     ;
 
 modulepath
     : NAME ('.' NAME)*
-    ;
-
-var_Suffix
-    : nameAndArgs* ('[' exp ']' | '.' NAME)
-    ;
-
-nameAndArgs
-    : (':' NAME)? arglist
-    ;
-
-/*
-var_
-    : NAME | prefixexp '[' exp ']' | prefixexp '.' NAME
-    ;
-prefixexp
-    : var_ | funcall | '(' exp ')'
-    ;
-funcall
-    : prefixexp args | prefixexp ':' NAME args
-    ;
-*/
-
-arglist
-    : '(' explist? ')'
     ;
 
 list
@@ -196,9 +173,6 @@ operatorAnd
 
 operatorComparison
 	: '<' | '>' | '<=' | '>=' | '~=' | '==';
-
-operatorStrcat
-	: '..';
 
 operatorAddSub
 	: '+' | '-';
@@ -282,15 +256,18 @@ HEX
     ;
 
 FLOAT
-    : Digit+ '.' Digit* ExponentPart?
-    | '.' Digit+ ExponentPart?
-    | Digit+ ExponentPart
+    : Digit+ Fraction? ExponentPart?
     ;
 
 HEX_FLOAT
     : '0' [xX] HexDigit+ '.' HexDigit* HexExponentPart?
     | '0' [xX] '.' HexDigit+ HexExponentPart?
     | '0' [xX] HexDigit+ HexExponentPart
+    ;
+
+fragment
+Fraction
+    : '.' Digit+
     ;
 
 fragment

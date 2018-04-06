@@ -337,9 +337,9 @@ func (stat *ForStatNode) Loc() *Loc {
 
 func (stat *ForStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(for ")
-	stat.Ptn.WriteTo(buf)
+	//stat.Ptn.WriteTo(buf)
 	buf.WriteString(" ")
-	stat.Exp.WriteTo(buf)
+	//stat.Exp.WriteTo(buf)
 	buf.WriteString(" ")
 	stat.Block.WriteTo(buf)
 	buf.WriteString(")")
