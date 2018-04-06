@@ -191,6 +191,13 @@ type AnonFunExpNode struct {
 	Exp    ExpNode
 }
 
+type RangeNode struct {
+	Left  ExpNode
+	Op    Token
+	Close bool
+	Right ExpNode
+}
+
 type PtnNode interface {
 	Node
 }
@@ -337,9 +344,9 @@ func (stat *ForStatNode) Loc() *Loc {
 
 func (stat *ForStatNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(for ")
-	//stat.Ptn.WriteTo(buf)
+	stat.Ptn.WriteTo(buf)
 	buf.WriteString(" ")
-	//stat.Exp.WriteTo(buf)
+	stat.Exp.WriteTo(buf)
 	buf.WriteString(" ")
 	stat.Block.WriteTo(buf)
 	buf.WriteString(")")
@@ -581,6 +588,18 @@ func (exp *AnonFunExpNode) WriteTo(buf *bytes.Buffer) {
 	}
 	exp.Exp.WriteTo(buf)
 	buf.WriteString("])")
+}
+
+func (exp *RangeNode) Loc() *Loc {
+	return exp.Left.Loc()
+}
+
+func (exp *RangeNode) WriteTo(buf *bytes.Buffer) {
+	buf.WriteString("(range ")
+	exp.Left.WriteTo(buf)
+	buf.WriteString(fmt.Sprintf(" %s ", exp.Op.Text))
+	exp.Right.WriteTo(buf)
+	buf.WriteString(")")
 }
 
 func (ptn *UnitPtnNode) Loc() *Loc {

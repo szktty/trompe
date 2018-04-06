@@ -83,10 +83,8 @@ func NewForStatListener() *ForStatListener {
 
 func (l *ForStatListener) EnterFor_(ctx *For_Context) {
 	fmt.Printf("enter for\n")
-	/*
-		ptn:= NewPatternListener()
-		ctx.Pattern().EnterRule(ptn)
-	*/
+	ptn := NewPatternListener()
+	ctx.Pattern().EnterRule(ptn)
 
 	exp := NewExpListener()
 	ctx.Exp().EnterRule(exp)
@@ -278,6 +276,33 @@ func NewStringListener() *StringListener {
 func (l *StringListener) EnterString_(ctx *String_Context) {
 	fmt.Printf("enter string\n")
 	l.Node = StrExpNode{Value: NewTokenAntlr(ctx.GetStart())}
+}
+
+type PatternListener struct {
+	*BaseTrompeListener
+	Node PtnNode
+}
+
+func NewPatternListener() *PatternListener {
+	return new(PatternListener)
+}
+
+func (l *PatternListener) EnterPattern(ctx *PatternContext) {
+	fmt.Printf("enter pattern: %s\n", ctx.GetText())
+
+	if varCtx := ctx.NAME(); varCtx != nil {
+		l.Node = &VarExpNode{NewTokenAntlr(ctx.GetStart())}
+	} else if intCtx := ctx.Int_(); intCtx != nil {
+		int_ := NewIntListener()
+		intCtx.EnterRule(int_)
+		l.Node = &int_.Node
+	} else if strCtx := ctx.String_(); strCtx != nil {
+		str := NewStringListener()
+		strCtx.EnterRule(str)
+		l.Node = &str.Node
+	} else {
+		panic("not impl")
+	}
 }
 
 func Parse(file string) Node {
