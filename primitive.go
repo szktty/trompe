@@ -48,6 +48,10 @@ func (prim *Primitive) Tuple() []Value {
 	panic("Prim")
 }
 
+func (prim *Primitive) Iter() ValIter {
+	return nil
+}
+
 func (prim *Primitive) Arity() int {
 	return prim.arity
 }

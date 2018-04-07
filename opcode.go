@@ -50,6 +50,7 @@ const (
 	OpTuple // length
 	OpClosedRange
 	OpHalfOpenRange
+	OpIter
 )
 
 func GetOpName(op int) string {
@@ -144,6 +145,8 @@ func GetOpName(op int) string {
 		return "OpClosedRange"
 	case OpHalfOpenRange:
 		return "OpHalfOpenRange"
+	case OpIter:
+		return "OpIter"
 	default:
 		panic("unknown opcode")
 	}

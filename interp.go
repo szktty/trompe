@@ -110,9 +110,14 @@ func (pc *ProgCounter) Next() int {
 
 func (pc *ProgCounter) AddLabel(n int) {
 	pc.Labels[n] = pc.Count
+	fmt.Printf("# label[%d] = %d\n", n, pc.Count)
 }
 
 func (pc *ProgCounter) Jump(n int) {
+	if _, ok := pc.Labels[n]; !ok {
+		panic("not exists")
+	}
+	fmt.Printf("jump %p\n", pc.Labels[n])
 	pc.Count = pc.Labels[n]
 }
 
@@ -135,7 +140,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 	args := make([]Value, 16)
 	for cont && pc.HasNext() {
 		op = pc.Next()
-		fmt.Printf("next op: %s\n", GetOpName(op))
+		fmt.Printf("%d: next op: %s\n", pc.Count, GetOpName(op))
 		stack.Inspect()
 		switch op {
 		case OpNop:
@@ -201,16 +206,37 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			pc.Jump(i)
 		case OpBranchTrue:
 			i = pc.Next()
-			top = stack.Top()
+			top = stack.TopPop()
 			if top.Bool() {
 				pc.Jump(i)
 			}
 		case OpBranchFalse:
 			i = pc.Next()
-			top = stack.Top()
+			top = stack.TopPop()
 			if !top.Bool() {
 				pc.Jump(i)
 			}
+		case OpBranchNext:
+			i = pc.Next()
+			top = stack.Top()
+			iter := top.Iter()
+			if iter == nil {
+				panic("not iter")
+			}
+			if next := iter.Next(); next != nil {
+				stack.Push(next)
+			} else {
+				stack.Pop() // pop iterator
+				fmt.Printf("branch next -> %d\n", i)
+				pc.Jump(i)
+			}
+		case OpIter:
+			top = stack.TopPop()
+			iter := NewValIter(top)
+			if iter == nil {
+				panic("cannot get iterator")
+			}
+			stack.Push(iter)
 		case OpBegin:
 			env = NewEnv(env)
 		case OpEnd:
@@ -240,11 +266,11 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpClosedRange:
 			right := stack.TopPop()
 			left := stack.TopPop()
-			stack.Push(NewRange(right.Int(), left.Int(), true))
+			stack.Push(NewRange(left.Int(), right.Int(), true))
 		case OpHalfOpenRange:
 			right := stack.TopPop()
 			left := stack.TopPop()
-			stack.Push(NewRange(right.Int(), left.Int(), false))
+			stack.Push(NewRange(left.Int(), right.Int(), false))
 		default:
 			panic("unsupported opcode")
 		}

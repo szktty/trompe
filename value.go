@@ -26,6 +26,7 @@ type Value interface {
 	Tuple() []Value
 	Closure() Closure
 	// Pattern() Pattern
+	Iter() ValIter
 }
 
 type ValUnit struct{}
@@ -44,6 +45,20 @@ type ValStr struct {
 
 type ValTuple struct {
 	Values []Value
+}
+
+type ValIter interface {
+	Value
+	Next() Value
+}
+
+func NewValIter(val Value) ValIter {
+	switch val := val.(type) {
+	case *Range:
+		return val.NewValIter()
+	default:
+		panic("unsupported")
+	}
 }
 
 var LangUnit = &ValUnit{}
@@ -83,6 +98,10 @@ func (val *ValUnit) Tuple() []Value {
 	panic("unit")
 }
 
+func (val *ValUnit) Iter() ValIter {
+	return nil
+}
+
 func (val *ValBool) Type() int {
 	return ValBoolType
 }
@@ -119,6 +138,10 @@ func (val *ValBool) Tuple() []Value {
 	panic("bool")
 }
 
+func (val *ValBool) Iter() ValIter {
+	return nil
+}
+
 func (val *ValInt) Type() int {
 	return ValIntType
 }
@@ -149,6 +172,10 @@ func (val *ValInt) List() *List {
 
 func (val *ValInt) Tuple() []Value {
 	panic("int")
+}
+
+func (val *ValInt) Iter() ValIter {
+	return nil
 }
 
 func (val *ValStr) Type() int {
@@ -187,6 +214,10 @@ func (val *ValStr) Tuple() []Value {
 	panic("string")
 }
 
+func (val *ValStr) Iter() ValIter {
+	return nil
+}
+
 type ValList struct {
 	Value *List
 }
@@ -222,6 +253,11 @@ func (val *ValList) List() *List {
 
 func (val *ValList) Tuple() []Value {
 	panic("list")
+}
+
+func (val *ValList) Iter() ValIter {
+	// TODO
+	return nil
 }
 
 func NewValList(value *List) *ValList {
@@ -265,6 +301,10 @@ func (val *ValTuple) Tuple() []Value {
 	return val.Values
 }
 
+func (val *ValTuple) Iter() ValIter {
+	return nil
+}
+
 type ValOpt struct {
 	Value Value // nullable
 }
@@ -305,6 +345,10 @@ func (val *ValOpt) Tuple() []Value {
 	panic("Opt")
 }
 
+func (val *ValOpt) Iter() ValIter {
+	return nil
+}
+
 type ValPtn struct {
 	Value Pattern
 }
@@ -343,6 +387,10 @@ func (val *ValPtn) List() *List {
 
 func (val *ValPtn) Tuple() []Value {
 	panic("Pattern")
+}
+
+func (val *ValPtn) Iter() ValIter {
+	return nil
 }
 
 type ValModRef struct {
@@ -395,4 +443,8 @@ func (val *ValModRef) Module() *Module {
 		val.Cache = GetModule(val.Path)
 	}
 	return val.Cache
+}
+
+func (val *ValModRef) Iter() ValIter {
+	return nil
 }

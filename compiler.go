@@ -176,6 +176,7 @@ func (c *codeComp) compile(node Node) {
 		beginL := c.newLabel()
 		endL := c.newLabel()
 		c.compile(node.Exp)
+		c.addOp(OpIter)
 		c.addLabel(beginL)
 		c.addOp(OpBranchNext)
 		c.addOp(endL)

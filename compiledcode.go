@@ -182,6 +182,8 @@ func (code *CompiledCode) Inspect() string {
 			s += fmt.Sprintf("create closed range")
 		case OpHalfOpenRange:
 			s += fmt.Sprintf("create half-open range")
+		case OpIter:
+			s += fmt.Sprintf("create iterator")
 		default:
 			panic(fmt.Sprintf("unknown opcode %d", code.Ops[pc]))
 		}
@@ -220,6 +222,10 @@ func (code *CompiledCode) List() *List {
 
 func (code *CompiledCode) Tuple() []Value {
 	panic("CompiledCode")
+}
+
+func (code *CompiledCode) Iter() ValIter {
+	return nil
 }
 
 func (code *CompiledCode) Arity() int {
