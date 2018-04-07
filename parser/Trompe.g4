@@ -89,7 +89,7 @@ exp
     | exp operatorOr exp
     | exp operatorBitwise exp
     */
-    | exp rangeop exp
+    | left=exp rangeop right=exp
     ;
 
 parenexp
@@ -219,8 +219,8 @@ string_
     ;
 
 rangeop
-    : '.' '.' '.'
-    | '.' '.' '<'
+    : '...'
+    | '..<'
     ;
 
 // LEXER

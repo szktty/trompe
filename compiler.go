@@ -56,6 +56,20 @@ func (c *codeComp) addOp(op int) {
 	c.ops = append(c.ops, op)
 }
 
+func (c *codeComp) addOpJump(label int) {
+	c.addOp(OpJump)
+	c.addOp(label)
+}
+
+func (c *codeComp) addOpBranch(flag bool, label int) {
+	if flag {
+		c.addOp(OpBranchTrue)
+	} else {
+		c.addOp(OpBranchFalse)
+	}
+	c.addOp(label)
+}
+
 func (c *codeComp) addSym(name string) int {
 	for i, name1 := range c.syms {
 		if name1 == name {
@@ -100,9 +114,11 @@ func (c *codeComp) compile(node Node) {
 	case *ChunkNode:
 		c.compile(node.Block)
 	case *BlockNode:
+		c.addOp(OpBegin)
 		for _, stat := range node.Stats {
 			c.compile(stat)
 		}
+		c.addOp(OpEnd)
 	case *LetStatNode:
 		c.compile(node.Ptn)
 		c.compile(node.Exp)
@@ -155,6 +171,17 @@ func (c *codeComp) compile(node Node) {
 		if node.Else != nil {
 			c.compile(node.ElseAction)
 		}
+		c.addLabel(endL)
+	case *ForStatNode:
+		beginL := c.newLabel()
+		endL := c.newLabel()
+		c.compile(node.Exp)
+		c.addLabel(beginL)
+		c.addOp(OpBranchNext)
+		c.addOp(endL)
+		c.compile(node.Ptn)
+		c.compile(&node.Block)
+		c.addOpJump(beginL)
 		c.addLabel(endL)
 	case *RetStatNode:
 		if node.Exp == nil {
@@ -236,14 +263,18 @@ func (c *codeComp) compile(node Node) {
 		anonComp.addOp(OpReturn)
 		code := anonComp.code()
 		c.addLit(code)
+	case *RangeNode:
+		c.compile(node.Left)
+		c.compile(node.Right)
+		c.addOp(OpRange)
 	default:
-		panic(fmt.Sprintf("unsupported node %p", node))
+		panic(fmt.Sprintf("unsupported node %s", NodeDesc(node)))
 	}
 }
 
 func Compile(path string, node Node) *CompiledCode {
 	comp := &compiler{path: path}
-	codeComp := &codeComp{comp: comp}
+	codeComp := createCodeComp(comp)
 	codeComp.compile(node)
 	return codeComp.code()
 }

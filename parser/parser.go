@@ -93,7 +93,7 @@ func (l *ForStatListener) EnterFor_(ctx *For_Context) {
 	ctx.Block().EnterRule(block)
 
 	// TODO: pattern
-	l.Node = ForStatNode{Exp: exp.Node, Block: block.Node}
+	l.Node = ForStatNode{Ptn: ptn.Node, Exp: exp.Node, Block: block.Node}
 }
 
 type FuncallListener struct {
@@ -174,11 +174,45 @@ func (l *ExpListener) EnterExp(ctx *ExpContext) {
 		exp := NewSimpleExpListener()
 		expCtx.EnterRule(exp)
 		l.Node = exp.Node
-	} else if ctx.Rangeop() != nil {
+	} else if opCtx := ctx.Rangeop(); opCtx != nil {
 		fmt.Printf("enter range\n")
+		op := NewRangeOpListener()
+		opCtx.EnterRule(op)
+		left := NewExpListener()
+		leftCtx := ctx.GetLeft()
+		leftCtx.EnterRule(left)
+		rightCtx := ctx.GetRight()
+		right := NewExpListener()
+		rightCtx.EnterRule(right)
+		l.Node = &RangeNode{Left: left.Node,
+			Op:    op.Token,
+			Close: op.Close,
+			Right: right.Node}
 	} else {
 		panic("not impl")
 	}
+}
+
+type RangeOpListener struct {
+	*BaseTrompeListener
+	Token Token
+	Close bool
+}
+
+func NewRangeOpListener() *RangeOpListener {
+	return new(RangeOpListener)
+}
+
+func (l *RangeOpListener) EnterRangeop(ctx *RangeopContext) {
+	switch ctx.GetText() {
+	case "...":
+		l.Close = false
+	case "..<":
+		l.Close = true
+	default:
+		panic("invalid token")
+	}
+	l.Token = NewTokenAntlr(ctx.GetStart())
 }
 
 type ParenexpListener struct {

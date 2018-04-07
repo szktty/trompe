@@ -29,6 +29,7 @@ const (
 	OpJump        // index
 	OpBranchTrue  // index
 	OpBranchFalse // index
+	OpBranchNext  // label
 	OpBegin
 	OpEnd
 	OpCall // length
@@ -47,6 +48,7 @@ const (
 	OpSome
 	OpList  // length
 	OpTuple // length
+	OpRange
 )
 
 func GetOpName(op int) string {
@@ -99,6 +101,8 @@ func GetOpName(op int) string {
 		return "OpBranchTrue"
 	case OpBranchFalse:
 		return "OpBranchFalse"
+	case OpBranchNext:
+		return "OpBranchNext"
 	case OpBegin:
 		return "OpBegin"
 	case OpEnd:
@@ -135,6 +139,8 @@ func GetOpName(op int) string {
 		return "OpList"
 	case OpTuple:
 		return "OpTuple"
+	case OpRange:
+		return "OpRange"
 	default:
 		panic("unknown opcode")
 	}

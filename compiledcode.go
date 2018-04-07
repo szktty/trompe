@@ -132,6 +132,10 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("branch false L%d", i)
+		case OpBranchNext:
+			i := code.Ops[pc+1]
+			pc++
+			s += fmt.Sprintf("branch next L%d", i)
 		case OpBegin:
 			s += "begin block"
 		case OpEnd:
@@ -174,6 +178,8 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("create tuple %d", i)
+		case OpRange:
+			s += fmt.Sprintf("create range")
 		default:
 			panic(fmt.Sprintf("unknown opcode %d", code.Ops[pc]))
 		}
