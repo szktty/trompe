@@ -11,7 +11,7 @@ type Context struct {
 	Env     *Env
 }
 
-func CreateContext(parent *Context,
+func NewContext(parent *Context,
 	module *Module,
 	env *Env,
 	clos Closure,
@@ -28,7 +28,7 @@ func CreateContext(parent *Context,
 }
 
 func (ctx *Context) NewBlock() *Context {
-	newCtx := CreateContext(ctx,
+	newCtx := NewContext(ctx,
 		ctx.Module,
 		ctx.Env,
 		ctx.Clos,
@@ -42,7 +42,7 @@ type Stack struct {
 	Index  int // -1 start
 }
 
-func CreateStack(len int) Stack {
+func NewStack(len int) Stack {
 	return Stack{Locals: make([]Value, len), Index: -1}
 }
 
@@ -108,7 +108,7 @@ type ProgCounter struct {
 	Labels map[int]int
 }
 
-func CreateProgCounter(code *CompiledCode) ProgCounter {
+func NewProgCounter(code *CompiledCode) ProgCounter {
 	return ProgCounter{Count: 0, Code: code, Labels: make(map[int]int, 16)}
 }
 
@@ -142,9 +142,9 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 	var top Value
 	var retVal Value
 	var err error
-	pc := CreateProgCounter(code)
+	pc := NewProgCounter(code)
 	cont := true
-	stack := CreateStack(16)
+	stack := NewStack(16)
 	args := make([]Value, 16)
 	for cont && pc.HasNext() {
 		op = pc.Next()
@@ -170,7 +170,7 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			name := code.Syms[i]
 			value := ctx.Env.Get(name)
 			if value == nil {
-				err = CreateKeyError(ctx, name)
+				err = NewKeyError(ctx, name)
 				break
 			}
 			stack.Push(value)
@@ -181,7 +181,7 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			m := ref.Module()
 			attr := m.Env.Get(name)
 			if attr == nil {
-				err = CreateKeyError(ctx, name)
+				err = NewKeyError(ctx, name)
 				break
 			}
 			stack.Push(attr)
@@ -237,19 +237,19 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
 				return nil, err
 			}
-			newCtx := CreateContext(ctx, ctx.Module, ctx.Env, clos, args, i)
+			newCtx := NewContext(ctx, ctx.Module, ctx.Env, clos, args, i)
 			retVal, err = clos.Apply(ip, &newCtx)
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()
-			stack.Push(CreateValOpt(top))
+			stack.Push(NewValOpt(top))
 		case OpList:
 			i = pc.Next()
 			list := ListNil
 			for j := 0; j < i; j++ {
 				list = list.Cons(stack.TopPop())
 			}
-			stack.Push(CreateValList(list))
+			stack.Push(NewValList(list))
 		case OpClosedRange:
 			right := stack.TopPop()
 			left := stack.TopPop()

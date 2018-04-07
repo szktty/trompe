@@ -20,7 +20,7 @@ type compiler struct {
 	path string
 }
 
-func createCodeComp(comp *compiler) *codeComp {
+func newCodeComp(comp *compiler) *codeComp {
 	return &codeComp{
 		comp:     comp,
 		syms:     make([]string, 0),
@@ -33,7 +33,7 @@ func createCodeComp(comp *compiler) *codeComp {
 }
 
 func (c *codeComp) newCodeComp() *codeComp {
-	new := createCodeComp(c.comp)
+	new := newCodeComp(c.comp)
 	return new
 }
 
@@ -93,7 +93,7 @@ func (c *codeComp) addStr(s string) int {
 			}
 		}
 	}
-	return c.addLit(CreateValStr(s))
+	return c.addLit(NewValStr(s))
 }
 
 func (c *codeComp) addFun(name string, comp *codeComp) {
@@ -252,7 +252,7 @@ func (c *codeComp) compile(node Node) {
 	case *NoneExpNode:
 		c.addOp(OpLoadNone)
 	case *AnonFunExpNode:
-		anonComp := createCodeComp(c.comp)
+		anonComp := newCodeComp(c.comp)
 		for _, name := range node.Params.Names {
 			anonComp.addParam(name.Text)
 		}
@@ -278,7 +278,7 @@ func (c *codeComp) compile(node Node) {
 
 func Compile(path string, node Node) *CompiledCode {
 	comp := &compiler{path: path}
-	codeComp := createCodeComp(comp)
+	codeComp := newCodeComp(comp)
 	codeComp.compile(node)
 	return codeComp.code()
 }

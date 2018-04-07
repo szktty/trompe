@@ -25,7 +25,7 @@ func ErrorName(ty int) string {
 	}
 }
 
-func CreateRuntimeError(ctx *Context, ty int, reason string) *RuntimeError {
+func NewRuntimeError(ctx *Context, ty int, reason string) *RuntimeError {
 	return &RuntimeError{ctx, ty, reason}
 }
 
@@ -33,18 +33,18 @@ func (err *RuntimeError) Error() string {
 	return fmt.Sprintf("%s: %s", ErrorName(err.Type), err.Reason)
 }
 
-func CreateInvalidArityError(ctx *Context, nargs int) *RuntimeError {
-	return CreateRuntimeError(ctx, InvalidArityError, "")
+func NewInvalidArityError(ctx *Context, nargs int) *RuntimeError {
+	return NewRuntimeError(ctx, InvalidArityError, "")
 }
 
-func CreateKeyError(ctx *Context, name string) *RuntimeError {
-	return CreateRuntimeError(ctx, KeyError,
+func NewKeyError(ctx *Context, name string) *RuntimeError {
+	return NewRuntimeError(ctx, KeyError,
 		fmt.Sprintf("key %s not found", name))
 }
 
 func ValidateArity(ctx *Context, expected int, actual int) *RuntimeError {
 	if expected != actual {
-		return CreateRuntimeError(ctx,
+		return NewRuntimeError(ctx,
 			InvalidArityError,
 			fmt.Sprintf("invalid arity (takes %d, but %d given)", expected, actual))
 	} else {

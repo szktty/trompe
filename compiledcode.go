@@ -240,8 +240,8 @@ func TestCompiledCodeHelloWorld() {
 			"show",
 		},
 		Lits: []Value{
-			CreateValStr("show"),
-			CreateValStr("Hello, world!"),
+			NewValStr("show"),
+			NewValStr("Hello, world!"),
 		},
 		Ops: []int{
 			OpLoadLocal, 0, // "show"
@@ -253,7 +253,7 @@ func TestCompiledCodeHelloWorld() {
 	fmt.Println(code.Inspect())
 
 	ip := NewInterp()
-	ctx := CreateContext(nil, nil, nil, &code, nil, 0)
+	ctx := NewContext(nil, nil, nil, &code, nil, 0)
 	ip.Eval(&ctx, &code)
 }
 
@@ -272,12 +272,12 @@ func TestCompiledCodeFizzBuzzMatch() {
 			"show",
 		},
 		Lits: []Value{
-			CreateValStr("Fizz"),
-			CreateValStr("Buzz"),
-			CreateValStr("FizzBuzz"),
-			CreateValPtn(CreatePtnTuple(&PtnInt{0}, &PtnInt{0})),
-			CreateValPtn(CreatePtnTuple(&PtnInt{0}, PtnWildcard)),
-			CreateValPtn(CreatePtnTuple(PtnWildcard, &PtnInt{0})),
+			NewValStr("Fizz"),
+			NewValStr("Buzz"),
+			NewValStr("FizzBuzz"),
+			NewValPtn(NewPtnTuple(&PtnInt{0}, &PtnInt{0})),
+			NewValPtn(NewPtnTuple(&PtnInt{0}, PtnWildcard)),
+			NewValPtn(NewPtnTuple(PtnWildcard, &PtnInt{0})),
 		},
 		Ops: []int{
 			OpLoadArg, 0,
@@ -340,7 +340,7 @@ func TestCompiledCodeFizzBuzzMatch() {
 
 	/*
 		prog := Program{}
-		ctx := CreateContext(nil, &code, nil, 0)
+		ctx := NewContext(nil, &code, nil, 0)
 		prog.Eval(&ctx)
 	*/
 }
@@ -362,10 +362,10 @@ func TestCompiledCodeFizzBuzzCompare() {
 			"show",
 		},
 		Lits: []Value{
-			CreateValStr("show"),
-			CreateValStr("Fizz"),
-			CreateValStr("Buzz"),
-			CreateValStr("FizzBuzz"),
+			NewValStr("show"),
+			NewValStr("Fizz"),
+			NewValStr("Buzz"),
+			NewValStr("FizzBuzz"),
 		},
 		Ops: []int{
 			OpLoadArg, 0, // arg 1
@@ -412,7 +412,7 @@ func TestCompiledCodeFizzBuzzCompare() {
 
 	/*
 		prog := Program{}
-		ctx := CreateContext(nil, &code, nil, 0)
+		ctx := NewContext(nil, &code, nil, 0)
 		prog.Eval(&ctx)
 	*/
 }

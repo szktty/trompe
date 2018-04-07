@@ -171,7 +171,7 @@ func (val *ValStr) String() string {
 	return val.Value
 }
 
-func CreateValStr(value string) *ValStr {
+func NewValStr(value string) *ValStr {
 	return &ValStr{value}
 }
 
@@ -224,11 +224,11 @@ func (val *ValList) Tuple() []Value {
 	panic("list")
 }
 
-func CreateValList(value *List) *ValList {
+func NewValList(value *List) *ValList {
 	return &ValList{value}
 }
 
-func CreateValTuple(value ...Value) *ValTuple {
+func NewValTuple(value ...Value) *ValTuple {
 	return &ValTuple{value}
 }
 
@@ -269,7 +269,7 @@ type ValOpt struct {
 	Value Value // nullable
 }
 
-func CreateValOpt(value Value) *ValOpt {
+func NewValOpt(value Value) *ValOpt {
 	return &ValOpt{value}
 }
 
@@ -309,7 +309,7 @@ type ValPtn struct {
 	Value Pattern
 }
 
-func CreateValPtn(ptn Pattern) *ValPtn {
+func NewValPtn(ptn Pattern) *ValPtn {
 	return &ValPtn{ptn}
 }
 

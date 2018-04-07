@@ -160,7 +160,7 @@ func (value *ObjectValue) Decode(file *ObjectFile) Value {
 	case ObjectValueTypeUnit:
 		return LangUnit
 	case ObjectValueTypeString:
-		return CreateValStr(value.Value)
+		return NewValStr(value.Value)
 	case ObjectValueTypeCode:
 		// TODO: error
 		id, _ := strconv.Atoi(value.Value)

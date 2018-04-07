@@ -58,7 +58,7 @@ func main() {
 	code := trompe.Compile(file, node)
 	fmt.Println(code.Inspect())
 	m := trompe.NewModule(nil, file)
-	ctx := trompe.CreateContext(nil, m, nil, code, nil, 0)
+	ctx := trompe.NewContext(nil, m, nil, code, nil, 0)
 	ip := trompe.NewInterp()
 	ip.Eval(&ctx, code)
 }

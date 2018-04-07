@@ -7,7 +7,7 @@ type List struct {
 
 var ListNil = &List{nil, nil}
 
-func CreateList(value Value) *List {
+func NewList(value Value) *List {
 	return &List{Value: value, Next: nil}
 }
 

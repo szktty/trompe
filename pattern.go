@@ -99,7 +99,7 @@ type PtnTuple struct {
 	Ptns []Pattern
 }
 
-func CreatePtnTuple(ptn ...Pattern) *PtnTuple {
+func NewPtnTuple(ptn ...Pattern) *PtnTuple {
 	return &PtnTuple{ptn}
 }
 
