@@ -8,7 +8,7 @@ import (
 
 type Closure interface {
 	Arity() int
-	Apply(*Interp, *Context) (Value, error)
+	Apply(*Interp, *Context, *Env) (Value, error)
 }
 
 type CompiledCode struct {
@@ -227,8 +227,8 @@ func (code *CompiledCode) Arity() int {
 	return 0
 }
 
-func (code *CompiledCode) Apply(ip *Interp, ctx *Context) (Value, error) {
-	return ip.Eval(ctx, code)
+func (code *CompiledCode) Apply(ip *Interp, ctx *Context, env *Env) (Value, error) {
+	return ip.Eval(ctx, env, code)
 }
 
 /*
@@ -253,8 +253,9 @@ func TestCompiledCodeHelloWorld() {
 	fmt.Println(code.Inspect())
 
 	ip := NewInterp()
-	ctx := NewContext(nil, nil, nil, &code, nil, 0)
-	ip.Eval(&ctx, &code)
+	ctx := NewContext(nil, nil, &code, nil, 0)
+	env := NewEnv(nil)
+	ip.Eval(&ctx, env, &code)
 }
 
 /*

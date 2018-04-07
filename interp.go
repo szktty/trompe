@@ -8,12 +8,10 @@ type Context struct {
 	Clos    Closure
 	Args    []Value
 	NumArgs int
-	Env     *Env
 }
 
 func NewContext(parent *Context,
 	module *Module,
-	env *Env,
 	clos Closure,
 	args []Value,
 	numArgs int) Context {
@@ -23,18 +21,7 @@ func NewContext(parent *Context,
 		Clos:    clos,
 		Args:    args,
 		NumArgs: numArgs,
-		Env:     NewEnv(env),
 	}
-}
-
-func (ctx *Context) NewBlock() *Context {
-	newCtx := NewContext(ctx,
-		ctx.Module,
-		ctx.Env,
-		ctx.Clos,
-		ctx.Args,
-		ctx.NumArgs)
-	return &newCtx
 }
 
 type Stack struct {
@@ -136,7 +123,7 @@ func NewInterp() *Interp {
 	return &Interp{}
 }
 
-func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
+func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error) {
 	var op int
 	var i int
 	var top Value
@@ -168,7 +155,7 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 		case OpLoadLocal:
 			i = pc.Next()
 			name := code.Syms[i]
-			value := ctx.Env.Get(name)
+			value := env.Get(name)
 			if value == nil {
 				err = NewKeyError(ctx, name)
 				break
@@ -225,9 +212,9 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 				pc.Jump(i)
 			}
 		case OpBegin:
-			ctx = ctx.NewBlock()
+			env = NewEnv(env)
 		case OpEnd:
-			ctx = ctx.Parent
+			env = env.Parent
 		case OpCall:
 			i = pc.Next()
 			for j := 0; j < i; j++ {
@@ -237,8 +224,8 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
 				return nil, err
 			}
-			newCtx := NewContext(ctx, ctx.Module, ctx.Env, clos, args, i)
-			retVal, err = clos.Apply(ip, &newCtx)
+			newCtx := NewContext(ctx, ctx.Module, clos, args, i)
+			retVal, err = clos.Apply(ip, &newCtx, NewEnv(env))
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()

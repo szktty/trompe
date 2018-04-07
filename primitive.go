@@ -52,6 +52,6 @@ func (prim *Primitive) Arity() int {
 	return prim.arity
 }
 
-func (prim *Primitive) Apply(interp *Interp, ctx *Context) (Value, error) {
+func (prim *Primitive) Apply(interp *Interp, ctx *Context, env *Env) (Value, error) {
 	return prim.Func(ctx, ctx.Args, ctx.NumArgs)
 }

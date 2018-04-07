@@ -1,6 +1,7 @@
 package trompe
 
 type Env struct {
+	Parent  *Env
 	Attrs   map[string]Value
 	Imports []*Module
 }
@@ -21,7 +22,7 @@ func NewEnv(src *Env) *Env {
 		newMap = make(map[string]Value, 16)
 		imports = []*Module{}
 	}
-	return &Env{newMap, imports}
+	return &Env{src, newMap, imports}
 }
 
 func (env *Env) AddImport(m *Module) {
