@@ -10,6 +10,10 @@ type Range struct {
 	Close bool
 }
 
+func NewRange(start int, end int, close bool) *Range {
+	return &Range{start, end, close}
+}
+
 func (r *Range) Type() int {
 	return ValRangeType
 }

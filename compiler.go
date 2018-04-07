@@ -266,7 +266,11 @@ func (c *codeComp) compile(node Node) {
 	case *RangeNode:
 		c.compile(node.Left)
 		c.compile(node.Right)
-		c.addOp(OpRange)
+		if node.Close {
+			c.addOp(OpClosedRange)
+		} else {
+			c.addOp(OpHalfOpenRange)
+		}
 	default:
 		panic(fmt.Sprintf("unsupported node %s", NodeDesc(node)))
 	}

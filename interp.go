@@ -27,6 +27,16 @@ func CreateContext(parent *Context,
 	}
 }
 
+func (ctx *Context) NewBlock() *Context {
+	newCtx := CreateContext(ctx,
+		ctx.Module,
+		ctx.Env,
+		ctx.Clos,
+		ctx.Args,
+		ctx.NumArgs)
+	return &newCtx
+}
+
 type Stack struct {
 	Locals []Value
 	Index  int // -1 start
@@ -214,6 +224,10 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 			if !top.Bool() {
 				pc.Jump(i)
 			}
+		case OpBegin:
+			ctx = ctx.NewBlock()
+		case OpEnd:
+			ctx = ctx.Parent
 		case OpCall:
 			i = pc.Next()
 			for j := 0; j < i; j++ {
@@ -236,6 +250,14 @@ func (ip *Interp) Eval(ctx *Context, code *CompiledCode) (Value, error) {
 				list = list.Cons(stack.TopPop())
 			}
 			stack.Push(CreateValList(list))
+		case OpClosedRange:
+			right := stack.TopPop()
+			left := stack.TopPop()
+			stack.Push(NewRange(right.Int(), left.Int(), true))
+		case OpHalfOpenRange:
+			right := stack.TopPop()
+			left := stack.TopPop()
+			stack.Push(NewRange(right.Int(), left.Int(), false))
 		default:
 			panic("unsupported opcode")
 		}

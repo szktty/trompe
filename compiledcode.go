@@ -178,8 +178,10 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("create tuple %d", i)
-		case OpRange:
-			s += fmt.Sprintf("create range")
+		case OpClosedRange:
+			s += fmt.Sprintf("create closed range")
+		case OpHalfOpenRange:
+			s += fmt.Sprintf("create half-open range")
 		default:
 			panic(fmt.Sprintf("unknown opcode %d", code.Ops[pc]))
 		}
