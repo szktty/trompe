@@ -191,7 +191,7 @@ type AnonFunExpNode struct {
 	Exp    ExpNode
 }
 
-type RangeNode struct {
+type RangeExpNode struct {
 	Left  ExpNode
 	Op    Token
 	Close bool
@@ -590,11 +590,11 @@ func (exp *AnonFunExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("])")
 }
 
-func (exp *RangeNode) Loc() *Loc {
+func (exp *RangeExpNode) Loc() *Loc {
 	return exp.Left.Loc()
 }
 
-func (exp *RangeNode) WriteTo(buf *bytes.Buffer) {
+func (exp *RangeExpNode) WriteTo(buf *bytes.Buffer) {
 	buf.WriteString("(range ")
 	exp.Left.WriteTo(buf)
 	buf.WriteString(fmt.Sprintf(" %s ", exp.Op.Text))

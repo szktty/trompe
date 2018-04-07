@@ -263,7 +263,7 @@ func (c *codeComp) compile(node Node) {
 		anonComp.addOp(OpReturn)
 		code := anonComp.code()
 		c.addLit(code)
-	case *RangeNode:
+	case *RangeExpNode:
 		c.compile(node.Left)
 		c.compile(node.Right)
 		if node.Close {

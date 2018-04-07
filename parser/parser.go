@@ -184,7 +184,7 @@ func (l *ExpListener) EnterExp(ctx *ExpContext) {
 		rightCtx := ctx.GetRight()
 		right := NewExpListener()
 		rightCtx.EnterRule(right)
-		l.Node = &RangeNode{Left: left.Node,
+		l.Node = &RangeExpNode{Left: left.Node,
 			Op:    op.Token,
 			Close: op.Close,
 			Right: right.Node}
