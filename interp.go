@@ -43,7 +43,7 @@ func (s *Stack) TopPop() Value {
 	return top
 }
 
-func (s *Stack) Get(i int) Value {
+func (s *Stack) Sharedet(i int) Value {
 	return s.Locals[i]
 }
 
@@ -146,14 +146,14 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpNop:
 			break
 		case OpLoadUnit:
-			stack.Push(LangUnit)
+			stack.Push(SharedUnit)
 		case OpLoadTrue:
-			stack.Push(LangTrue)
+			stack.Push(SharedTrue)
 		case OpLoadFalse:
-			stack.Push(LangFalse)
+			stack.Push(SharedFalse)
 		case OpLoadInt:
 			i = pc.Next()
-			stack.Push(&ValInt{i})
+			stack.Push(NewInt(i))
 		case OpLoadLit:
 			i = pc.Next()
 			stack.Push(code.Lits[i])
@@ -169,7 +169,8 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpLoadAttr:
 			i = pc.Next()
 			name := code.Syms[i]
-			ref := stack.TopPop().(*ValModRef)
+			top := stack.TopPop()
+			ref, _ := ValueToRef(top)
 			m := ref.Module()
 			attr := m.Env.Get(name)
 			if attr == nil {
@@ -178,17 +179,17 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			}
 			stack.Push(attr)
 		case OpLoadModule:
-			stack.Push(NewValModRefWithModule(ctx.Module))
+			stack.Push(NewRef(ctx.Module.Path(), ctx.Module))
 		case OpStoreLocal:
 			i = pc.Next()
 			stack.Set(i, stack.Top())
 		case OpStoreAttr:
 			i = pc.Next()
 			name := code.Syms[i]
-			value := stack.TopPop()
-			ref := stack.TopPop().(*ValModRef)
+			v := stack.TopPop()
+			ref, _ := ValueToRef(top)
 			m := ref.Module()
-			m.Env.Set(name, value)
+			m.Env.Set(name, v)
 		case OpPop:
 			stack.Pop()
 		case OpDup:
@@ -196,7 +197,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpReturn:
 			break
 		case OpReturnUnit:
-			stack.Push(LangUnit)
+			stack.Push(SharedUnit)
 			break
 		case OpLabel:
 			i = pc.Next()
@@ -207,20 +208,22 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpBranchTrue:
 			i = pc.Next()
 			top = stack.TopPop()
-			if top.Bool() {
+			b, _ := ValueToBool(top)
+			if b.Value {
 				pc.Jump(i)
 			}
 		case OpBranchFalse:
 			i = pc.Next()
 			top = stack.TopPop()
-			if !top.Bool() {
+			b, _ := ValueToBool(top)
+			if !b.Value {
 				pc.Jump(i)
 			}
 		case OpBranchNext:
 			i = pc.Next()
 			top = stack.Top()
-			iter := top.Iter()
-			if iter == nil {
+			iter, ok := ValueToIter(top)
+			if !ok {
 				panic("not iter")
 			}
 			if next := iter.Next(); next != nil {
@@ -232,7 +235,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			}
 		case OpIter:
 			top = stack.TopPop()
-			iter := NewValIter(top)
+			iter := NewIter(top)
 			if iter == nil {
 				panic("cannot get iterator")
 			}
@@ -246,7 +249,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			for j := 0; j < i; j++ {
 				args[j] = stack.TopPop()
 			}
-			clos := stack.TopPop().Closure()
+			clos, _ := ValueToClos(stack.TopPop())
 			if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
 				return nil, err
 			}
@@ -255,22 +258,26 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			stack.Push(retVal)
 		case OpSome:
 			top = stack.TopPop()
-			stack.Push(NewValOpt(top))
+			stack.Push(NewOption(top))
 		case OpList:
 			i = pc.Next()
 			list := ListNil
 			for j := 0; j < i; j++ {
 				list = list.Cons(stack.TopPop())
 			}
-			stack.Push(NewValList(list))
+			stack.Push(NewList(list))
 		case OpClosedRange:
-			right := stack.TopPop()
-			left := stack.TopPop()
-			stack.Push(NewRange(left.Int(), right.Int(), true))
+			r := stack.TopPop()
+			l := stack.TopPop()
+			li, _ := ValueToInt(l)
+			ri, _ := ValueToInt(r)
+			stack.Push(NewRange(li.Value, ri.Value, true))
 		case OpHalfOpenRange:
-			right := stack.TopPop()
-			left := stack.TopPop()
-			stack.Push(NewRange(left.Int(), right.Int(), false))
+			r := stack.TopPop()
+			l := stack.TopPop()
+			li, _ := ValueToInt(l)
+			ri, _ := ValueToInt(r)
+			stack.Push(NewRange(li.Value, ri.Value, false))
 		default:
 			panic("unsupported opcode")
 		}
@@ -279,7 +286,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 	if err != nil {
 		return nil, err
 	} else if stack.Index < 0 {
-		return LangUnit, nil
+		return SharedUnit, nil
 	} else {
 		return stack.Top(), nil
 	}

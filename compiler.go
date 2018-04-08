@@ -87,13 +87,13 @@ func (c *codeComp) addLit(val Value) int {
 
 func (c *codeComp) addStr(s string) int {
 	for i, lit := range c.lits {
-		if val, ok := lit.(*ValStr); ok {
-			if val.Value == s {
+		if v, ok := ValueToString(lit); ok {
+			if v.Value == s {
 				return i
 			}
 		}
 	}
-	return c.addLit(NewValStr(s))
+	return c.addLit(NewString(s))
 }
 
 func (c *codeComp) addFun(name string, comp *codeComp) {

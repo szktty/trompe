@@ -193,39 +193,11 @@ func (code *CompiledCode) Inspect() string {
 }
 
 func (code *CompiledCode) Type() int {
-	return ValClosType
+	return ValueTypeClos
 }
 
 func (code *CompiledCode) Desc() string {
 	return fmt.Sprintf("CompiledCode %p", code)
-}
-
-func (code *CompiledCode) Bool() bool {
-	panic("CompiledCode")
-}
-
-func (code *CompiledCode) Int() int {
-	panic("CompiledCode")
-}
-
-func (code *CompiledCode) String() string {
-	panic("CompiledCode")
-}
-
-func (code *CompiledCode) Closure() Closure {
-	return code
-}
-
-func (code *CompiledCode) List() *List {
-	panic("CompiledCode")
-}
-
-func (code *CompiledCode) Tuple() []Value {
-	panic("CompiledCode")
-}
-
-func (code *CompiledCode) Iter() ValIter {
-	return nil
 }
 
 func (code *CompiledCode) Arity() int {
@@ -246,8 +218,8 @@ func TestCompiledCodeHelloWorld() {
 			"show",
 		},
 		Lits: []Value{
-			NewValStr("show"),
-			NewValStr("Hello, world!"),
+			NewString("show"),
+			NewString("Hello, world!"),
 		},
 		Ops: []int{
 			OpLoadLocal, 0, // "show"
@@ -279,12 +251,12 @@ func TestCompiledCodeFizzBuzzMatch() {
 			"show",
 		},
 		Lits: []Value{
-			NewValStr("Fizz"),
-			NewValStr("Buzz"),
-			NewValStr("FizzBuzz"),
-			NewValPtn(NewPtnTuple(&PtnInt{0}, &PtnInt{0})),
-			NewValPtn(NewPtnTuple(&PtnInt{0}, PtnWildcard)),
-			NewValPtn(NewPtnTuple(PtnWildcard, &PtnInt{0})),
+			NewString("Fizz"),
+			NewString("Buzz"),
+			NewString("FizzBuzz"),
+			newPattern(newPtnTuple(&ptnInt{0}, &ptnInt{0})),
+			newPattern(newPtnTuple(&ptnInt{0}, ptnWildcard)),
+			newPattern(newPtnTuple(ptnWildcard, &ptnInt{0})),
 		},
 		Ops: []int{
 			OpLoadArg, 0,
@@ -369,10 +341,10 @@ func TestCompiledCodeFizzBuzzCompare() {
 			"show",
 		},
 		Lits: []Value{
-			NewValStr("show"),
-			NewValStr("Fizz"),
-			NewValStr("Buzz"),
-			NewValStr("FizzBuzz"),
+			NewString("show"),
+			NewString("Fizz"),
+			NewString("Buzz"),
+			NewString("FizzBuzz"),
 		},
 		Ops: []int{
 			OpLoadArg, 0, // arg 1

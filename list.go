@@ -1,5 +1,9 @@
 package trompe
 
+import (
+	"fmt"
+)
+
 type List struct {
 	Value Value
 	Next  *List
@@ -22,4 +26,15 @@ func (l *List) Len() int {
 
 func (l *List) Cons(value Value) *List {
 	return &List{Value: value, Next: l}
+}
+
+// interface Value
+
+func (l *List) Type() int {
+	return ValueTypeList
+}
+
+func (l *List) Desc() string {
+	// TODO
+	return fmt.Sprintf("list")
 }

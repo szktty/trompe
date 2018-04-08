@@ -8,7 +8,7 @@ func LibCoreId(ctx *Context, args []Value, nargs int) (Value, error) {
 
 func LibCoreShow(ctx *Context, args []Value, nargs int) (Value, error) {
 	fmt.Printf("%s\n", args[0].Desc())
-	return LangUnit, nil
+	return SharedUnit, nil
 }
 
 func InstallLibCore() {

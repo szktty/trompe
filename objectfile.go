@@ -60,12 +60,14 @@ func (file *ObjectFile) AddCompiledCode(code *CompiledCode) {
 	for _, lit := range code.Lits {
 		// TODO: other types
 		switch lit.Type() {
-		case ValClosType:
-			if litCode, ok := lit.Closure().(*CompiledCode); ok {
-				file.AddCompiledCode(litCode)
-			} else {
-				panic("notimpl")
+		case ValueTypeClos:
+			if clos, ok := ValueToClos(lit); ok {
+				if litCode, ok := clos.(*CompiledCode); ok {
+					file.AddCompiledCode(litCode)
+					break
+				}
 			}
+			panic("notimpl")
 		default:
 			break
 		}
@@ -158,9 +160,9 @@ func (objCode *ObjectCode) Decode(file *ObjectFile) {
 func (value *ObjectValue) Decode(file *ObjectFile) Value {
 	switch value.Type {
 	case ObjectValueTypeUnit:
-		return LangUnit
+		return SharedUnit
 	case ObjectValueTypeString:
-		return NewValStr(value.Value)
+		return NewString(value.Value)
 	case ObjectValueTypeCode:
 		// TODO: error
 		id, _ := strconv.Atoi(value.Value)
