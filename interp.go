@@ -89,10 +89,13 @@ type Program struct {
 	Code *CompiledCode
 }
 
+// TODO: private
 type ProgCounter struct {
 	Count  int
 	Code   *CompiledCode
 	Labels map[int]int
+	isSkip bool
+	dest   int
 }
 
 func NewProgCounter(code *CompiledCode) ProgCounter {
@@ -111,11 +114,17 @@ func (pc *ProgCounter) Next() int {
 func (pc *ProgCounter) AddLabel(n int) {
 	pc.Labels[n] = pc.Count
 	fmt.Printf("# label[%d] = %d\n", n, pc.Count)
+	if pc.isSkip && pc.dest == n {
+		pc.isSkip = false
+		fmt.Printf("stop skip \n")
+	}
 }
 
 func (pc *ProgCounter) Jump(n int) {
 	if _, ok := pc.Labels[n]; !ok {
-		panic("not exists")
+		pc.isSkip = true
+		pc.dest = n
+		return
 	}
 	fmt.Printf("jump %p\n", pc.Labels[n])
 	pc.Count = pc.Labels[n]
@@ -142,142 +151,199 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		op = pc.Next()
 		fmt.Printf("%d: next op: %s\n", pc.Count, GetOpName(op))
 		stack.Inspect()
+
+		if pc.isSkip {
+			fmt.Printf("--- skip\n")
+		}
+
 		switch op {
 		case OpNop:
 			break
 		case OpLoadUnit:
-			stack.Push(SharedUnit)
+			if !pc.isSkip {
+				stack.Push(SharedUnit)
+			}
 		case OpLoadTrue:
-			stack.Push(SharedTrue)
+			if !pc.isSkip {
+				stack.Push(SharedTrue)
+			}
 		case OpLoadFalse:
-			stack.Push(SharedFalse)
+			if !pc.isSkip {
+				stack.Push(SharedFalse)
+			}
 		case OpLoadInt:
 			i = pc.Next()
-			stack.Push(NewInt(i))
+			if !pc.isSkip {
+				stack.Push(NewInt(i))
+			}
 		case OpLoadLit:
 			i = pc.Next()
-			stack.Push(code.Lits[i])
+			if !pc.isSkip {
+				stack.Push(code.Lits[i])
+			}
 		case OpLoadLocal:
 			i = pc.Next()
-			name := code.Syms[i]
-			value := env.Get(name)
-			if value == nil {
-				err = NewKeyError(ctx, name)
-				break
+			if !pc.isSkip {
+				name := code.Syms[i]
+				value := env.Get(name)
+				if value == nil {
+					err = NewKeyError(ctx, name)
+					break
+				}
+				stack.Push(value)
 			}
-			stack.Push(value)
 		case OpLoadAttr:
 			i = pc.Next()
-			name := code.Syms[i]
-			top := stack.TopPop()
-			ref, _ := ValueToRef(top)
-			m := ref.Module()
-			attr := m.Env.Get(name)
-			if attr == nil {
-				err = NewKeyError(ctx, name)
-				break
+			if !pc.isSkip {
+				name := code.Syms[i]
+				top := stack.TopPop()
+				ref, _ := ValueToRef(top)
+				m := ref.Module()
+				attr := m.Env.Get(name)
+				if attr == nil {
+					err = NewKeyError(ctx, name)
+					break
+				}
+				stack.Push(attr)
 			}
-			stack.Push(attr)
 		case OpLoadModule:
-			stack.Push(NewRef(ctx.Module.Path(), ctx.Module))
+			if !pc.isSkip {
+				stack.Push(NewRef(ctx.Module.Path(), ctx.Module))
+			}
 		case OpStoreLocal:
 			i = pc.Next()
-			stack.Set(i, stack.Top())
+			if !pc.isSkip {
+				stack.Set(i, stack.Top())
+			}
 		case OpStoreAttr:
 			i = pc.Next()
-			name := code.Syms[i]
-			v := stack.TopPop()
-			ref, _ := ValueToRef(top)
-			m := ref.Module()
-			m.Env.Set(name, v)
+			if !pc.isSkip {
+				name := code.Syms[i]
+				v := stack.TopPop()
+				ref, _ := ValueToRef(top)
+				m := ref.Module()
+				m.Env.Set(name, v)
+			}
 		case OpPop:
-			stack.Pop()
+			if !pc.isSkip {
+				stack.Pop()
+			}
 		case OpDup:
-			stack.Push(stack.Top())
+			if !pc.isSkip {
+				stack.Push(stack.Top())
+			}
 		case OpReturn:
-			break
+			if !pc.isSkip {
+				cont = false
+			}
 		case OpReturnUnit:
-			stack.Push(SharedUnit)
-			break
+			if !pc.isSkip {
+				stack.Push(SharedUnit)
+				cont = false
+			}
 		case OpLabel:
 			i = pc.Next()
 			pc.AddLabel(i)
 		case OpJump:
 			i = pc.Next()
-			pc.Jump(i)
+			if !pc.isSkip {
+				pc.Jump(i)
+			}
 		case OpBranchTrue:
 			i = pc.Next()
-			top = stack.TopPop()
-			b, _ := ValueToBool(top)
-			if b.Value {
-				pc.Jump(i)
+			if !pc.isSkip {
+				top = stack.TopPop()
+				b, _ := ValueToBool(top)
+				if b.Value {
+					pc.Jump(i)
+				}
 			}
 		case OpBranchFalse:
 			i = pc.Next()
-			top = stack.TopPop()
-			b, _ := ValueToBool(top)
-			if !b.Value {
-				pc.Jump(i)
+			if !pc.isSkip {
+				top = stack.TopPop()
+				b, _ := ValueToBool(top)
+				if !b.Value {
+					pc.Jump(i)
+				}
 			}
 		case OpBranchNext:
 			i = pc.Next()
-			top = stack.Top()
-			iter, ok := ValueToIter(top)
-			if !ok {
-				panic("not iter")
-			}
-			if next := iter.Next(); next != nil {
-				stack.Push(next)
-			} else {
-				stack.Pop() // pop iterator
-				fmt.Printf("branch next -> %d\n", i)
-				pc.Jump(i)
+			if !pc.isSkip {
+				top = stack.Top()
+				iter, ok := ValueToIter(top)
+				if !ok {
+					panic("not iter")
+				}
+				if next := iter.Next(); next != nil {
+					stack.Push(next)
+				} else {
+					stack.Pop() // pop iterator
+					fmt.Printf("branch next -> %d\n", i)
+					pc.Jump(i)
+				}
 			}
 		case OpIter:
 			top = stack.TopPop()
-			iter := NewIter(top)
-			if iter == nil {
-				panic("cannot get iterator")
+			if !pc.isSkip {
+				iter := NewIter(top)
+				if iter == nil {
+					panic("cannot get iterator")
+				}
+				stack.Push(iter)
 			}
-			stack.Push(iter)
 		case OpBegin:
-			env = NewEnv(env)
+			if !pc.isSkip {
+				env = NewEnv(env)
+			}
 		case OpEnd:
-			env = env.Parent
+			if !pc.isSkip {
+				env = env.Parent
+			}
 		case OpCall:
 			i = pc.Next()
-			for j := 0; j < i; j++ {
-				args[j] = stack.TopPop()
+			if !pc.isSkip {
+				for j := 0; j < i; j++ {
+					args[j] = stack.TopPop()
+				}
+				clos, _ := ValueToClos(stack.TopPop())
+				if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
+					return nil, err
+				}
+				newCtx := NewContext(ctx, ctx.Module, clos, args, i)
+				retVal, err = clos.Apply(ip, &newCtx, NewEnv(env))
+				stack.Push(retVal)
 			}
-			clos, _ := ValueToClos(stack.TopPop())
-			if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
-				return nil, err
-			}
-			newCtx := NewContext(ctx, ctx.Module, clos, args, i)
-			retVal, err = clos.Apply(ip, &newCtx, NewEnv(env))
-			stack.Push(retVal)
 		case OpSome:
-			top = stack.TopPop()
-			stack.Push(NewOption(top))
+			if !pc.isSkip {
+				top = stack.TopPop()
+				stack.Push(NewOption(top))
+			}
 		case OpList:
 			i = pc.Next()
-			list := ListNil
-			for j := 0; j < i; j++ {
-				list = list.Cons(stack.TopPop())
+			if !pc.isSkip {
+				list := ListNil
+				for j := 0; j < i; j++ {
+					list = list.Cons(stack.TopPop())
+				}
+				stack.Push(NewList(list))
 			}
-			stack.Push(NewList(list))
 		case OpClosedRange:
-			r := stack.TopPop()
-			l := stack.TopPop()
-			li, _ := ValueToInt(l)
-			ri, _ := ValueToInt(r)
-			stack.Push(NewRange(li.Value, ri.Value, true))
+			if !pc.isSkip {
+				r := stack.TopPop()
+				l := stack.TopPop()
+				li, _ := ValueToInt(l)
+				ri, _ := ValueToInt(r)
+				stack.Push(NewRange(li.Value, ri.Value, true))
+			}
 		case OpHalfOpenRange:
-			r := stack.TopPop()
-			l := stack.TopPop()
-			li, _ := ValueToInt(l)
-			ri, _ := ValueToInt(r)
-			stack.Push(NewRange(li.Value, ri.Value, false))
+			if !pc.isSkip {
+				r := stack.TopPop()
+				l := stack.TopPop()
+				li, _ := ValueToInt(l)
+				ri, _ := ValueToInt(r)
+				stack.Push(NewRange(li.Value, ri.Value, false))
+			}
 		default:
 			panic("unsupported opcode")
 		}
