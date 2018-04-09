@@ -135,7 +135,7 @@ func (code *CompiledCode) Inspect() string {
 		case OpBranchNext:
 			i := code.Ops[pc+1]
 			pc++
-			s += fmt.Sprintf("branch next L%d", i)
+			s += fmt.Sprintf("load next; branch L%d", i)
 		case OpBegin:
 			s += "begin block"
 		case OpEnd:
