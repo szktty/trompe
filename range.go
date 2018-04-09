@@ -48,9 +48,9 @@ func (iter *RangeIter) Desc() string {
 }
 
 func (iter *RangeIter) Next() Value {
-	iter.cur++
-	if iter.cur > iter.end {
-		return NewInt(iter.cur)
+	if iter.cur <= iter.end {
+		iter.cur++
+		return NewInt(iter.cur - 1)
 	} else {
 		return nil
 	}
