@@ -39,26 +39,23 @@ func AddOpenedModule(m *Module) {
 	OpenedModules = append(OpenedModules, m)
 }
 
-func GetModuleAttr(imports []*Module, name string) Value {
-	for _, m := range imports {
-		if value := m.GetAttr(name); value != nil {
-			return value
-		}
-	}
-	for _, m := range OpenedModules {
-		if value := m.GetAttr(name); value != nil {
-			return value
+func GetModuleAttr(ms []*Module, name string) Value {
+	for _, m := range ms {
+		if v := m.GetAttr(name); v != nil {
+			return v
 		}
 	}
 	return nil
 }
 
 func NewModule(parent *Module, name string) *Module {
+	env := NewEnv(nil)
+	env.Imports = OpenedModules
 	return &Module{
 		Parent: parent,
 		Subs:   make(map[string]*Module, 8),
 		Name:   name,
-		Env:    NewEnv(nil),
+		Env:    env,
 	}
 }
 
