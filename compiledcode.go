@@ -230,10 +230,7 @@ func TestCompiledCodeHelloWorld() {
 	}
 	fmt.Println(code.Inspect())
 
-	ip := NewInterp()
-	ctx := NewContext(nil, nil, &code, nil, 0)
-	env := NewEnv(nil)
-	ip.Eval(&ctx, env, &code)
+	Run("__test__", &code)
 }
 
 /*
