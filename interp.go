@@ -131,10 +131,18 @@ func (pc *ProgCounter) Jump(n int) {
 }
 
 type Interp struct {
+	Top *Module
 }
 
-func NewInterp() *Interp {
-	return &Interp{}
+func NewInterp(top *Module) *Interp {
+	return &Interp{Top: top}
+}
+
+func Run(file string, code *CompiledCode) (Value, error) {
+	m := NewModule(nil, file)
+	ctx := NewContext(nil, m, code, nil, 0)
+	ip := NewInterp(m)
+	return ip.Eval(&ctx, NewEnv(m.Env), code)
 }
 
 func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error) {
