@@ -206,9 +206,9 @@ func NewRangeOpListener() *RangeOpListener {
 func (l *RangeOpListener) EnterRangeop(ctx *RangeopContext) {
 	switch ctx.GetText() {
 	case "...":
-		l.Close = false
-	case "..<":
 		l.Close = true
+	case "..<":
+		l.Close = false
 	default:
 		panic("invalid token")
 	}
@@ -325,7 +325,7 @@ func (l *PatternListener) EnterPattern(ctx *PatternContext) {
 	fmt.Printf("enter pattern: %s\n", ctx.GetText())
 
 	if varCtx := ctx.NAME(); varCtx != nil {
-		l.Node = &VarExpNode{NewTokenAntlr(ctx.GetStart())}
+		l.Node = &VarPtnNode{NewTokenAntlr(ctx.GetStart())}
 	} else if intCtx := ctx.Int_(); intCtx != nil {
 		int_ := NewIntListener()
 		intCtx.EnterRule(int_)
