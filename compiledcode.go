@@ -144,6 +144,10 @@ func (code *CompiledCode) Inspect() string {
 			i := code.Ops[pc+1]
 			pc++
 			s += fmt.Sprintf("call with %d args", i)
+		case OpPanic:
+			i := code.Ops[pc+1]
+			pc++
+			s += fmt.Sprintf("panic %d", i)
 		case OpEq:
 			s += "=="
 		case OpNe:

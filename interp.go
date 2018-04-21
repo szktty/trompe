@@ -193,9 +193,11 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 			i = pc.Next()
 			if !pc.isSkip {
 				name := code.Syms[i]
+				fmt.Printf("-- load local %s\n", name)
 				value := env.Get(name)
 				if value == nil {
 					err = NewKeyError(ctx, name)
+					panic(err.Error())
 					break
 				}
 				stack.Push(value)
@@ -281,7 +283,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 				top = stack.Top()
 				iter, ok := ValueToIter(top)
 				if !ok {
-					panic("not iter")
+					panic(fmt.Sprintf("not iter %s", top.Desc()))
 				}
 				if next := iter.Next(); next != nil {
 					stack.Push(next)
@@ -289,6 +291,20 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 					stack.Pop() // pop iterator
 					fmt.Printf("branch next -> %d\n", i)
 					pc.Jump(i)
+				}
+			}
+		case OpMatch:
+			if !pc.isSkip {
+				ptn := stack.TopPop()
+				top = stack.TopPop()
+				if ptn, ok := ptn.(*Pattern); ok {
+					if ptn.Eval(env, top) {
+						stack.Push(SharedTrue)
+					} else {
+						stack.Push(SharedFalse)
+					}
+				} else {
+					panic("not pattern")
 				}
 			}
 		case OpIter:
@@ -311,16 +327,29 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 		case OpCall:
 			i = pc.Next()
 			if !pc.isSkip {
-				for j := 0; j < i; j++ {
-					args[j] = stack.TopPop()
+				for j := i; j > 0; j-- {
+					args[j-1] = stack.TopPop()
 				}
-				clos, _ := ValueToClos(stack.TopPop())
+				clos, ok := ValueToClos(stack.TopPop())
+				if !ok {
+					panic("not closure")
+				}
 				if err := ValidateArity(ctx, i, clos.Arity()); err != nil {
 					return nil, err
 				}
 				newCtx := NewContext(ctx, ctx.Module, clos, args, i)
 				retVal, err = clos.Apply(ip, &newCtx, NewEnv(env))
 				stack.Push(retVal)
+			}
+		case OpPanic:
+			i = pc.Next()
+			if !pc.isSkip {
+				switch i {
+				case OpPanicMatch:
+					panic("pattern match error")
+				default:
+					panic(fmt.Sprintf("unknown panic %d", i))
+				}
 			}
 		case OpSome:
 			if !pc.isSkip {
@@ -353,7 +382,7 @@ func (ip *Interp) Eval(ctx *Context, env *Env, code *CompiledCode) (Value, error
 				stack.Push(NewRange(li.Value, ri.Value, false))
 			}
 		default:
-			panic("unsupported opcode")
+			panic(fmt.Sprintf("unsupported opcode %s", GetOpName(op)))
 		}
 	}
 

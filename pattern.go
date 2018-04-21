@@ -20,12 +20,51 @@ func newPattern(c ptnComp) *Pattern {
 	return &Pattern{c}
 }
 
+func NewPatternFromNode(n PtnNode) *Pattern {
+	comp := parsePtnNode(n)
+	return newPattern(comp)
+}
+
+func parsePtnNode(n PtnNode) ptnComp {
+	switch n := n.(type) {
+	case *UnitPtnNode:
+		return &ptnUnit{}
+	case *BoolPtnNode:
+		return &ptnBool{n.Value}
+	case *IntPtnNode:
+		i, _ := StrToInt(n.Value.Text)
+		return &ptnInt{i}
+	case *StrPtnNode:
+		return &ptnStr{n.Value.Text}
+	case *VarPtnNode:
+		return &ptnVar{n.Name.Text}
+	default:
+		panic("notimpl")
+		return nil
+	}
+}
+
+func (p *Pattern) Eval(env *Env, v Value) bool {
+	return p.Comp.Eval(env, v)
+}
+
 func (p *Pattern) Type() int {
 	return ValueTypePattern
 }
 
 func (p *Pattern) Desc() string {
 	return fmt.Sprintf("<pattern %s>", p.Comp.Desc())
+}
+
+type ptnUnit struct {
+}
+
+func (p *ptnUnit) Eval(env *Env, v Value) bool {
+	return v == SharedUnit
+}
+
+func (p *ptnUnit) Desc() string {
+	return "()"
 }
 
 type ptnBool struct {
@@ -181,7 +220,7 @@ type ptnVar struct {
 
 func (p *ptnVar) Eval(env *Env, v Value) bool {
 	if !strings.HasPrefix(p.Name, "_") {
-		// TODO: set attr
+		env.Set(p.Name, v)
 	}
 	return true
 }

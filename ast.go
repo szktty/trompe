@@ -241,6 +241,10 @@ type EltPtnListNode struct {
 	Seps  []Loc
 }
 
+type VarPtnNode struct {
+	Name Token
+}
+
 func NewToken(loc Loc, text string) Token {
 	return Token{loc, text}
 }
@@ -683,4 +687,12 @@ func (elts *EltPtnListNode) WriteTo(buf *bytes.Buffer) {
 		buf.WriteString(" ")
 	}
 	buf.WriteString("])")
+}
+
+func (ptn *VarPtnNode) Loc() *Loc {
+	return &ptn.Name.Loc
+}
+
+func (ptn *VarPtnNode) WriteTo(buf *bytes.Buffer) {
+	buf.WriteString(fmt.Sprintf("(varptn %s)", ptn.Name.Text))
 }

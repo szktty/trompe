@@ -32,7 +32,8 @@ const (
 	OpBranchNext  // label
 	OpBegin
 	OpEnd
-	OpCall // length
+	OpCall  // length
+	OpPanic // kind
 	OpEq
 	OpNe
 	OpLt
@@ -51,6 +52,11 @@ const (
 	OpClosedRange
 	OpHalfOpenRange
 	OpIter
+)
+
+const (
+	OpPanicFatal = iota
+	OpPanicMatch
 )
 
 func GetOpName(op int) string {
@@ -111,6 +117,8 @@ func GetOpName(op int) string {
 		return "OpEnd"
 	case OpCall:
 		return "OpCall"
+	case OpPanic:
+		return "OpPanic"
 	case OpEq:
 		return "OpEq"
 	case OpNe:

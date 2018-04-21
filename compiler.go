@@ -56,6 +56,10 @@ func (c *codeComp) addOp(op int) {
 	c.ops = append(c.ops, op)
 }
 
+func (c *codeComp) addOpPop() {
+	c.addOp(OpPop)
+}
+
 func (c *codeComp) addOpJump(label int) {
 	c.addOp(OpJump)
 	c.addOp(label)
@@ -100,6 +104,19 @@ func (c *codeComp) addFun(name string, comp *codeComp) {
 	c.funComps[name] = comp
 }
 
+func (c *codeComp) addMatch(n PtnNode) {
+	ptn := NewPatternFromNode(n)
+	i := c.addLit(ptn)
+	c.addOp(OpLoadLit)
+	c.addOp(i)
+	c.addOp(OpMatch)
+}
+
+func (c *codeComp) addOpPanic(kind int) {
+	c.addOp(OpPanic)
+	c.addOp(kind)
+}
+
 func (c *codeComp) code() *CompiledCode {
 	code := NewCompiledCode()
 	code.Syms = c.syms
@@ -113,10 +130,15 @@ func (c *codeComp) compile(node Node) {
 	switch node := node.(type) {
 	case *ChunkNode:
 		c.compile(node.Block)
+		c.addOpPop()
 	case *BlockNode:
 		c.addOp(OpBegin)
-		for _, stat := range node.Stats {
+		l := len(node.Stats)
+		for i, stat := range node.Stats {
 			c.compile(stat)
+			if i+1 < l {
+				c.addOpPop()
+			}
 		}
 		c.addOp(OpEnd)
 	case *LetStatNode:
@@ -174,16 +196,29 @@ func (c *codeComp) compile(node Node) {
 		c.addLabel(endL)
 	case *ForStatNode:
 		beginL := c.newLabel()
+		panicL := c.newLabel()
 		endL := c.newLabel()
+		c.addOp(OpBegin)
 		c.compile(node.Exp)
 		c.addOp(OpIter)
+
+		// loop ahead
 		c.addLabel(beginL)
 		c.addOp(OpBranchNext)
 		c.addOp(endL)
-		c.compile(node.Ptn)
+		c.addMatch(node.Ptn)
+		c.addOpBranch(false, panicL)
 		c.compile(&node.Block)
+		c.addOpPop()
 		c.addOpJump(beginL)
+
+		// pattern matching error
+		c.addLabel(panicL)
+		c.addOpPanic(OpPanicMatch)
+
 		c.addLabel(endL)
+		c.addOp(OpEnd)
+		c.addOpPop()
 	case *RetStatNode:
 		if node.Exp == nil {
 			c.addOp(OpReturnUnit)
@@ -260,6 +295,7 @@ func (c *codeComp) compile(node Node) {
 		for _, stat := range node.Stats {
 			anonComp.compile(stat)
 		}
+		anonComp.addOpPop()
 		anonComp.compile(node.Exp)
 		anonComp.addOp(OpReturn)
 		code := anonComp.code()

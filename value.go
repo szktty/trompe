@@ -1,6 +1,9 @@
 package trompe
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	ValueTypeUnit = iota
@@ -44,6 +47,14 @@ var SharedUnit = &Unit{}
 var SharedTrue = &Bool{true}
 var SharedFalse = &Bool{false}
 var SharedNone = &Option{nil}
+
+func NewBool(b bool) *Bool {
+	if b {
+		return SharedTrue
+	} else {
+		return SharedFalse
+	}
+}
 
 func ValueToBool(v Value) (*Bool, bool) {
 	switch v := v.(type) {
@@ -211,4 +222,8 @@ func (r *Ref) Module() *Module {
 		r.module = GetModule(r.Path)
 	}
 	return r.module
+}
+
+func StrToInt(s string) (int, error) {
+	return strconv.Atoi(s)
 }
