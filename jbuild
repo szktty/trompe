@@ -1,6 +1,0 @@
-(jbuild_version 1)
-
-(executable
- ((name trompe)
-  (public_name trompe)
-  (libraries (base yojson stdio))))
