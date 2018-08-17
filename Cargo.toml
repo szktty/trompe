@@ -1,0 +1,6 @@
+[package]
+name = "trompe"
+version = "0.1.0"
+authors = ["SUZUKI Tetsuya <tetsuya.suzuki@gmail.com>"]
+
+[dependencies]
