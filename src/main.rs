@@ -7,12 +7,14 @@ enum Value {
     Bool(bool),
     Int(i64),
     Ptr(u64),
+    None,
 }
 
 #[derive(Debug, Clone)]
 enum ValueObj {
     String(String),
     List(Value, Option<u64>),
+    Some(Value),
     Struct(Vec<Value>)
 }
 
@@ -55,6 +57,17 @@ enum Opcode {
     Le,
     Gt,
     Ge,
+}
+
+#[derive(Debug, Clone)]
+struct Block {
+    ops: Vec<Opcode>,
+    lits: Vec<u64>
+}
+
+#[derive(Debug, Clone)]
+struct Stack {
+    values: Vec<Value>
 }
 
 impl Heap {
@@ -104,9 +117,33 @@ impl Heap {
 
 }
 
+impl Stack {
+
+    fn get(&self) -> Option<Value> {
+    }
+
+    fn push(&mut self, value: Value) {
+        self.values.push(value);
+    }
+
+    fn pop(&mut self) {
+        self.values.pop();
+    }
+
+}
+
 impl Interp {
 
-    fn eval() {
+    fn eval(block: &Block) {
+        let mut i = 0;
+        loop {
+            let op = &block.ops[i];
+            i += 1;
+            match *op {
+                Opcode::Nop => (),
+                _ => ()
+            }
+        }
     }
 
 }
