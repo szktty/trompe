@@ -48,13 +48,13 @@ struct Stack {
 #[derive(Debug, Clone)]
 enum Opcode {
     Nop,
-    LoadTemp(u8),
+    LoadTemp(String),
     LoadLit(u8),
     LoadUnit,
     LoadTrue,
     LoadFalse,
     LoadInt(i64),
-    StorePop(u8),
+    StorePop(String),
     Pop,
     Return,
     LoopHead,
@@ -62,7 +62,7 @@ enum Opcode {
     BranchTrue(u16),
     BranchFalse(u16),
     Apply(u8),
-    Prim(u16),
+    Prim(String),
     MakeBlock,
     Not,
     Eq,
@@ -76,15 +76,32 @@ enum Opcode {
 #[derive(Debug, Clone)]
 struct Block {
     ops: Vec<Opcode>,
-    lits: Vec<Id>
+    lits: Vec<Id>,
+    env: Env
 }
 
 #[derive(Debug, Clone)]
 struct Context {
-    block: Id,
     pc: usize,
     stackBase: usize,
     stackIndex: usize
+}
+
+#[derive(Debug, Clone)]
+struct Env {
+    attrs: HashMap<String, Value>
+}
+
+impl Env {
+
+    fn new() -> Env {
+        Env { attrs: HashMap::new() }
+    }
+
+    fn get(&self, key: &String) -> Option<Value> {
+        self.attrs.get(key).cloned()
+    }
+
 }
 
 impl Heap {
@@ -110,7 +127,7 @@ impl Heap {
         }
     }
 
-    fn retain(&mut self, id: Id) -> bool {
+    fn retain_id(&mut self, id: Id) -> bool {
         if let Some(val) = self.values.get_mut(&id) {
             val.count += 1;
             true
@@ -119,7 +136,14 @@ impl Heap {
         }
     }
 
-    fn release(&mut self, id: Id) -> bool {
+    fn retain(&mut self, value: &Value) -> bool {
+        match *value {
+            Value::Ptr(id) => self.retain_id(id),
+            _ => true
+        }
+    }
+
+    fn release_id(&mut self, id: Id) -> bool {
         if let Entry::Occupied(mut o) = self.values.entry(id) {
             if o.get().count <= 1 {
                 o.remove_entry();
@@ -132,9 +156,20 @@ impl Heap {
         }
     }
 
+    fn release(&mut self, value: &Value) -> bool {
+        match *value {
+            Value::Ptr(id) => self.release_id(id),
+            _ => true
+        }
+    }
+
 }
 
 impl Stack {
+
+    fn new() -> Stack {
+        Stack { values: Vec::with_capacity(1000) }
+    }
 
     fn get(&self, ctx: &Context, i: usize) -> Option<&Value> {
         self.values.get(ctx.stackBase + i)
@@ -162,6 +197,10 @@ impl Stack {
 
 impl Context {
 
+    fn new() -> Context {
+        Context { pc: 0, stackBase: 0, stackIndex: 0 }
+    }
+
     fn stackTop(&self) -> usize {
         self.stackBase + self.stackIndex
     }
@@ -170,7 +209,11 @@ impl Context {
 
 impl Interp {
 
-    fn eval(&mut self, ctx: &mut Context, block: &Block) -> Result<Value, String> {
+    fn new() -> Interp {
+        Interp { heap: Heap::new(), stack: Stack::new() }
+    }
+
+    fn eval(&mut self, ctx: &mut Context, env: &mut Env, block: &Block) -> Result<Value, String> {
         let mut pc = 0;
         loop {
             if pc <= block.ops.len() {
@@ -179,7 +222,7 @@ impl Interp {
 
             let op = &block.ops[pc];
             pc += 1;
-            match *op {
+            match op {
                 Opcode::Nop => (),
 
                 Opcode::LoadUnit =>
@@ -192,31 +235,41 @@ impl Interp {
                     self.stack.load(ctx, Value::Bool(false)),
 
                 Opcode::LoadInt(n) =>
-                    self.stack.load(ctx, Value::Int(n)),
+                    self.stack.load(ctx, Value::Int(*n)),
 
-                Opcode::LoadTemp(i) =>
-                    match self.stack.get(ctx, i as usize).cloned() {
-                        Some(val) => self.stack.load(ctx, val),
+                Opcode::LoadTemp(name) =>
+                    match env.attrs.get(name) {
+                        Some(val) => {
+                            self.heap.retain(&val);
+                            self.stack.load(ctx, val.clone());
+                        },
                         None => panic!("temp not found")
                     },
 
-                Opcode::StorePop(i) => {
-                    let i2 = i as usize;
-                    match self.stack.get(ctx, i2).cloned() {
-                        Some(val) => self.stack.store(ctx, i2, val),
-                        None => panic!("temp not found")
+                Opcode::StorePop(name) => {
+                    match self.stack.pop(ctx) {
+                        Some(val) => {
+                            match env.attrs.insert(name.clone(), val.clone()) {
+                                None => (),
+                                Some(old) => {
+                                    let _ = self.heap.release(&old);
+                                }
+                            }
+                        },
+                        None => panic!("value not found")
                     }
                 },
 
-                Opcode::Pop =>
-                    self.stack.pop(ctx),
+                Opcode::Pop => {
+                    let _ = self.stack.pop(ctx);
+                },
 
                 Opcode::LoopHead => (),
 
                 Opcode::BranchTrue(i) =>
                     match self.stack.top(ctx).cloned() {
                         Some(Value::Bool(true)) => {
-                            pc = i as usize;
+                            pc = *i as usize;
                             match &block.ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
@@ -230,7 +283,7 @@ impl Interp {
                  Opcode::BranchFalse(i) =>
                     match self.stack.top(ctx).cloned() {
                         Some(Value::Bool(false)) => {
-                            pc = i as usize;
+                            pc = *i as usize;
                             match &block.ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
@@ -332,6 +385,10 @@ impl Interp {
 
 impl Block {
 
+    fn new() -> Block {
+        Block { ops: Vec::new(), lits: Vec::new(), env: Env::new() }
+    }
+
     fn get_lit(&self, i: usize) -> Option<&usize> {
         self.lits.get(i)
     }
@@ -339,6 +396,13 @@ impl Block {
 }
 
 fn main() {
-    let mut _val = Heap::new();
     println!("Hello, world!");
+    let mut interp = Interp::new();
+    let mut ctx = Context::new();
+    let mut env = Env::new();
+    let mut block = Block::new();
+    block.ops = vec![
+        Opcode::Nop
+    ];
+    interp.eval(&mut ctx, &mut env, &block);
 }
