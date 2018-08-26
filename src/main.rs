@@ -33,6 +33,7 @@ struct ValueRef {
 
 #[derive(Debug, Clone)]
 struct Heap {
+    next_id: usize,
     values: HashMap<Id, ValueRef>
 }
 
@@ -44,6 +45,7 @@ struct Interp {
 
 #[derive(Debug, Clone)]
 struct Stack {
+    count: usize,
     values: Vec<Value>
 }
 
@@ -90,8 +92,7 @@ struct Block {
 #[derive(Debug, Clone)]
 struct Context {
     pc: usize,
-    stackBase: usize,
-    stackIndex: usize
+    base: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -115,13 +116,15 @@ impl Heap {
 
     fn new() -> Self {
         Heap {
+            next_id: 0,
             values: HashMap::new()
         }
     }
 
     fn new_value(&mut self, obj: ValueObj) -> Value {
-        let id = 0;
+        let id = self.next_id;
         let ptr = Value::Ptr(id);
+        self.next_id += 1;
         self.values.insert(id, ValueRef { count: 1, value: obj });
         ptr
     }
@@ -175,29 +178,33 @@ impl Heap {
 impl Stack {
 
     fn new() -> Stack {
-        Stack { values: Vec::with_capacity(1000) }
+        Stack { count: 0, values: Vec::with_capacity(1000) }
     }
 
-    fn get(&self, ctx: &Context, i: usize) -> Option<&Value> {
-        self.values.get(ctx.stackBase + i)
+    fn get(&self, i: usize) -> Option<&Value> {
+        self.values.get(i)
     }
 
-    fn top(&self, ctx: &Context) -> Option<&Value> {
-        self.values.get(ctx.stackTop())
+    fn top(&self) -> Option<&Value> {
+        self.values.get(self.count-1)
     }
 
-    fn load(&mut self, ctx: &mut Context, value: Value) {
-        ctx.stackIndex += 1;
-        self.values[ctx.stackTop()] = value;
+    fn load(&mut self, value: Value) {
+        if self.count >= self.values.len() {
+            self.values.push(value);
+        } else {
+            self.values[self.count-1] = value;
+        }
+        self.count += 1;
     }
 
-    fn store(&mut self, ctx: &mut Context, i: usize, value: Value) {
-        self.values[ctx.stackBase + i] = value;
+    fn store(&mut self, i: usize, value: Value) {
+        self.values[i] = value;
     }
 
-    fn pop(&mut self, ctx: &mut Context) -> Option<&Value> {
-        ctx.stackIndex -= 1;
-        self.top(ctx)
+    fn pop(&mut self) -> Option<&Value> {
+        self.count -= 1;
+        self.values.get(self.count)
     }
 
 }
@@ -205,11 +212,7 @@ impl Stack {
 impl Context {
 
     fn new() -> Context {
-        Context { pc: 0, stackBase: 0, stackIndex: 0 }
-    }
-
-    fn stackTop(&self) -> usize {
-        self.stackBase + self.stackIndex
+        Context { pc: 0, base: 0 }
     }
 
 }
@@ -220,44 +223,40 @@ impl Interp {
         Interp { heap: Heap::new(), stack: Stack::new() }
     }
 
-    fn eval(&mut self, ctx: &mut Context, env: &mut Env, block: &Block) -> Result<Value, String> {
+    fn eval(&mut self, ctx: &mut Context, env: &mut Env, code: &CompiledCode) -> Result<Value, String> {
         let mut pc = 0;
-        let ops = &block.code.ops;
         loop {
-            if pc >= ops.len() {
+            if pc >= code.ops.len() {
                 break;
             }
 
-            // FIXME
-            let op = ops[pc].clone();
-            pc += 1;
-            println!("# opcode => {}", op.clone().to_string());
-            match op {
+            println!("# opcode => {}", &code.ops[pc].to_string());
+            match &code.ops[pc] {
                 Opcode::Nop => (),
 
                 Opcode::LoadUnit =>
-                    self.stack.load(ctx, Value::Unit),
+                    self.stack.load(Value::Unit),
 
                 Opcode::LoadTrue =>
-                    self.stack.load(ctx, Value::Bool(true)),
+                    self.stack.load(Value::Bool(true)),
 
                 Opcode::LoadFalse =>
-                    self.stack.load(ctx, Value::Bool(false)),
+                    self.stack.load(Value::Bool(false)),
 
                 Opcode::LoadInt(n) =>
-                    self.stack.load(ctx, Value::Int(n)),
+                    self.stack.load(Value::Int(*n)),
 
                 Opcode::LoadTemp(ref name) =>
                     match env.attrs.get(name) {
                         Some(val) => {
                             self.heap.retain(&val);
-                            self.stack.load(ctx, val.clone());
+                            self.stack.load(val.clone());
                         },
                         None => panic!("temp not found")
                     },
 
                 Opcode::StorePop(name) => {
-                    match self.stack.pop(ctx) {
+                    match self.stack.pop() {
                         Some(val) => {
                             match env.attrs.insert(name.clone(), val.clone()) {
                                 None => (),
@@ -271,16 +270,16 @@ impl Interp {
                 },
 
                 Opcode::Pop => {
-                    let _ = self.stack.pop(ctx);
+                    let _ = self.stack.pop();
                 },
 
                 Opcode::LoopHead => (),
 
                 Opcode::BranchTrue(i) =>
-                    match self.stack.top(ctx).cloned() {
+                    match self.stack.top().cloned() {
                         Some(Value::Bool(true)) => {
-                            pc = i as usize;
-                            match ops[pc] {
+                            pc = *i as usize;
+                            match &code.ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
                             }
@@ -291,10 +290,10 @@ impl Interp {
                     },
 
                  Opcode::BranchFalse(i) =>
-                    match self.stack.top(ctx).cloned() {
+                    match self.stack.top().cloned() {
                         Some(Value::Bool(false)) => {
-                            pc = i as usize;
-                            match ops[pc] {
+                            pc = *i as usize;
+                            match &code.ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
                             }
@@ -305,20 +304,20 @@ impl Interp {
                     },
 
                  Opcode::Not =>
-                     match self.stack.pop(ctx).cloned() {
+                     match self.stack.pop().cloned() {
                         Some(Value::Bool(val)) => {
-                            self.stack.load(ctx, Value::Bool(!val));
+                            self.stack.load(Value::Bool(!val));
                         },
                         Some(_) => panic!("must be bool"),
                         None => panic!("value not found")
                      },
 
                  Opcode::Eq => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Bool(v1)), Some(Value::Bool(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 == v2));
+                            self.stack.load(Value::Bool(v1 == v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -326,11 +325,11 @@ impl Interp {
                  },
 
                  Opcode::Neq => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Bool(v1)), Some(Value::Bool(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 != v2));
+                            self.stack.load(Value::Bool(v1 != v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -338,11 +337,11 @@ impl Interp {
                  },
 
                  Opcode::Lt => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Int(v1)), Some(Value::Int(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 < v2));
+                            self.stack.load(Value::Bool(v1 < v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -350,11 +349,11 @@ impl Interp {
                  },
 
                  Opcode::Le => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Int(v1)), Some(Value::Int(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 <= v2));
+                            self.stack.load(Value::Bool(v1 <= v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -362,11 +361,11 @@ impl Interp {
                  },
 
                  Opcode::Gt => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Int(v1)), Some(Value::Int(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 > v2));
+                            self.stack.load(Value::Bool(v1 > v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -374,11 +373,11 @@ impl Interp {
                  },
 
                  Opcode::Ge => {
-                     let v2 = self.stack.pop(ctx).cloned();
-                     let v1 = self.stack.pop(ctx).cloned();
+                     let v2 = self.stack.pop().cloned();
+                     let v1 = self.stack.pop().cloned();
                      match (v1, v2) {
                         (Some(Value::Int(v1)), Some(Value::Int(v2))) => {
-                            self.stack.load(ctx, Value::Bool(v1 >= v2));
+                            self.stack.load(Value::Bool(v1 >= v2));
                         },
                         (Some(_), Some(_)) => panic!("must be bool"),
                         _ => panic!("value not found")
@@ -387,6 +386,7 @@ impl Interp {
 
                 _ => ()
             }
+            pc += 1;
         }
         Result::Ok(Value::Unit)
     }
@@ -468,9 +468,10 @@ fn main() {
     let mut env = Env::new();
     let mut code = CompiledCode::new();
     code.ops = vec![
-        Opcode::Nop
+        Opcode::Nop,
+        Opcode::LoadUnit
     ];
     println!("code => {}", code.to_string());
     let mut block = Block::new(code);
-    interp.eval(&mut ctx, &mut env, &block);
+    interp.eval(&mut ctx, &mut env, &block.code);
 }
