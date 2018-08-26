@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::error::Error;
 use std::result::Result;
+use std::string::ToString;
+use std::io::Write;
 
 type Id = usize;
 
@@ -58,7 +60,7 @@ enum Opcode {
     Pop,
     Return,
     LoopHead,
-    Jump(u16),
+    Jump(i16),
     BranchTrue(u16),
     BranchFalse(u16),
     Apply(u8),
@@ -74,9 +76,14 @@ enum Opcode {
 }
 
 #[derive(Debug, Clone)]
-struct Block {
+struct CompiledCode {
     ops: Vec<Opcode>,
     lits: Vec<Id>,
+}
+
+#[derive(Debug, Clone)]
+struct Block {
+    code: CompiledCode,
     env: Env
 }
 
@@ -215,13 +222,16 @@ impl Interp {
 
     fn eval(&mut self, ctx: &mut Context, env: &mut Env, block: &Block) -> Result<Value, String> {
         let mut pc = 0;
+        let ops = &block.code.ops;
         loop {
-            if pc <= block.ops.len() {
+            if pc >= ops.len() {
                 break;
             }
 
-            let op = &block.ops[pc];
+            // FIXME
+            let op = ops[pc].clone();
             pc += 1;
+            println!("# opcode => {}", op.clone().to_string());
             match op {
                 Opcode::Nop => (),
 
@@ -235,9 +245,9 @@ impl Interp {
                     self.stack.load(ctx, Value::Bool(false)),
 
                 Opcode::LoadInt(n) =>
-                    self.stack.load(ctx, Value::Int(*n)),
+                    self.stack.load(ctx, Value::Int(n)),
 
-                Opcode::LoadTemp(name) =>
+                Opcode::LoadTemp(ref name) =>
                     match env.attrs.get(name) {
                         Some(val) => {
                             self.heap.retain(&val);
@@ -269,8 +279,8 @@ impl Interp {
                 Opcode::BranchTrue(i) =>
                     match self.stack.top(ctx).cloned() {
                         Some(Value::Bool(true)) => {
-                            pc = *i as usize;
-                            match &block.ops[pc] {
+                            pc = i as usize;
+                            match ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
                             }
@@ -283,8 +293,8 @@ impl Interp {
                  Opcode::BranchFalse(i) =>
                     match self.stack.top(ctx).cloned() {
                         Some(Value::Bool(false)) => {
-                            pc = *i as usize;
-                            match &block.ops[pc] {
+                            pc = i as usize;
+                            match ops[pc] {
                                 Opcode::LoopHead => (),
                                 _ => panic!("not loophead")
                             }
@@ -383,14 +393,70 @@ impl Interp {
 
 }
 
-impl Block {
+impl CompiledCode {
 
-    fn new() -> Block {
-        Block { ops: Vec::new(), lits: Vec::new(), env: Env::new() }
+    fn new() -> CompiledCode {
+        CompiledCode { ops: Vec::new(), lits: Vec::new() }
     }
 
     fn get_lit(&self, i: usize) -> Option<&usize> {
         self.lits.get(i)
+    }
+
+}
+
+impl ToString for CompiledCode {
+
+    fn to_string(&self) -> String {
+        let mut buf = Vec::new();
+        write!(&mut buf, "opcodes:\n").unwrap();
+        let mut i = 0;
+        for op in self.ops.iter() {
+            i += 1;
+            write!(&mut buf, "    {}: {}\n", i, op.to_string());
+        }
+        String::from_utf8(buf).unwrap()
+    }
+
+}
+
+impl Block {
+
+    fn new(code: CompiledCode) -> Block {
+        Block { code: code, env: Env::new() }
+    }
+
+}
+
+impl ToString for Opcode {
+
+    fn to_string(&self) -> String {
+        match self {
+            Opcode::Nop => String::from("nop"),
+            Opcode::LoadTemp(name) => format!("load temp #{}", name),
+            Opcode::LoadLit(i) => format!("load literal #{}", i),
+            Opcode::LoadUnit => format!("load unit"),
+            Opcode::LoadTrue => format!("load true"),
+            Opcode::LoadFalse => format!("load false"),
+            Opcode::LoadInt(val) => format!("load int {}", val),
+            Opcode::StorePop(name) => format!("store #{}; pop", name),
+            Opcode::Pop => format!("pop"),
+            Opcode::Return => format!("return"),
+            Opcode::LoopHead => format!("loophead"),
+            Opcode::Jump(n) => format!("jump {}", n),
+            Opcode::BranchTrue(n) => format!("branch true {}", n),
+            Opcode::BranchFalse(n) => format!("branch false {}", n),
+            Opcode::Apply(n) => format!("apply {}", n),
+            Opcode::Prim(name) => format!("primitive #{}", name),
+            Opcode::MakeBlock => format!("make block"),
+            Opcode::Not => format!("not"),
+            Opcode::Eq => format!("=="),
+            Opcode::Neq => format!("!="),
+            Opcode::Lt => format!("<"),
+            Opcode::Le => format!("<="),
+            Opcode::Gt => format!(">"),
+            Opcode::Ge => format!(">="),
+        }
     }
 
 }
@@ -400,9 +466,11 @@ fn main() {
     let mut interp = Interp::new();
     let mut ctx = Context::new();
     let mut env = Env::new();
-    let mut block = Block::new();
-    block.ops = vec![
+    let mut code = CompiledCode::new();
+    code.ops = vec![
         Opcode::Nop
     ];
+    println!("code => {}", code.to_string());
+    let mut block = Block::new(code);
     interp.eval(&mut ctx, &mut env, &block);
 }
