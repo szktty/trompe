@@ -5,6 +5,8 @@ use std::result::Result;
 use std::string::ToString;
 use std::io::Write;
 
+mod infer;
+
 type Id = usize;
 
 #[derive(Debug, Clone)]
@@ -13,6 +15,7 @@ enum Value {
     Bool(bool),
     Int(i64),
     Ptr(Id),
+    Prim(String),
     None,
 }
 
@@ -37,10 +40,17 @@ struct Heap {
     values: HashMap<Id, ValueRef>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+struct Prim {
+    name: String,
+    f: fn(interp: &Interp, ctx: &Context, nargs: u8, args: Vec<Value>)
+}
+
+#[derive(Clone)]
 struct Interp {
     heap: Heap,
-    stack: Stack
+    stack: Stack,
+    prims: HashMap<String, Prim>
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +68,7 @@ enum Opcode {
     LoadTrue,
     LoadFalse,
     LoadInt(i64),
+    LoadPrim(String),
     StorePop(String),
     Pop,
     Return,
@@ -66,7 +77,6 @@ enum Opcode {
     BranchTrue(u16),
     BranchFalse(u16),
     Apply(u8),
-    Prim(String),
     MakeBlock,
     Not,
     Eq,
@@ -220,7 +230,8 @@ impl Context {
 impl Interp {
 
     fn new() -> Interp {
-        Interp { heap: Heap::new(), stack: Stack::new() }
+        Interp { heap: Heap::new(), stack: Stack::new(),
+        prims: HashMap::new() }
     }
 
     fn eval(&mut self, ctx: &mut Context, env: &mut Env, code: &CompiledCode) -> Result<Value, String> {
@@ -254,6 +265,16 @@ impl Interp {
                         },
                         None => panic!("temp not found")
                     },
+
+                Opcode::LoadLit(i) => {
+                    match code.lits.get(*i as usize) {
+                        None => panic!("literal not found"),
+                        Some(id) => self.stack.load(Value::Ptr(*id))
+                    }
+                },
+
+                Opcode::LoadPrim(ref name) =>
+                    self.stack.load(Value::Prim(name.clone())),
 
                 Opcode::StorePop(name) => {
                     match self.stack.pop() {
@@ -302,6 +323,23 @@ impl Interp {
                         Some(_) => panic!("not bool"),
                         None => panic!("value not found")
                     },
+
+                 Opcode::Apply(_) => {
+                     match self.stack.pop() {
+                         Some(Value::Prim(ref name)) => {
+                             match self.prims.get(name) {
+                                 Some(prim) => {
+                                     /*
+                                     let f = prim.f;
+                                     f(self, ctx, 0, Vec::new())
+                                     */
+                                 },
+                                 _ => (),
+                             }
+                         },
+                         _ => panic!("not function")
+                     }
+                 },
 
                  Opcode::Not =>
                      match self.stack.pop().cloned() {
@@ -439,6 +477,7 @@ impl ToString for Opcode {
             Opcode::LoadTrue => format!("load true"),
             Opcode::LoadFalse => format!("load false"),
             Opcode::LoadInt(val) => format!("load int {}", val),
+            Opcode::LoadPrim(name) => format!("load primitive #{}", name),
             Opcode::StorePop(name) => format!("store #{}; pop", name),
             Opcode::Pop => format!("pop"),
             Opcode::Return => format!("return"),
@@ -447,7 +486,6 @@ impl ToString for Opcode {
             Opcode::BranchTrue(n) => format!("branch true {}", n),
             Opcode::BranchFalse(n) => format!("branch false {}", n),
             Opcode::Apply(n) => format!("apply {}", n),
-            Opcode::Prim(name) => format!("primitive #{}", name),
             Opcode::MakeBlock => format!("make block"),
             Opcode::Not => format!("not"),
             Opcode::Eq => format!("=="),
@@ -461,15 +499,24 @@ impl ToString for Opcode {
 
 }
 
+fn prim_hello(interp: &Interp, ctx: &Context, nargs: u8, args: Vec<Value>) {
+    println!("# prim: hello, world!");
+}
+
 fn main() {
     println!("Hello, world!");
     let mut interp = Interp::new();
+    let prim_name = String::from("hello");
+    interp.prims.insert(prim_name.clone(),
+    Prim { name: prim_name.clone(), f: prim_hello });
     let mut ctx = Context::new();
     let mut env = Env::new();
     let mut code = CompiledCode::new();
     code.ops = vec![
         Opcode::Nop,
-        Opcode::LoadUnit
+        Opcode::LoadUnit,
+        Opcode::LoadPrim(prim_name.clone()),
+        Opcode::Apply(0),
     ];
     println!("code => {}", code.to_string());
     let mut block = Block::new(code);
